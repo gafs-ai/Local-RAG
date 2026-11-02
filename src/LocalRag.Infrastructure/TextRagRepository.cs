@@ -6,7 +6,7 @@ namespace LocalRag.Infrastructure;
 
 public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text);
 
-public sealed class TextRagRepository : IAsyncDisposable
+public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointStore
 {
     private readonly SurrealDbClient _db;
     private TextRagRepository(SurrealDbClient db) => _db = db;
@@ -16,7 +16,7 @@ public sealed class TextRagRepository : IAsyncDisposable
         var db = await SurrealConnection.OpenAsync(connection, "application", token).ConfigureAwait(false);
         try
         {
-            (await db.RawQuery("DEFINE TABLE IF NOT EXISTS text_document SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_revision SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_space SCHEMALESS;", cancellationToken: token).ConfigureAwait(false)).EnsureAllOks();
+            (await db.RawQuery("DEFINE TABLE IF NOT EXISTS text_document SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_revision SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_space SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_monitor SCHEMALESS;", cancellationToken: token).ConfigureAwait(false)).EnsureAllOks();
             return new(db);
         }
         catch { await db.DisposeAsync().ConfigureAwait(false); throw; }
@@ -103,6 +103,24 @@ public sealed class TextRagRepository : IAsyncDisposable
     {
         if (space.Length != 64 || space.Any(ch => !char.IsAsciiHexDigit(ch))) throw new ArgumentException("検索空間IDが不正です。");
         return "text_vectors_" + space.ToLowerInvariant();
+    }
+
+    public async Task<MonitoringCheckpoint?> LoadMonitoringAsync(CancellationToken token)
+    {
+        var result = await _db.RawQuery("SELECT VALUE payload FROM text_monitor:current;", cancellationToken: token).ConfigureAwait(false);
+        result.EnsureAllOks();
+        var json = result.GetValue<string[]>(0)?.SingleOrDefault();
+        if (json is null) return null;
+        var checkpoint = JsonSerializer.Deserialize<MonitoringCheckpoint>(json) ?? throw new InvalidDataException("監視状態が空です。");
+        checkpoint.Validate();
+        return checkpoint;
+    }
+
+    public async Task SaveMonitoringAsync(MonitoringCheckpoint checkpoint, CancellationToken token)
+    {
+        checkpoint.Validate();
+        (await _db.RawQuery("UPSERT text_monitor:current SET payload=$payload;",
+            new Dictionary<string, object?> { ["payload"] = JsonSerializer.Serialize(checkpoint) }, token).ConfigureAwait(false)).EnsureAllOks();
     }
 
     public ValueTask DisposeAsync() => _db.DisposeAsync();

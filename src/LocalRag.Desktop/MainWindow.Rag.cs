@@ -14,6 +14,7 @@ public partial class MainWindow
     private TextRagRepository? _repository;
     private LemonadeTextAi? _ragAi;
     private TextRagService? _rag;
+    private PersistentMonitor? _persistentMonitor;
     private CancellationTokenSource? _monitorCancellation;
     private CancellationTokenSource? _ragCancellation;
     private Task _monitorTask = Task.CompletedTask;
@@ -46,6 +47,8 @@ public partial class MainWindow
             _ragCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _ragAi = new LemonadeTextAi(_loadedSettings);
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);
+            _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));
+            ShowDocuments(await _repository.DocumentsAsync(_lifetime.Token));
             PolicyStatus.Text = _loadedSettings.Confidentiality.Enabled
                 ? $"機密検査：パターン {(_loadedSettings.Confidentiality.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM {(_loadedSettings.Confidentiality.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
             RagPanel.IsEnabled = true;
@@ -70,15 +73,19 @@ public partial class MainWindow
         ScanButton.IsEnabled = false;
         try
         {
-            await new CompletionScheduler().RunAsync(async ct =>
+            await _persistentMonitor!.RunAsync(async ct =>
             {
                 await RunCycleAsync(ct).ConfigureAwait(false);
             }, TimeSpan.FromMinutes(_loadedSettings.MonitoringIntervalMinutes), ex => Dispatcher.InvokeAsync(() =>
             {
                 RagStatus.Text = $"取り込みを保留しました（{ex.GetType().Name}）。指定間隔の後に再試行します。";
+            }).Task, due => Dispatcher.InvokeAsync(() =>
+            {
+                RagStatus.Text = $"前回の処理完了から監視間隔を待っています。次回探索予定：{due.ToLocalTime():yyyy/MM/dd HH:mm:ss}。";
             }).Task, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception ex) { RagStatus.Text = $"自動監視を停止しました（{ex.GetType().Name}）。DB接続と設定を確認し、設定を保存して再開してください。"; }
         finally { ScanButton.IsEnabled = !_shuttingDown; }
     }
 
@@ -91,9 +98,12 @@ public partial class MainWindow
         {
             RagStatus.Text = $"完了：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、未探索フォルダ {result.InaccessibleRoots}。" +
                 (_loadedSettings.AutomaticMonitoring && _monitorCancellation is { IsCancellationRequested: false } ? $" 次回は完了から{_loadedSettings.MonitoringIntervalMinutes}分後です。" : "");
-            DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" + (d.ErrorCode is null ? "" : $"（{d.ErrorCode}）")).ToArray();
+            ShowDocuments(documents);
         });
     }
+
+    private void ShowDocuments(IReadOnlyList<TextDocumentState> documents) =>
+        DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" + (d.ErrorCode is null ? "" : $"（{d.ErrorCode}）")).ToArray();
 
     private async void PauseMonitoring(object sender, RoutedEventArgs e)
     {
@@ -106,7 +116,7 @@ public partial class MainWindow
     private async void ScanNow(object sender, RoutedEventArgs e)
     {
         if (_rag is null || _ragChanging || _shuttingDown || !_ragTask.IsCompleted || !_monitorTask.IsCompleted) return;
-        await (_ragTask = RunUserActionAsync(() => RunCycleAsync(_ragCancellation!.Token)));
+        await (_ragTask = RunUserActionAsync(() => _persistentMonitor!.RunCycleAsync(RunCycleAsync, _ragCancellation!.Token)));
     }
 
     private async void SearchText(object sender, RoutedEventArgs e)
@@ -160,6 +170,7 @@ public partial class MainWindow
         _monitorCancellation?.Cancel();
         await Task.WhenAll(_monitorTask, _ragTask);
         _rag?.Dispose(); _rag = null;
+        _persistentMonitor = null;
         _ragAi?.Dispose(); _ragAi = null;
         if (_repository is not null) { await _repository.DisposeAsync(); _repository = null; }
         _ragCancellation?.Dispose(); _ragCancellation = null;

@@ -10,14 +10,17 @@ public sealed class CompletionScheduler
         TimeSpan interval,
         Func<Exception, Task> onFailure,
         CancellationToken cancellationToken,
-        Func<TimeSpan, CancellationToken, Task>? delay = null)
+        Func<TimeSpan, CancellationToken, Task>? delay = null,
+        TimeSpan initialDelay = default)
     {
         if (interval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(interval));
+        if (initialDelay < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(initialDelay));
         if (Interlocked.CompareExchange(ref _running, 1, 0) != 0)
             throw new InvalidOperationException("監視はすでに実行中です。");
         delay ??= Task.Delay;
         try
         {
+            if (initialDelay > TimeSpan.Zero) await delay(initialDelay, cancellationToken).ConfigureAwait(false);
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
