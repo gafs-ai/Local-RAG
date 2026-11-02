@@ -484,3 +484,17 @@ Gemma-3-4b-it-mm-NPU / nomic-embed-text-v2-moe-GGUFで最初のMCP診断は4文�
 今回の最終ソリューションビルドは警告0・エラー0。全体自動テストの最終記録は`TestResults/release000-final.trx`（117成功）。ZIPから展開したアプリでDB/MCPの待機表示を確認し、Computer Useでウィンドウの「閉じる」を選択。管理画面が非表示になった後も、インストール済み中継経由の検索1件・全文Allowed/21文字・終了値0を確認した。画面の再選択時には一度`failed to activate captured window`となったが、ウィンドウを再取得した1回の再試行で復旧してから操作した。
 
 ChatGPTでのツール読み込みと正常/拒否/検査失敗の実取得が残る。正式0.0.0タグとGitHub Releaseは残条件成立後とする。試験用アプリは自動監視OFF・監視間隔15分で、後続のプラグイン接続確認用にトレイ常駐させている。最新の既定プラグイン生成も成功し、固定ユーザーパスを含む検証用と区別している。
+
+## 16. プラグイン有効化後にツールが現れない問題（2026-11-02）
+
+ユーザーの設定画面にはワークスペース登録版と`Local RAG local packages`版が並び、メンションは後者を指定していた。スキルは会話に読み込まれたが、search/fetchは利用可能ツール一覧に現れなかった。有効化漏れとは扱わず、現在のCLIが公開するapp-server診断APIで切り分けた。画面操作、会話作成、モデル要求、APIキー作成は行っていない。
+
+確認した問題と対応:
+
+1. 本体プロセスが停止中だった。従来の中継は起動時に本体へ接続し、失敗するとexit 1で終了した。追加した回帰テストも`ClientTransportClosedException`で再現（`TestResults/mcp-offline-before.trx`）。中継は本体と独立して起動し、要求ごとに設定・DPAPIトークンを読み、最大110秒内で接続する方式へ変更。本体起動後、無効化、ポート変更、再起動を同じstdio接続で検証した。検査・認証の省略はしていない。
+2. portable形式では`plugin/read`がenabled=true・スキルあり・mcpServers=[]を返した。OpenAI拡張に参照を追加した形式でも同様。現在のホストで対応する`.codex-plugin/plugin.json`と`.mcp.json`に切り替えるとmcpServers=[localrag]となった。これを配布スクリプトの既定Desktop形式にした。Portable形式も明示指定で生成可能だが、このホストの接続成功とは扱わない。
+3. 互換形式の初回起動はos error 267。CLIが返したcwdはキャッシュパスの末尾に文字列`${PLUGIN_ROOT}`を残しており、変数が展開されていなかった。`cwd: "."`、command=dotnet、先頭引数`./server/LocalRag.Mcp.dll`に変更すると、`mcpServerStatus/list`がsearch/fetchの両スキーマ、serverInfo、toolsError=nullを返した。本体停止中でもツール一覧を取得できた。
+
+全体テストは**118成功・失敗0・スキップ0**（`TestResults/mcp-reconnect-full.trx`、実DBを含む）。本体停止中の列挙、同じstdio接続での再接続、MCP無効化と設定変更が追加検証範囲。ホスト側の登録・初期化検証を`scripts/Test-PluginDiscovery.ps1`として残した。ZIP作成時もマニフェスト・MCP設定・実行ファイルの格納を検査する。
+
+正式候補は0.0.0-rc.3とする。現在の会話でのモデル自身によるsearch/fetch呼び出しと、ChatGPTの回答は引き続き未確認。ホスト診断でツールが列挙されたことを、ChatGPTからの実取得成功に置き換えない。

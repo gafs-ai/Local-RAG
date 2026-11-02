@@ -1,6 +1,6 @@
 # 0.0.0 リリース判定と利用上の制約
 
-状態: **候補版0.0.0-rc.1。正式0.0.0は未リリース。** ChatGPT接続の実機試験が残っている。
+状態: **候補版0.0.0-rc.3。正式0.0.0は未リリース。** ChatGPT接続の実機試験が残っている。
 
 ## 対応範囲
 
@@ -30,7 +30,7 @@ MCPとChatGPTへの接続は[MCPConnection.md](MCPConnection.md)を参照。
 
 ## 検証・リリース判定
 
-自動テスト117件、失敗0、スキップ0（実DB10件を含む）。実モデル・実DB・stdio→認証付きHTTPの実MCPクライアントで4文書の取り込み、検索、全文取得、機密拒否、変更後の旧版非取得に成功。専用ワーカーとDBの強制終了後、未完成版を隠し、未完了Embeddingのみ再開する試験に成功。詳細と初回失敗は[TechnicalValidation.md](TechnicalValidation.md)に記録する。
+自動テスト118件、失敗0、スキップ0（実DB10件を含む）。実モデル・実DB・stdio→認証付きHTTPの実MCPクライアントで4文書の取り込み、検索、全文取得、機密拒否、変更後の旧版非取得に成功。専用ワーカーとDBの強制終了後、未完成版を隠し、未完了Embeddingのみ再開する試験に成功。詳細と初回失敗は[TechnicalValidation.md](TechnicalValidation.md)に記録する。
 
 候補ZIPを展開したアプリで起動とMCP待機を確認。画面を閉じてトレイ常駐した後も、インストール済み中継から検索・全文取得に成功した。
 
@@ -38,6 +38,6 @@ MCPとChatGPTへの接続は[MCPConnection.md](MCPConnection.md)を参照。
 
 ## 配布の作成
 
-Windows PowerShellで`./scripts/Package.ps1 -Version 0.0.0-rc.1`を実行すると、`artifacts`内の新規フォルダへ配布ZIP、依存ライセンス一覧、SHA-256を作成する。Git作業ツリーがクリーンなら対応するHEADのソースZIPも作る。変更未コミットの場合は検証用と明記し、ソースZIPは作らない。
+Windows PowerShellで`./scripts/Package.ps1 -Version 0.0.0-rc.3`を実行すると、`artifacts`内の新規フォルダへ配布ZIP、依存ライセンス一覧、SHA-256を作成する。Git作業ツリーがクリーンなら対応するHEADのソースZIPも作る。変更未コミットの場合は検証用と明記し、ソースZIPは作らない。
 
 GPL-3.0-or-later、権利者GAFS Inc.。依存ライブラリは元のライセンスを維持する。モデル、SurrealDB本体、Lemonade、ユーザー文書・設定・認証情報・インデックスはZIPへ含めない。

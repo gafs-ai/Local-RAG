@@ -12,20 +12,10 @@ if (args.Length != 0 && (args.Length != 2 || args[0] != "--data-dir" || !Path.Is
 var data = args.Length == 2 ? args[1] : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LocalRAG");
 try
 {
-    var settings = await new SettingsStore(data).LoadAsync();
-    if (!settings.Mcp.Enabled) throw new InvalidOperationException();
-    var secret = await new McpTokenStore(data).LoadAsync();
-    using var handler = new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false };
-    using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(110) };
-    var transport = new HttpClientTransport(new HttpClientTransportOptions
-    {
-        Endpoint = new Uri($"http://127.0.0.1:{settings.Mcp.Port}/mcp"),
-        AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
-    }, http);
-    await using var client = await McpClient.CreateAsync(transport);
     var builder = Host.CreateApplicationBuilder();
     builder.Logging.ClearProviders(); // stdout is exclusively the MCP protocol.
-    builder.Services.AddSingleton<IRetrievalCalls>(new ForwardCalls(client));
+    // Discovery must not depend on the desktop application's startup order.
+    builder.Services.AddSingleton<IRetrievalCalls>(new ForwardCalls(data));
     builder.Services.AddMcpServer(o => o.ServerInfo = new() { Name = "LocalRAG", Version = "0.0.0" })
         .WithStdioServerTransport().WithTools<RetrievalTools>();
     using var host = builder.Build();
@@ -34,15 +24,30 @@ try
 }
 catch (Exception) { Console.Error.WriteLine("Local RAG MCP is unavailable. Start the application and check MCP settings."); return 1; }
 
-internal sealed class ForwardCalls(McpClient client) : IRetrievalCalls
+internal sealed class ForwardCalls(string data) : IRetrievalCalls
 {
     public async Task<CallToolResult> CallAsync(string name, string? query, int limit, string? id, CancellationToken token)
     {
         try
         {
+            using var bounded = CancellationTokenSource.CreateLinkedTokenSource(token);
+            bounded.CancelAfter(TimeSpan.FromSeconds(110));
+            // Reload on each call so app restarts, port changes and disabling MCP take effect
+            // without restarting the ChatGPT plugin. Never create credentials or start the DB here.
+            var settings = await new SettingsStore(data).LoadAsync(bounded.Token).ConfigureAwait(false);
+            if (!settings.Mcp.Enabled) return LocalRetrievalCalls.Error("retrieval_unavailable");
+            var secret = await new McpTokenStore(data).LoadAsync(bounded.Token).ConfigureAwait(false);
+            using var handler = new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false };
+            using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(110) };
+            var transport = new HttpClientTransport(new HttpClientTransportOptions
+            {
+                Endpoint = new Uri($"http://127.0.0.1:{settings.Mcp.Port}/mcp"),
+                AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
+            }, http);
+            await using var client = await McpClient.CreateAsync(transport, cancellationToken: bounded.Token).ConfigureAwait(false);
             return await client.CallToolAsync(name, name == "search"
                 ? new Dictionary<string, object?> { ["query"] = query, ["limit"] = limit }
-                : new Dictionary<string, object?> { ["id"] = id }, cancellationToken: token).ConfigureAwait(false);
+                : new Dictionary<string, object?> { ["id"] = id }, cancellationToken: bounded.Token).ConfigureAwait(false);
         }
         catch (Exception) { return LocalRetrievalCalls.Error("retrieval_unavailable"); }
     }

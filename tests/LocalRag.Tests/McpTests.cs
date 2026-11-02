@@ -89,6 +89,39 @@ public class McpTests
         Assert.True(result.IsError); Assert.Equal(0, stub.Calls);
     }
 
+    [Fact]
+    public async Task StdioToolsRemainDiscoverableWhenAppIsOfflineAndReconnectAfterSettingsChange()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "LocalRag.Tests", Guid.NewGuid().ToString("N"));
+        // No settings, credentials or running application at discovery time.
+        await using var client = await McpClient.CreateAsync(new StdioClientTransport(new()
+        {
+            Command = "dotnet", Arguments = [Path.Combine(AppContext.BaseDirectory, "LocalRag.Mcp.dll"), "--data-dir", root]
+        }));
+        Assert.Equal(["fetch", "search"], (await client.ListToolsAsync()).Select(t => t.Name).Order().ToArray());
+        var stub = new Stub();
+        var args = new Dictionary<string, object?> { ["id"] = stub.Id.ToString("D") };
+        var offline = await client.CallToolAsync("fetch", args);
+        Assert.True(offline.IsError);
+        Assert.Equal("retrieval_unavailable", Body(offline).GetProperty("error").GetString());
+        var secret = await new McpTokenStore(root).GetOrCreateAsync();
+        var port = FreePort();
+        await new SettingsStore(root).SaveAsync(new AppSettings { Mcp = new() { Port = port } });
+        await using (var host = await LocalMcpHost.StartAsync(stub, port, secret))
+        {
+            Assert.Equal("full original text", Body(await client.CallToolAsync("fetch", args)).GetProperty("text").GetString());
+            await new SettingsStore(root).SaveAsync(new AppSettings { Mcp = new() { Port = port, Enabled = false } });
+            Assert.True((await client.CallToolAsync("fetch", args)).IsError);
+        }
+        // Same stdio process discovers a newly enabled endpoint, without restarting the chat.
+        var newPort = FreePort();
+        await new SettingsStore(root).SaveAsync(new AppSettings { Mcp = new() { Port = newPort } });
+        await using (var restarted = await LocalMcpHost.StartAsync(stub, newPort, secret))
+            Assert.Equal("full original text", Body(await client.CallToolAsync("fetch", args)).GetProperty("text").GetString());
+        Assert.True((await client.CallToolAsync("fetch", args)).IsError);
+        Assert.Equal(2, (await client.ListToolsAsync()).Count);
+    }
+
     [Theory]
     [InlineData(false, null, null, HttpStatusCode.Unauthorized)]
     [InlineData(true, "https://evil.invalid", null, HttpStatusCode.Forbidden)]

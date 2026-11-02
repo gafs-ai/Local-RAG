@@ -21,7 +21,7 @@ Local RAGの管理画面でフォルダ・Gemma等のチャットモデル・Emb
 }
 ```
 
-保存先を変更した場合は`args`を`["--data-dir", "C:\\LocalRagData"]`のように指定する。絶対パスを使う。アプリと中継は同じWindowsユーザーで動かす。中継はDB・モデル・監視処理を起動しない。アプリが起動していない、MCPが無効、認証情報を読めない場合は接続エラーになる。
+保存先を変更した場合は`args`を`["--data-dir", "C:\\LocalRagData"]`のように指定する。絶対パスを使う。アプリと中継は同じWindowsユーザーで動かす。中継はDB・モデル・監視処理を起動しない。本体停止中でも中継は起動してsearch/fetchの一覧を提供する。取得要求時に本体が起動していない、MCPが無効、認証情報を読めない場合は`retrieval_unavailable`を返す。要求ごとに設定を読み直すため、本体起動・再起動・ポート変更後は同じ中継で再試行できる。
 
 開発用には`dotnet`をcommand、ビルドした`LocalRag.Mcp.dll`の絶対パスを先頭のargsに指定できる。配布版は.NET Desktop Runtime 10.0 x64とASP.NET Core Runtime 10.0 x64が必要（.NET 10 SDKを導入済みなら含まれる）。
 
@@ -49,11 +49,13 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 公式の[デスクトップ用プラグイン](https://developers.openai.com/plugins/deploy/desktop-only)で説明されるローカルstdio方式を使う。Local RAGを常駐させ、同じPC・Windowsユーザーのローカル実行可能な会話からプラグインを選択する。利用可否はBusinessワークスペースのポリシーとデスクトップ環境で確認する。公開ディレクトリへの審査付き提出と、今回の非公開プラグイン登録は別の作業である。
 
-`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。`plugin.json`、`mcp.json`、検索用スキルを同梱する。設定・認証情報・文書・DBは含めない。既定保存先を変更した場合のみ`-DataDirectory <絶対パス>`を指定し、このPC専用のパッケージとして扱う。
+`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。既定のDesktop形式は`.codex-plugin/plugin.json`、`.mcp.json`、検索用スキルを同梱する。現在のホストで検証した互換形式であり、`dotnet ./server/LocalRag.Mcp.dll`をプラグイン基準の`cwd: "."`で実行する。`${PLUGIN_ROOT}`が展開されない環境でも固定ユーザーパスを埋め込まずに動作する。
+
+`-Format Portable`はAgent Plugins 1.0の`plugin.json`と`mcp.json`を生成するが、今回のホストではMCPが認識されなかったため、デスクトップの動作確認には用いない。設定・認証情報・文書・DBはどちらにも含めない。既定保存先を変更した場合のみ`-DataDirectory <絶対パス>`を指定し、このPC専用のパッケージとして扱う。
 
 ホストがCodex CLIのローカルmarketplaceを利用する環境では、生成されたmarketplaceのディレクトリを`codex plugin marketplace add <ディレクトリ>`、続いて`codex plugin add local-rag@local-rag-local`で登録できる。これはローカルホストへの登録であり、Businessワークスペースへの登録完了を意味しない。ChatGPTの非公開プラグイン追加、または管理者による[GitHub marketplaceの取り込み](https://learn.chatgpt.com/docs/enterprise/plugin-management)はホストの対応する導入手順で行う。キャッシュを直接編集しない。
 
-2026-11-02時点: 検証用パッケージのローカル登録・有効化と、現在のワークスペースへの非公開プラグイン作成が成功。ユーザーによるプラグインのメンションも確認した。ただし進行中の会話の利用可能ツール一覧にはsearch/fetchが現れず、**ChatGPTからの実取得は未確認**。新しいターンでのツール読み込みと、正常取得・機密拒否・検査失敗の確認が残る。検証用プラグインは合成文書用の保存先へ接続しており、そのまま他PCへ配布しない。
+2026-11-02時点: ローカル版の有効化とスキル読み込みを確認。その後、MCP宣言の認識・パス展開・本体停止時の中継終了を修正し、ホストの診断APIでsearch/fetch両方と起動エラーなしを確認した。`scripts/Test-PluginDiscovery.ps1 -MarketplaceFile <marketplace.json>`でこの検査を再現できる。**現在のChatGPT会話からの実取得は未確認**であり、正常取得・機密拒否・検査失敗の実呼び出しが残る。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式であり、今回の試験は`Local RAG local packages`のローカル版で行う。
 
 ### ブラウザ版（未実装）
 

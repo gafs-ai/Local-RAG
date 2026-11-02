@@ -1,4 +1,4 @@
-param([ValidatePattern('^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$')][string]$Version = '0.0.0-rc.1')
+param([ValidatePattern('^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$')][string]$Version = '0.0.0-rc.3')
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 Push-Location $repo

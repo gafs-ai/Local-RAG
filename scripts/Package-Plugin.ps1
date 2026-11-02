@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory)][string]$DistributionDirectory,
     [string]$OutputDirectory,
-    [string]$DataDirectory
+    [string]$DataDirectory,
+    [ValidateSet('Desktop','Portable')][string]$Format = 'Desktop'
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -31,13 +32,37 @@ $manifest = [ordered]@{
         interface=@{displayName='Local RAG';shortDescription='ローカル文書の検索と取得';developerName='GAFS Inc.';capabilities=@('Read')}
     }}
 }
-$manifest | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $plugin 'plugin.json') -Encoding utf8
+if ($Format -eq 'Portable') {
+    $manifest | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $plugin 'plugin.json') -Encoding utf8
+} else {
+    # The installed desktop runtime discovers bundled MCP servers through the compatibility
+    # manifest. Do not add a portable root that shadows this declaration on that runtime.
+    $compatibility = New-Item -ItemType Directory -Path (Join-Path $plugin '.codex-plugin')
+    @{
+        name=$manifest.name;version=$manifest.version;description=$manifest.description
+        author=$manifest.author;license=$manifest.license
+        requires_local_executor=$true;skills='./skills/';mcpServers='./.mcp.json'
+        interface=$manifest.extensions.'com.openai'.interface
+    } | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $compatibility.FullName 'plugin.json') -Encoding utf8
+}
 $bridgeArgs = @()
 if ($DataDirectory) { $bridgeArgs = @('--data-dir',$DataDirectory) }
-@{
-    '$schema'='https://agent-plugins.org/schemas/1.0.0/mcp.schema.json'
+$mcp = @{
     mcpServers=@{localrag=@{type='stdio';command='${PLUGIN_ROOT}/server/LocalRag.Mcp.exe';args=$bridgeArgs;cwd='${PLUGIN_ROOT}'}}
-} | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $plugin 'mcp.json') -Encoding utf8
+}
+if ($Format -eq 'Portable') {
+    $mcp['$schema']='https://agent-plugins.org/schemas/1.0.0/mcp.schema.json'
+    $mcpFile = 'mcp.json'
+} else {
+    $mcpFile = '.mcp.json'
+    # This desktop runtime resolves cwd relative to the plugin root but does not
+    # expand PLUGIN_ROOT here. dotnet resolves the DLL against that working directory.
+    $mcp.mcpServers.localrag.command = 'dotnet'
+    $mcp.mcpServers.localrag.args = @('./server/LocalRag.Mcp.dll') + $bridgeArgs
+    $mcp.mcpServers.localrag.cwd = '.'
+    $mcp.mcpServers.localrag.tool_timeout_sec = 120
+}
+$mcp | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $plugin $mcpFile) -Encoding utf8
 $skill = New-Item -ItemType Directory -Path (Join-Path $plugin 'skills/search-local-documents')
 @'
 ---
@@ -64,6 +89,13 @@ $marketplace = New-Item -ItemType Directory -Path (Join-Path $output '.agents/pl
 @{name='local-rag-local';interface=@{displayName='Local RAG local packages'};plugins=@(@{name='local-rag';source=@{source='local';path='./local-rag'}})} |
     ConvertTo-Json -Depth 8 | Set-Content (Join-Path $marketplace.FullName 'marketplace.json') -Encoding utf8
 Compress-Archive -Path $plugin -DestinationPath (Join-Path $output 'local-rag.zip')
+$archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $output 'local-rag.zip'))
+try {
+    $requiredManifest = if ($Format -eq 'Desktop') { 'local-rag/.codex-plugin/plugin.json' } else { 'local-rag/plugin.json' }
+    foreach ($required in @($requiredManifest,"local-rag/$mcpFile",'local-rag/server/LocalRag.Mcp.exe')) {
+        if (!$archive.GetEntry($required)) { throw "Required plugin file missing from archive: $required" }
+    }
+} finally { $archive.Dispose() }
 Get-FileHash (Join-Path $output 'local-rag.zip') -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLowerInvariant())  local-rag.zip" } |
     Set-Content (Join-Path $output 'SHA256SUMS.txt') -Encoding ascii
 Write-Output "Plugin: $plugin"
