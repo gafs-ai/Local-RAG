@@ -18,7 +18,7 @@ public class TextRagTests
         var paragraphs = await pipeline.FormatAsync([new(1, "source A"), new(2, "source B")], category, default);
         Assert.Equal("source A\n\nsource B", Assert.Single(await pipeline.ChunkAsync(paragraphs, category, default)).Text);
         Assert.Equal(0, ai.TransformCalls);
-        await Assert.ThrowsAsync<InvalidDataException>(() => pipeline.ChunkAsync([new(1, new string('a', 1201))], category, default));
+        await Assert.ThrowsAsync<PipelineValidationException>(() => pipeline.ChunkAsync([new(1, new string('a', 1201))], category, default));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class TextRagTests
         using var parsed = TextAiPipeline.ParseResponse("```json\n{\"category\":\"general\"}\n```");
         Assert.Equal("general", parsed.RootElement.GetProperty("category").GetString());
         Assert.ThrowsAny<JsonException>(() => TextAiPipeline.ParseResponse("Here is JSON: {\"category\":\"general\"}"));
-        Assert.Throws<InvalidDataException>(() => TextAiPipeline.ParseResponse("{\"decision\":\"withhold\",\"decision\":\"allow\"}"));
+        Assert.Throws<PipelineValidationException>(() => TextAiPipeline.ParseResponse("{\"decision\":\"withhold\",\"decision\":\"allow\"}"));
     }
     [Theory]
     [InlineData("{\"chunks\":[{\"start\":2,\"end\":2}]}")]
@@ -210,7 +210,7 @@ public class TextRagTests
 
 internal sealed class FakeTextAi : ITextRagAi
 {
-    public bool InvalidSingleParagraphEnd { get; init; }
+    public bool InvalidChunkEnd { get; init; }
     public int TransformCalls { get; private set; }
     public int EmbeddingCalls { get; private set; }
     public int FailEmbeddingCall { get; init; }
@@ -229,8 +229,8 @@ internal sealed class FakeTextAi : ITextRagAi
         if (root.TryGetProperty("document", out var document))
             return Task.FromResult(document.GetString()!.Contains("検索対象外") ? "{\"category\":\"excluded\"}" : "{\"category\":\"general\"}");
         var paragraphs = root.GetProperty("paragraphs").EnumerateArray().ToArray();
-        if (InvalidSingleParagraphEnd && root.TryGetProperty("maxCharacters", out _))
-            return Task.FromResult("{\"chunks\":[{\"start\":1,\"end\":2}]}");
+        if (InvalidChunkEnd && root.TryGetProperty("maxCharacters", out _))
+            return Task.FromResult("{\"chunks\":[{\"start\":1,\"end\":99}]}");
         return Task.FromResult(root.TryGetProperty("maxCharacters", out _)
             ? JsonSerializer.Serialize(new { chunks = paragraphs.Select(p => new { start = p.GetProperty("Id").GetInt32(), end = p.GetProperty("Id").GetInt32() }) })
             : JsonSerializer.Serialize(new { remove = paragraphs.Where(p => p.GetProperty("Text").GetString() == "社外秘").Select(p => p.GetProperty("Id").GetInt32()) }));

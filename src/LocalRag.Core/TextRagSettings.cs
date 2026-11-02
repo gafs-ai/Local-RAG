@@ -69,7 +69,7 @@ public sealed record TextRagSettings
 
     public string ConfigurationId(AiConnectionSettings ai) => Hash(JsonSerializer.Serialize(new
     {
-        version = "text-pipeline-v3", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
+        version = "text-pipeline-v4", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
         ClassifyEnabled, FormatEnabled, ChunkEnabled, DefaultCategory, MaxDocumentCharacters, MaxChunkCharacters,
         MaxOutputTokens, EmbeddingRevision, QueryInstruction, ClassifyPrompt, FormatPrompt, ChunkPrompt, Categories
     }));

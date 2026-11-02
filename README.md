@@ -81,7 +81,9 @@ dotnet run --project src/LocalRag.Desktop --configuration Release --no-build -- 
 
 取り込みと検索のAI呼び出しは直列です。この段階では検索は実行中の取り込み完了を待ちます。設定変更時は処理を中断し、新しい設定で再開します。機密検査を変更すると既存の検索表示も消去します。
 
-取り込みの保留時は、失敗した工程と内容を含まない理由を文書一覧に表示します。分割プロンプトには実際の段落ID・文字数上限に合う応答例を付けます。保存済みの旧標準プロンプトは実行時に補正し、独自に編集したプロンプトは維持します。今回の処理版（v3）への更新後は旧版の索引を再取り込みします。
+取り込みの保留時は、失敗した工程と内容を含まない理由を文書一覧に表示します。単一段落の分割は結果が一意なためコードで処理します。複数段落の分割プロンプトには実際の段落ID・文字数上限に合う応答例を付けます。保存済みの旧標準プロンプトは実行時に補正し、独自に編集したプロンプトは維持します。今回の処理版（v4）への更新後は旧版の索引を再取り込みします。
+
+構造化応答では、整数文字列の段落ID（`"1"`→`1`）と削除IDの重複を、意味を変えずにコードで補正します。未定義の分類、存在しない段落、欠落・重複する範囲、過剰な削除、スキーマ不正は具体的な検証理由を添えてLLMへ1回差し戻します。補正・再生成後も検証し、失敗時は保留します。本文や意味の推測による修正はしません。機密検査の有効な拒否・保留は再試行せず、許可へ変更しません。
 
 同じフォルダ・処理設定で再起動した場合は、前回完了から監視間隔の残り時間を待ちます。途中で中断した場合、期限を過ぎた場合、フォルダや処理設定が変わった場合は自動探索を開始します。間隔だけを変更した場合は前回の完了時刻から計算し直します。今すぐ探索するには監視を一時停止して「今すぐ1回実行」を使ってください。監視状態の保存・復元に失敗した場合は自動監視を停止して表示します。
 
@@ -99,6 +101,7 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- text-smoke Qwen3-4B-Hybrid Qwen3-Embedding-0.6B-GGUF .local/text-smoke .local/tools
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- text-smoke Gemma-3-4b-it-mm-NPU nomic-embed-text-v2-moe-GGUF .local/gemma-nomic-smoke .local/tools
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- chunk-probe Gemma-3-4b-it-mm-NPU .local/chunk-probe
+dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- chunk-repair-probe Gemma-3-4b-it-mm-NPU .local/chunk-repair-probe
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- chunk-smoke Gemma-3-4b-it-mm-NPU nomic-embed-text-v2-moe-GGUF .local/chunk-smoke .local/tools
 ```
 
@@ -108,7 +111,9 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 
 `text-smoke`は指定先に毎回新しいフォルダを作り、日本語の合成文書3件で一連処理を検証します。ポート18503を使用し、入力・設定・DB・合成入力に対するモデル応答を診断先に保持します。通常のアプリ処理はモデル応答本文をログに記録しません。診断はユーザーの文書を取り込みません。
 
-`chunk-probe`は固定の合成入力3例（段落IDが1、3、1と3）で分割を検証し、プロンプト・入力・応答を専用フォルダへ保存します。DBは使いません。`chunk-smoke`は単一段落の回帰文書を加えた4件を、保存済み旧標準プロンプト相当の設定で取り込み、全文取得・検索・機密検査を検証します。ポート18503は`text-smoke`と共用のため、両診断を同時実行しないでください。
+`chunk-probe`は固定の合成入力3例（段落IDが1、3、1と3）で分割を検証し、モデルを呼んだ場合のプロンプト・入力・応答を専用フォルダへ保存します。単一段落の2例では呼び出し0回となります。`chunk-repair-probe`は複数段落の初回応答へ意図的に不正な終端を注入し、実モデルへ検証理由を差し戻して再生成を確認します。注入した応答は実モデルの失敗とは区別して記録します。両診断ともDBは使いません。
+
+`chunk-smoke`は単一段落の回帰文書を加えた4件を、保存済み旧標準プロンプト相当の設定で取り込み、全文取得・検索・機密検査を検証します。ポート18503は`text-smoke`と共用のため、両診断を同時実行しないでください。
 
 診断CLIの終了値は0が成功、1が実行失敗/引数不正、2が受入条件の未達です。`db`と`embed`のDB診断は一意な検証用DBを作り、そのDBだけを終了時に削除します。サーバーの永続ファイルは保存先の`server/data`に残します。診断が起動したサーバーは診断終了時に通常終了します。
 

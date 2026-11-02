@@ -12,15 +12,13 @@ public class ChunkRegressionTests
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public async Task SingleParagraphPromptDoesNotSuggestNonexistentSecondParagraph(bool legacy, bool categoryOverride)
+    public async Task SingleParagraphHasUniqueCodeResultWithoutModelCall(bool legacy, bool categoryOverride)
     {
         var settings = new TextRagSettings { ChunkPrompt = legacy ? TextRagSettings.LegacyChunkPrompt : TextRagSettings.DefaultChunkPrompt };
         var category = new TextCategory { ChunkPrompt = categoryOverride ? TextRagSettings.LegacyChunkPrompt : null };
-        var ai = new CapturingAi("{\"chunks\":[{\"start\":1,\"end\":1}]}");
+        var ai = new CapturingAi("{\"chunks\":[{\"start\":1,\"end\":99}]}");
         var chunks = await new TextAiPipeline(ai, settings).ChunkAsync([new(1, "公開資料：監視試験。花壇の水やりは朝に行います。")], category, default);
-        Assert.Equal(1, ai.Calls); // ChunkEnabled still calls the LLM, even for one paragraph.
-        Assert.DoesNotContain("\"end\":2", ai.Prompt);
-        Assert.Contains("{\"chunks\":[{\"start\":1,\"end\":1}]}", ai.Prompt);
+        Assert.Equal(0, ai.Calls);
         Assert.Equal(1, Assert.Single(chunks).End);
     }
 
@@ -41,9 +39,10 @@ public class ChunkRegressionTests
     {
         var ai = new CapturingAi("```json\n{\"chunks\":[{\"start\":1,\"end\":2}]}\n```");
         var error = await Assert.ThrowsAsync<PipelineValidationException>(() =>
-            new TextAiPipeline(ai, new()).ChunkAsync([new(1, "source")], new(), default));
+            new TextAiPipeline(ai, new()).ChunkAsync([new(1, "source"), new(3, "next")], new(), default));
         Assert.Equal("chunk_end", error.Code);
         Assert.Equal(2, ai.Calls);
+        Assert.Contains("A chunk end does not identify an existing paragraph", ai.Prompt);
         Assert.Contains("終端段落", PipelineErrors.Describe("chunk", error.Code));
     }
 
@@ -60,11 +59,11 @@ public class ChunkRegressionTests
         await using var fixture = await ServerFixture.StartAsync();
         var input = fixture.Root + "-inputs";
         Directory.CreateDirectory(input);
-        await File.WriteAllTextAsync(Path.Combine(input, "monitor.txt"), "公開資料：監視試験。花壇の水やりは朝に行います。");
+        await File.WriteAllTextAsync(Path.Combine(input, "monitor.txt"), "公開資料：監視試験。\n\n花壇の水やりは朝に行います。");
         var settings = TextRagTests.Settings(input);
         Guid id;
         await using (var repository = await TextRagRepository.OpenAsync(fixture.Manager.Connection!))
-        using (var service = new TextRagService(repository, new FakeTextAi { InvalidSingleParagraphEnd = true }, settings, fixture.Root))
+        using (var service = new TextRagService(repository, new FakeTextAi { InvalidChunkEnd = true }, settings, fixture.Root))
         {
             Assert.Equal(1, (await service.ScanAsync()).Failed);
             var failed = Assert.Single(await repository.DocumentsAsync(default));
@@ -85,7 +84,7 @@ public class ChunkRegressionTests
         using var resumed = new TextRagService(reopened, ai, settings, fixture.Root);
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         Assert.Equal(1, ai.TransformCalls); // Classification and formatting checkpoints were reused.
-        Assert.Equal(1, ai.EmbeddingCalls);
+        Assert.Equal(2, ai.EmbeddingCalls);
         var ready = Assert.Single(await reopened.DocumentsAsync(default));
         Assert.Equal(id, ready.DocumentId);
         Assert.Null(ready.ErrorCode);

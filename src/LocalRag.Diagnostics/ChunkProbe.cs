@@ -6,7 +6,7 @@ using LocalRag.Infrastructure;
 
 internal static class ChunkProbe
 {
-    public static async Task<int> RunAsync(string model, string root, CancellationToken token)
+    public static async Task<int> RunAsync(string model, string root, CancellationToken token, bool injectInvalidEnd = false)
     {
         // Only these fixed synthetic examples may be traced; no user document input is accepted.
         var run = Path.Combine(Path.GetFullPath(root), Guid.NewGuid().ToString("N"));
@@ -14,7 +14,7 @@ internal static class ChunkProbe
         Console.WriteLine($"Diagnostic data: {run}");
         var settings = new AppSettings { Ai = new() { ChatModel = model } };
         using var ai = new LemonadeTextAi(settings);
-        var traced = new TracingAi(ai, Path.Combine(run, "synthetic-chunk-responses.jsonl"));
+        var traced = new TracingAi(ai, Path.Combine(run, "synthetic-chunk-responses.jsonl"), injectInvalidEnd);
         var pipeline = new TextAiPipeline(traced, settings.TextPipeline);
         var failed = 0;
         List<TextParagraph>[] examples =
@@ -25,10 +25,11 @@ internal static class ChunkProbe
         ];
         foreach (var paragraphs in examples)
         {
+            var callsBefore = traced.ModelCalls;
             try
             {
                 var chunks = await pipeline.ChunkAsync(paragraphs, new(), token);
-                Console.WriteLine($"IDs={string.Join(',', paragraphs.Select(p => p.Id))}: {JsonSerializer.Serialize(chunks)}");
+                Console.WriteLine($"IDs={string.Join(',', paragraphs.Select(p => p.Id))}, real-model-calls={traced.ModelCalls - callsBefore}: {JsonSerializer.Serialize(chunks)}");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -40,12 +41,26 @@ internal static class ChunkProbe
         return failed == 0 ? 0 : 2;
     }
 
-    private sealed class TracingAi(ITextRagAi inner, string trace) : ITextRagAi
+    private sealed class TracingAi(ITextRagAi inner, string trace, bool injectInvalidEnd) : ITextRagAi
     {
+        public int ModelCalls { get; private set; }
+        private bool _injected;
         public async Task<string> CompleteAsync(string system, string input, CancellationToken token)
         {
-            var response = await inner.CompleteAsync(system, input, token);
-            await File.AppendAllTextAsync(trace, JsonSerializer.Serialize(new { system, input, response }) + Environment.NewLine, token);
+            var injected = injectInvalidEnd && !_injected;
+            string response;
+            if (injected)
+            {
+                _injected = true;
+                response = "{\"chunks\":[{\"start\":1,\"end\":2}]}";
+                Console.WriteLine("Injected synthetic invalid end=2 to exercise the correction request (not a model response).");
+            }
+            else
+            {
+                ModelCalls++;
+                response = await inner.CompleteAsync(system, input, token);
+            }
+            await File.AppendAllTextAsync(trace, JsonSerializer.Serialize(new { system, input, response, injected }) + Environment.NewLine, token);
             return response;
         }
         public Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token) => inner.EmbedAsync(inputs, token);
