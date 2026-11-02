@@ -55,7 +55,9 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 ホストがCodex CLIのローカルmarketplaceを利用する環境では、生成されたmarketplaceのディレクトリを`codex plugin marketplace add <ディレクトリ>`、続いて`codex plugin add local-rag@local-rag-local`で登録できる。これはローカルホストへの登録であり、Businessワークスペースへの登録完了を意味しない。ChatGPTの非公開プラグイン追加、または管理者による[GitHub marketplaceの取り込み](https://learn.chatgpt.com/docs/enterprise/plugin-management)はホストの対応する導入手順で行う。キャッシュを直接編集しない。
 
-2026-11-02時点: ローカル版の有効化とスキル読み込みを確認。その後、MCP宣言の認識・パス展開・本体停止時の中継終了を修正し、ホストの診断APIでsearch/fetch両方と起動エラーなしを確認した。`scripts/Test-PluginDiscovery.ps1 -MarketplaceFile <marketplace.json>`でこの検査を再現できる。**現在のChatGPT会話からの実取得は未確認**であり、正常取得・機密拒否・検査失敗の実呼び出しが残る。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式であり、今回の試験は`Local RAG local packages`のローカル版で行う。
+2026-11-02時点: MCP宣言の認識・パス展開・本体停止時の中継終了を修正し、ホスト診断でsearch/fetch両方と起動エラーなしを確認した。`scripts/Test-PluginDiscovery.ps1 -MarketplaceFile <marketplace.json>`で再現できる。更新前から続いていた会話にはツールが現れなかったが、**新しい会話でguide.txtの本文・出典・文書IDが返ったことをユーザー提供の結果で確認**した。個々のsearch/fetch呼び出し履歴はこの会話では未確認。ChatGPT上の機密拒否・検査失敗と実文書での実用性評価は残る。
+
+導入・更新後の試験は新しいローカル実行の会話で行い、`Local RAG local packages`版を選択する。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式のため、今回の成功対象に含めない。ユーザー指定により、接続成功をもって0.0.0の正式リリースは行わない。
 
 ### ブラウザ版（未実装）
 
