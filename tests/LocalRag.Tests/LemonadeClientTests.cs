@@ -79,7 +79,8 @@ public class LemonadeClientTests
     {
         var handler = new Handler(EmbeddingModels);
         using var client = new LemonadeClient(new(), handler);
-        await Assert.ThrowsAsync<InvalidDataException>(() => client.EmbedAsync("local", [new string('あ', 3000)]));
+        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => client.EmbedAsync("local", [new string('あ', 3000)]));
+        Assert.Equal("embedding_context", error.Code);
         Assert.Equal(0, handler.Posts);
     }
 
@@ -97,7 +98,8 @@ public class LemonadeClientTests
     {
         var handler = new Handler(EmbeddingModels.Replace("\"local\"", "\"nomic-embed-text-v2-moe-GGUF\""));
         using var client = new LemonadeClient(new(), handler);
-        await Assert.ThrowsAsync<InvalidDataException>(() => client.EmbedAsync("nomic-embed-text-v2-moe-GGUF", [new string('あ', 100)]));
+        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => client.EmbedAsync("nomic-embed-text-v2-moe-GGUF", [new string('あ', 100)]));
+        Assert.Equal("embedding_context", error.Code);
         Assert.Equal(0, handler.Posts);
     }
 

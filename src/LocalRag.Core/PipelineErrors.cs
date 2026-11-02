@@ -43,6 +43,7 @@ public static class PipelineErrors
         "format_destructive" => "整形による削除量が大きいため保留しました",
         "decision_invalid" => "機密検査の判定値が不正です",
         "chat_context" => "モデルの入力上限を超える可能性があります",
+        "embedding_context" => "Embeddingモデルの入力上限を超える可能性があります。短いチャンクへの分割が必要です",
         "output_incomplete" => "モデル出力が正常に完了しませんでした",
         "connection" => "接続に失敗しました。接続先の稼働状態を確認してください",
         "timeout" => "応答待ちがタイムアウトしました",

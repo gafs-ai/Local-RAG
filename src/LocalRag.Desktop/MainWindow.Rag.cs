@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Windows;
 using LocalRag.Core;
 using LocalRag.Infrastructure;
@@ -9,8 +7,6 @@ namespace LocalRag.Desktop;
 
 public partial class MainWindow
 {
-    private sealed record AdvancedSettings(TextRagSettings TextPipeline, ConfidentialityPolicy Confidentiality);
-    private static readonly JsonSerializerOptions AdvancedJson = new() { WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
     private sealed record SearchRow(Guid DocumentId, string Label);
     private TextRagRepository? _repository;
     private LemonadeTextAi? _ragAi;
@@ -51,8 +47,9 @@ public partial class MainWindow
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);
             _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));
             ShowDocuments(await _repository.DocumentsAsync(_lifetime.Token));
-            PolicyStatus.Text = _loadedSettings.Confidentiality.Enabled
-                ? $"機密検査：パターン {(_loadedSettings.Confidentiality.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM {(_loadedSettings.Confidentiality.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
+            var policy = _loadedSettings.DisclosurePolicy();
+            PolicyStatus.Text = policy.Enabled
+                ? $"機密検査：パターン {(policy.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM {(policy.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
             RagPanel.IsEnabled = true;
             RagStatus.Text = "取り込みと検索を利用できます。";
             McpStatus.Text = "MCPは無効です。";

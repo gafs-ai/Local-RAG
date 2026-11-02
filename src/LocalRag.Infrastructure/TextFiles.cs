@@ -23,7 +23,7 @@ public static class TextFiles
                 throw new InvalidDataException("リンク先のファイルは取り込みません。");
     }
 
-    public static TextScan Scan(IReadOnlyList<WatchedFolder> folders, string dataDirectory, CancellationToken token)
+    public static TextScan Scan(IReadOnlyList<WatchedFolder> folders, string dataDirectory, CancellationToken token, IReadOnlyList<string>? extensions = null)
     {
         var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var complete = new List<WatchedFolder>();
@@ -47,7 +47,8 @@ public static class TextFiles
                         var attributes = File.GetAttributes(entry);
                         if ((attributes & FileAttributes.ReparsePoint) != 0 || Within(entry, dataDirectory)) continue;
                         if ((attributes & FileAttributes.Directory) != 0) { if (root.Recursive) pending.Push(entry); }
-                        else if (Supported(entry) && !Path.GetFileName(entry).StartsWith("~$", StringComparison.Ordinal)) files.Add(Path.GetFullPath(entry));
+                        else if ((extensions is null ? Supported(entry) : extensions.Contains(Path.GetExtension(entry), StringComparer.OrdinalIgnoreCase)) &&
+                            !Path.GetFileName(entry).StartsWith("~$", StringComparison.Ordinal)) files.Add(Path.GetFullPath(entry));
                     }
                 }
                 complete.Add(root);

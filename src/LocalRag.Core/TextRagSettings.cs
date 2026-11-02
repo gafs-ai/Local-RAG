@@ -58,7 +58,7 @@ public sealed record TextRagSettings
             foreach (var category in Categories)
             {
                 if (category.Id is null || !Regex.IsMatch(category.Id, "^[a-z][a-z0-9_]{0,39}$") || !ids.Add(category.Id)) errors.Add("分類IDは重複のない英小文字・数字・アンダースコアで指定してください。");
-                if (string.IsNullOrWhiteSpace(category.Description) || category.Description.Length > 500) errors.Add("分類説明は1～500文字で指定してください。");
+                if (category.Description is null || category.Description.Length > 500) errors.Add("分類説明は空欄または500文字以内で指定してください。");
                 foreach (var prompt in new[] { category.FormatPrompt, category.ChunkPrompt })
                     if (prompt is not null && (string.IsNullOrWhiteSpace(prompt) || prompt.Length > 8000)) errors.Add("分類別プロンプトが不正です。");
             }
@@ -71,10 +71,11 @@ public sealed record TextRagSettings
     {
         version = "text-pipeline-v4", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
         ClassifyEnabled, FormatEnabled, ChunkEnabled, DefaultCategory, MaxDocumentCharacters, MaxChunkCharacters,
-        MaxOutputTokens, EmbeddingRevision, QueryInstruction, ClassifyPrompt, FormatPrompt, ChunkPrompt, Categories
+        MaxOutputTokens, EmbeddingRevision, QueryInstruction = EffectiveQueryInstruction(ai), ClassifyPrompt, FormatPrompt, ChunkPrompt, Categories
     }));
     public string SpaceId(AiConnectionSettings ai, int dimension) => Hash(JsonSerializer.Serialize(new
-        { version = "utf8-paragraphs-v1", inputProfile = EmbeddingInput.Profile(ai.EmbeddingModel), ai.BaseUrl, ai.EmbeddingModel, EmbeddingRevision, QueryInstruction, dimension, distance = "cosine" }));
+        { version = "utf8-paragraphs-v1", inputProfile = EmbeddingInput.Profile(ai.EmbeddingModel), ai.BaseUrl, ai.EmbeddingModel, EmbeddingRevision, QueryInstruction = EffectiveQueryInstruction(ai), dimension, distance = "cosine" }));
+    private string EffectiveQueryInstruction(AiConnectionSettings ai) => EmbeddingInput.IsNomicV2(ai.EmbeddingModel) ? "" : QueryInstruction;
     public static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 }
 

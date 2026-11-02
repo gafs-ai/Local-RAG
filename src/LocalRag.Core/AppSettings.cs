@@ -2,7 +2,7 @@ namespace LocalRag.Core;
 
 public sealed record AppSettings
 {
-    public int SchemaVersion { get; init; } = 1;
+    public int SchemaVersion { get; init; } = 2;
     public int MonitoringIntervalMinutes { get; init; } = 15;
     public bool AutomaticMonitoring { get; init; } = true;
     public List<WatchedFolder> Folders { get; init; } = [];
@@ -11,11 +11,18 @@ public sealed record AppSettings
     public McpSettings Mcp { get; init; } = new();
     public TextRagSettings TextPipeline { get; init; } = new();
     public ConfidentialityPolicy Confidentiality { get; init; } = new();
+    public ManagementSettings? Management { get; init; }
+
+    public TextRagSettings PipelineFor(string path) => Management?.Resolve(TextPipeline, path) ?? TextPipeline;
+    public TextRagSettings RetrievalPrompts() => Management?.ApplyRetrieval(TextPipeline) ?? TextPipeline;
+    public ConfidentialityPolicy DisclosurePolicy() => Management?.Retrieval.Policy() ?? Confidentiality;
+    public string PipelineConfigurationId() => Management?.ConfigurationId(TextPipeline, Ai) ?? TextPipeline.ConfigurationId(Ai);
+    public IReadOnlyList<string> AllowedTextExtensions() => Management?.TextExtensions ?? [".txt", ".md"];
 
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
-        if (SchemaVersion != 1) errors.Add("この設定ファイルの版には対応していません。");
+        if (SchemaVersion is not (1 or 2)) errors.Add("この設定ファイルの版には対応していません。");
         if (MonitoringIntervalMinutes is < 1 or > 10080)
             errors.Add("監視間隔は1～10080分で指定してください。");
         if (Ai is null) errors.Add("AI接続設定がありません。");
@@ -30,6 +37,7 @@ public sealed record AppSettings
         }
         if (TextPipeline is null) errors.Add("テキスト処理設定がありません。");
         else errors.AddRange(TextPipeline.Validate());
+        if (Management is not null) errors.AddRange(Management.Validate());
         if (Confidentiality is null || Confidentiality.Patterns is null || Confidentiality.Patterns.Count > 100 ||
             Confidentiality.Patterns.Any(p => p is null || p.Length > 2000)) errors.Add("機密検査パターンが不正です。");
         if (Folders is null) errors.Add("フォルダ設定がありません。");

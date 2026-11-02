@@ -1,0 +1,90 @@
+<Window x:Class="LocalRag.Desktop.ManagementWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Local RAG — 処理設定" Width="1120" Height="860" MinWidth="920" MinHeight="700"
+ FontFamily="Yu Gothic UI" FontSize="14" Background="#F5F7FA" WindowStartupLocation="CenterOwner">
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel Margin="0,0,0,16"><TextBlock Text="処理設定" FontSize="26" FontWeight="SemiBold" Foreground="#17334B"/>
+   <TextBlock Text="編集内容は「保存して適用」でまとめて反映します。取り込み設定の変更後は再索引が必要です。" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
+  <TabControl x:Name="ManagerTabs" Grid.Row="1" Padding="16" SelectionChanged="TabChanged">
+   <TabItem Header="プロンプトマネージャー">
+    <Grid Margin="0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="260"/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
+     <DockPanel><StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><WrapPanel>
+      <Button Content="白紙から作成" Click="NewPrompt"/><Button Content="コピー" Click="CopyPrompt"/></WrapPanel>
+      <Button Content="選択したプロンプトを削除" Click="DeletePrompt" Margin="0,8,0,0"/></StackPanel>
+      <ListBox x:Name="PromptList" DisplayMemberPath="Name" SelectionChanged="PromptSelected" AutomationProperties.Name="プロンプト一覧"/></DockPanel>
+     <Grid Grid.Column="2" x:Name="PromptEditor"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+      <TextBlock x:Name="PromptNotice" TextWrapping="Wrap" Foreground="#755620" Margin="0,0,0,12"/>
+      <StackPanel Grid.Row="1"><TextBlock Text="名前"/><TextBox x:Name="PromptNameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="プロンプト名"/></StackPanel>
+      <StackPanel Grid.Row="2"><TextBlock Text="用途"/><ComboBox x:Name="PromptPurposeBox" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Purpose}" AutomationProperties.Name="プロンプトの用途"/></StackPanel>
+      <TextBlock Grid.Row="3" Text="本文（分類・整形・分割・秘匿判定は標準と同じ応答形式を使用します）" TextWrapping="Wrap"/>
+      <TextBox Grid.Row="4" x:Name="PromptBodyBox" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="プロンプト本文"/>
+     </Grid>
+    </Grid>
+   </TabItem>
+   <TabItem Header="カテゴリマネージャー">
+    <DockPanel Margin="0,8"><StackPanel DockPanel.Dock="Top"><TextBlock Text="カテゴリ名を入力します。説明は空欄でも構いません。「検索対象外」はそのカテゴリの文書を索引に公開しません。" TextWrapping="Wrap" Margin="0,0,0,12"/>
+     <WrapPanel Margin="0,0,0,12"><Button Content="カテゴリを追加" Click="AddCategory"/><Button Content="選択したカテゴリを削除" Click="DeleteCategory"/></WrapPanel></StackPanel>
+     <DataGrid x:Name="CategoryGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" AutomationProperties.Name="カテゴリ一覧">
+      <DataGrid.Columns><DataGridTextColumn Header="カテゴリ名" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="220"/>
+       <DataGridTextColumn Header="説明（任意）" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+       <DataGridCheckBoxColumn Header="検索対象外" Binding="{Binding Excluded, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+      </DataGrid.Columns></DataGrid>
+    </DockPanel>
+   </TabItem>
+   <TabItem Header="テキストパイプライン">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,8">
+     <TextBlock Text="対象の拡張子（UTF-8のテキストとして読み取ります）" FontWeight="SemiBold"/>
+     <TextBox x:Name="ExtensionsBox" AutomationProperties.Name="対象拡張子"/>
+     <TextBlock Text="例：.txt .md .cs　拡張子別設定のない対象ファイルには共通設定を使います。Word・PDFなどのバイナリ形式は変換しません。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <StackPanel><TextBlock Text="適用する設定"/><ListBox x:Name="RouteList" DisplayMemberPath="Label" Height="170" SelectionChanged="RouteSelected" AutomationProperties.Name="拡張子別設定一覧"/>
+       <TextBox x:Name="NewExtensionBox" AutomationProperties.Name="追加する拡張子" ToolTip="例：.cs"/>
+       <Button Content="拡張子別設定を追加" Click="AddRoute"/><Button Content="選択を共通設定に戻す" Click="RemoveRoute" Margin="0,8,0,0"/>
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+       <CheckBox x:Name="ClassifyBox" Content="分類を行う" Margin="0,0,0,10"/>
+       <TextBlock Text="分類プロンプト"/><ComboBox x:Name="ClassifyPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="分類プロンプト"/>
+       <TextBlock Text="分類を省略した場合のカテゴリ（下の有効カテゴリから選択）" TextWrapping="Wrap"/><ComboBox x:Name="DefaultCategoryBox" DisplayMemberPath="Name" SelectedValuePath="Id" AutomationProperties.Name="既定カテゴリ"/>
+       <TextBlock Text="整形の既定処理"/><ComboBox x:Name="DefaultFormatBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の整形"/>
+       <TextBlock Text="チャンク分割の既定処理"/><ComboBox x:Name="DefaultChunkBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の分割"/>
+      </StackPanel>
+     </Grid>
+     <TextBlock Text="有効カテゴリとカテゴリ別の処理" FontWeight="SemiBold" Margin="0,16,0,8"/>
+     <DataGrid x:Name="RouteCategoryGrid" Height="230" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" AutomationProperties.Name="カテゴリ別処理">
+      <DataGrid.Columns><DataGridCheckBoxColumn Header="有効" Binding="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+       <DataGridTextColumn Header="カテゴリ" Binding="{Binding Name}" IsReadOnly="True" Width="180"/>
+       <DataGridComboBoxColumn x:Name="FormatColumn" Header="整形" SelectedValueBinding="{Binding FormatKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+       <DataGridComboBoxColumn x:Name="ChunkColumn" Header="チャンク分割" SelectedValueBinding="{Binding ChunkKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+      </DataGrid.Columns>
+     </DataGrid>
+     <Expander Header="入力と出力の上限" Margin="0,16,0,0"><UniformGrid Columns="3" Margin="0,8">
+      <StackPanel Margin="0,0,14,0"><TextBlock Text="文書上限（文字）"/><TextBox x:Name="DocumentLimitBox" AutomationProperties.Name="文書上限"/></StackPanel>
+      <StackPanel Margin="0,0,14,0"><TextBlock Text="チャンク上限（文字）"/><TextBox x:Name="ChunkLimitBox" AutomationProperties.Name="チャンク上限"/></StackPanel>
+      <StackPanel><TextBlock Text="AI応答上限（トークン）"/><TextBox x:Name="OutputLimitBox" AutomationProperties.Name="応答上限"/></StackPanel>
+     </UniformGrid></Expander>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+   <TabItem Header="取得パイプライン">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,8">
+     <TextBlock Text="検索と全文取得に共通する設定" FontSize="20" FontWeight="SemiBold"/>
+     <TextBlock Text="メディアやカテゴリで分岐せず、管理画面とMCPの取得に同じ秘匿設定を適用します。" TextWrapping="Wrap" Margin="0,8,0,18"/>
+     <TextBlock x:Name="SearchPromptNotice" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,14"/>
+     <StackPanel x:Name="SearchPromptPanel"><TextBlock Text="検索用プロンプト"/><ComboBox x:Name="SearchPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="検索用プロンプト"/></StackPanel>
+     <CheckBox x:Name="ConfidentialityBox" Content="秘匿機能を使用する" Margin="0,8,0,12"/>
+     <TextBlock Text="無効にすると、未検査の本文と出典が取得先へ返ります。有効で検査手段を両方OFFにした場合は、判定保留として本文を返しません。" TextWrapping="Wrap" Foreground="#755620" Margin="0,0,0,16"/>
+     <CheckBox x:Name="PatternsBox" Content="一致パターンで検査する" Margin="0,0,0,8"/>
+     <TextBlock Text="一致パターン（1行に1件・正規表現。大文字小文字を区別しません）" TextWrapping="Wrap"/>
+     <TextBox x:Name="PatternTextBox" Height="140" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="秘匿パターン"/>
+     <CheckBox x:Name="LlmBox" Content="ローカルAIで秘匿判定する" Margin="0,0,0,8"/>
+     <TextBlock Text="秘匿判定用プロンプト"/><ComboBox x:Name="ConfidentialityPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="秘匿判定プロンプト"/>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+  </TabControl>
+  <TextBlock Grid.Row="2" x:Name="ManagerStatus" TextWrapping="Wrap" Foreground="#A02727" Margin="0,10" MaxHeight="90"/>
+  <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+   <Button Content="キャンセル" IsCancel="True"/>
+   <Button Content="保存して適用" Click="Apply" Background="#173F66" Foreground="White"/>
+  </StackPanel>
+ </Grid>
+</Window>

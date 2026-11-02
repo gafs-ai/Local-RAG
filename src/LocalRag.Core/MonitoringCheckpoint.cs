@@ -15,7 +15,7 @@ public sealed record MonitoringCheckpoint(string Scope, bool Running, DateTimeOf
 
     public static string ScopeFor(AppSettings settings) => TextRagSettings.Hash(JsonSerializer.Serialize(new
     {
-        pipeline = settings.TextPipeline.ConfigurationId(settings.Ai),
+        pipeline = settings.PipelineConfigurationId(),
         folders = settings.Folders.Select(f => new
         {
             path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(f.Path)).ToUpperInvariant(), f.Recursive

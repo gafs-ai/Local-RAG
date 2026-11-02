@@ -24,7 +24,7 @@
                         <TextBlock Text="現在の状態" FontSize="21" FontWeight="SemiBold" Foreground="#17334B" />
                         <Border Background="#FFF7E6" Padding="16" CornerRadius="6" Margin="0,14,0,22">
                             <TextBlock TextWrapping="Wrap" Foreground="#755620"
-                                       Text="UTF-8の.txtと.mdの取り込み・検索・MCP取得に対応します。フォルダとAIモデルを保存すると監視を開始します。Word・PDF・音声は後続版の予定です。長文は上限を超えると保留します。" />
+                                       Text="指定した拡張子のUTF-8テキストを取り込み・検索・MCP取得できます。既定は.txtと.mdです。処理設定からプロンプト・カテゴリ・パイプラインを管理できます。Word・PDF・音声の変換は後続対応です。" />
                         </Border>
                         <TextBlock Text="AI接続" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock x:Name="AiStatus" Text="未確認。設定タブの接続先を使って確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
@@ -66,6 +66,13 @@
             <TabItem Header="  フォルダ・AI・DB設定  ">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="SettingsPanel" Margin="4,12">
+                        <TextBlock Text="処理設定" FontSize="18" FontWeight="SemiBold" />
+                        <WrapPanel Margin="0,10,0,16">
+                            <Button Content="プロンプトマネージャー" Tag="0" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="カテゴリマネージャー" Tag="1" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="テキストパイプライン" Tag="2" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="取得パイプライン" Tag="3" Click="OpenManager" Margin="0,0,8,8"/>
+                        </WrapPanel>
                         <TextBlock Text="監視フォルダ" FontSize="18" FontWeight="SemiBold" />
                         <TextBlock Text="1行に1つの絶対パス。配下のフォルダも対象にします。" Foreground="#526477" Margin="0,6,0,0" />
                         <TextBox x:Name="FoldersBox" Height="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="監視フォルダ" />
@@ -105,12 +112,6 @@
                                 <TextBlock Text="接続できない場合に、既存サーバーの管理用認証情報を保存して再試行します。パスワードはWindowsのユーザー別保護を使って保存します。" TextWrapping="Wrap" />
                                 <TextBlock Text="ユーザー名" /><TextBox x:Name="DbUserBox" AutomationProperties.Name="DBユーザー名" />
                                 <TextBlock Text="パスワード" /><PasswordBox x:Name="DbPasswordBox" Padding="8" Margin="0,6,0,14" AutomationProperties.Name="DBパスワード" />
-                            </StackPanel>
-                        </Expander>
-                        <Expander Header="詳細設定（分類・プロンプト・機密検査）" Margin="0,8">
-                            <StackPanel Margin="8">
-                                <TextBlock Text="JSONで編集します。ClassifyEnabled・FormatEnabled・ChunkEnabledで工程を省略できます。Categoriesで分類と分類別設定を変更できます。Confidentiality.Enabled=falseは機密検査全体を無効にします。変更後は下の保存ボタンで反映します。" TextWrapping="Wrap" Margin="0,4,0,8" />
-                                <TextBox x:Name="AdvancedBox" Height="300" AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="パイプラインと機密検査の詳細設定" />
                             </StackPanel>
                         </Expander>
                         <Button x:Name="SaveButton" Content="設定を保存" Click="SaveSettings" HorizontalAlignment="Left" Background="#173F66" Foreground="White" />

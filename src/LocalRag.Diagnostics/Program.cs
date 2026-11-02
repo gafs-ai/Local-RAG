@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LocalRag.Core;
 using LocalRag.Infrastructure;
+using LocalRag.Diagnostics;
 
 using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(20));
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancellation.Cancel(); };
@@ -8,6 +9,8 @@ try
 {
     switch (args.FirstOrDefault())
     {
+        case "configured-scan" when args.Length is 2 or 3:
+            return await ConfiguredScan.RunAsync(args[1], args.ElementAtOrDefault(2), cancellation.Token);
         case "mcp-check" when args.Length is 3 or 4:
             return await McpProbe.RunAsync(args[1], args[2], cancellation.Token, args.ElementAtOrDefault(3));
         case "recovery-smoke":
@@ -72,6 +75,7 @@ try
             return 0;
         }
         default:
+            Console.WriteLine("Configured evaluation: configured-scan <dedicated-data-directory> [tools-directory] (saved settings required; close the desktop app first)");
             Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke/ mcp-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe/ chunk-repair-probe <chat-model-id> [data-directory] | mcp-check <data-directory> <query> [bridge-executable] | recovery-smoke [data-directory] [tools-directory]");
             return 1;
     }

@@ -53,7 +53,6 @@ public partial class MainWindow : Window, IDisposable
             FoldersBox.Text = string.Join(Environment.NewLine, settings.Folders.Select(x => x.Path));
             IntervalBox.Text = settings.MonitoringIntervalMinutes.ToString();
             AutomaticMonitoringBox.IsChecked = settings.AutomaticMonitoring;
-            AdvancedBox.Text = JsonSerializer.Serialize(new AdvancedSettings(settings.TextPipeline, settings.Confidentiality), AdvancedJson);
             BaseUrlBox.Text = settings.Ai.BaseUrl;
             ChatModelBox.Text = settings.Ai.ChatModel;
             EmbeddingModelBox.Text = settings.Ai.EmbeddingModel;
@@ -82,14 +81,11 @@ public partial class MainWindow : Window, IDisposable
         if (!int.TryParse(IntervalBox.Text, out var interval)) throw new InvalidDataException("監視間隔を整数で入力してください。");
         if (!int.TryParse(DbPortBox.Text, out var port)) throw new InvalidDataException("DBポートを整数で入力してください。");
         if (!int.TryParse(McpPortBox.Text, out var mcpPort)) throw new InvalidDataException("MCPポートを整数で入力してください。");
-        var advanced = JsonSerializer.Deserialize<AdvancedSettings>(AdvancedBox.Text, AdvancedJson) ?? throw new InvalidDataException("詳細設定が空です。");
         var settings = _loadedSettings with
         {
             MonitoringIntervalMinutes = interval,
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
             Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
-            TextPipeline = advanced.TextPipeline,
-            Confidentiality = advanced.Confidentiality,
             Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true },
             Folders = FoldersBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(path => new WatchedFolder(path,
@@ -107,6 +103,31 @@ public partial class MainWindow : Window, IDisposable
     }
 
     private async void SaveSettings(object sender, RoutedEventArgs e) => await (_saveTask = SaveSettingsAsync());
+
+    private async void OpenManager(object sender, RoutedEventArgs e)
+    {
+        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted) return;
+        var tab = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
+        var editor = new ManagementWindow(_loadedSettings, tab) { Owner = this };
+        if (editor.ShowDialog() != true) return;
+        await (_saveTask = SaveManagementAsync(editor.Result!, editor.Limits));
+    }
+
+    private async Task SaveManagementAsync(ManagementSettings management, TextRagSettings limits)
+    {
+        SaveButton.IsEnabled = false;
+        try
+        {
+            var settings = _loadedSettings with { SchemaVersion = 2, Management = management, TextPipeline = limits };
+            await _settingsStore.SaveAsync(settings, _lifetime.Token);
+            _loadedSettings = settings;
+            await ReconfigureRagAsync();
+            SettingsStatus.Text = "処理設定を保存して適用しました。取り込み設定を変更した文書は次回探索で再処理します。";
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
+        finally { SaveButton.IsEnabled = true; }
+    }
 
     private async Task SaveSettingsAsync()
     {

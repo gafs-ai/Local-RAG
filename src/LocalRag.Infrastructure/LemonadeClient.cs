@@ -98,7 +98,7 @@ public sealed class LemonadeClient : IDisposable
             throw new InvalidOperationException("指定モデルをローカルのEmbeddingモデルとして確認できません。");
         var context = EmbeddingInput.ContextLimit(model, await GetContextAsync(models.Single(x => x.Id == model), "embeddings", cancellationToken).ConfigureAwait(false));
         if (inputs.Any(input => (long)System.Text.Encoding.UTF8.GetByteCount(input) + 256 > context))
-            throw new InvalidDataException("Embedding入力がモデルの上限を超える可能性があるため保留しました。");
+            throw new PipelineValidationException("embedding_context", "Embedding入力がモデルの上限を超える可能性があるため保留しました。");
         using var response = await _http.PostAsJsonAsync("embeddings", new { model, input = inputs, encoding_format = "float" }, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));

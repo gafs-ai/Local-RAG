@@ -6,9 +6,9 @@ namespace LocalRag.Infrastructure;
 public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, AppSettings settings, string dataDirectory) : ITextRetrieval, IDisposable
 {
     private readonly SemaphoreSlim _operations = new(1, 1);
-    private readonly string _configuration = settings.TextPipeline.ConfigurationId(settings.Ai);
-    private readonly TextAiPipeline _pipeline = new(ai, settings.TextPipeline);
-    private readonly DisclosureGate _gate = new(new TextConfidentialityClassifier(ai, settings.TextPipeline));
+    private readonly string _configuration = settings.PipelineConfigurationId();
+    private readonly TextRagSettings _retrievalPrompts = settings.RetrievalPrompts();
+    private readonly DisclosureGate _gate = new(new TextConfidentialityClassifier(ai, settings.RetrievalPrompts()));
 
     public async Task<TextCycleResult> ScanAsync(IProgress<string>? progress = null, CancellationToken token = default)
     {
@@ -16,12 +16,14 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
         try
         {
             RequireModels();
-            var scan = await Task.Run(() => TextFiles.Scan(settings.Folders, dataDirectory, token), token).ConfigureAwait(false);
+            var scan = await Task.Run(() => TextFiles.Scan(settings.Folders, dataDirectory, token, settings.AllowedTextExtensions()), token).ConfigureAwait(false);
             var documents = (await repository.DocumentsAsync(token).ConfigureAwait(false)).ToDictionary(x => x.Key);
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int indexed = 0, excluded = 0, unchanged = 0, failed = 0, deleted = 0;
             foreach (var path in scan.Files)
             {
+                var pipelineSettings = settings.PipelineFor(path);
+                var pipeline = new TextAiPipeline(ai, pipelineSettings);
                 token.ThrowIfCancellationRequested();
                 seen.Add(path);
                 var key = TextRagSettings.Hash(Path.GetFullPath(path).ToUpperInvariant());
@@ -47,10 +49,10 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                     if (state.CategoryId is null)
                     {
                         stage = "classify";
-                        state = state with { CategoryId = await _pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false) };
+                        state = state with { CategoryId = await pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
-                    var category = settings.TextPipeline.Categories.Single(c => c.Id == state.CategoryId);
+                    var category = pipelineSettings.Categories.Single(c => c.Id == state.CategoryId);
                     if (category.Excluded)
                     {
                         await repository.SaveAsync(state with { Status = "excluded" }, token).ConfigureAwait(false);
@@ -60,13 +62,13 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                     {
                         stage = "format";
                         var paragraphs = TextFiles.Paragraphs(state.Original, settings.TextPipeline.MaxChunkCharacters);
-                        state = state with { Paragraphs = await _pipeline.FormatAsync(paragraphs, category, token).ConfigureAwait(false) };
+                        state = state with { Paragraphs = await pipeline.FormatAsync(paragraphs, category, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
                     if (state.Chunks is null)
                     {
                         stage = "chunk";
-                        state = state with { Chunks = await _pipeline.ChunkAsync(state.Paragraphs, category, token).ConfigureAwait(false) };
+                        state = state with { Chunks = await pipeline.ChunkAsync(state.Paragraphs, category, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
                     for (var ordinal = state.EmbeddedChunks; ordinal < state.Chunks.Count; ordinal++)
@@ -76,7 +78,7 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                         ValidateVectors(batch, 1);
                         if (state.SpaceId is null)
                         {
-                            var space = settings.TextPipeline.SpaceId(settings.Ai, batch.Dimension);
+                            var space = _retrievalPrompts.SpaceId(settings.Ai, batch.Dimension);
                             await repository.EnsureSpaceAsync(space, batch.Dimension, token).ConfigureAwait(false);
                             state = state with { SpaceId = space, Dimension = batch.Dimension };
                         }
@@ -130,10 +132,10 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
         try
         {
             RequireModels();
-            var input = EmbeddingInput.Query(settings.Ai.EmbeddingModel, settings.TextPipeline.QueryInstruction, query);
+            var input = EmbeddingInput.Query(settings.Ai.EmbeddingModel, _retrievalPrompts.QueryInstruction, query);
             var batch = await ai.EmbedAsync([input], token).ConfigureAwait(false);
             ValidateVectors(batch, 1);
-            var space = settings.TextPipeline.SpaceId(settings.Ai, batch.Dimension);
+            var space = _retrievalPrompts.SpaceId(settings.Ai, batch.Dimension);
             await repository.EnsureSpaceAsync(space, batch.Dimension, token).ConfigureAwait(false);
             var chunks = await repository.SearchAsync(space, _configuration, batch.Vectors[0], limit, token).ConfigureAwait(false);
             var results = new List<TextSearchResult>();
@@ -168,13 +170,14 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
     }
 
     private Task<DisclosureResult> DiscloseAsync(TextDocumentState document, string candidate, CancellationToken token) =>
-        _gate.EvaluateAsync(document.DocumentId, document.Original, $"Source: {document.Path}\n\n{candidate}", settings.Confidentiality, token);
+        _gate.EvaluateAsync(document.DocumentId, document.Original, $"Source: {document.Path}\n\n{candidate}", settings.DisclosurePolicy(), token);
 
     private async Task<bool> CurrentAsync(TextDocumentState document, CancellationToken token)
     {
         if (document.Status != "ready" || document.ConfigurationId != _configuration || TextFiles.Within(document.Path, dataDirectory) ||
             !settings.Folders.Any(f => TextFiles.InFolder(document.Path, f)) ||
-            !settings.TextPipeline.Categories.Any(c => c.Id == document.CategoryId && !c.Excluded)) return false;
+            !settings.AllowedTextExtensions().Contains(Path.GetExtension(document.Path), StringComparer.OrdinalIgnoreCase) ||
+            !settings.PipelineFor(document.Path).Categories.Any(c => c.Id == document.CategoryId && !c.Excluded)) return false;
         try { return (await TextFiles.ReadAsync(document.Path, settings.TextPipeline.MaxDocumentCharacters, token).ConfigureAwait(false)).Hash == document.SourceHash; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException) { return false; }
     }

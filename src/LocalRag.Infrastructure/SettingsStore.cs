@@ -11,12 +11,20 @@ public sealed class SettingsStore(string dataDirectory)
 
     public async Task<AppSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(FilePath)) return new AppSettings();
+        if (!File.Exists(FilePath)) return Migrate(new AppSettings());
         await using var stream = File.OpenRead(FilePath);
         var settings = await JsonSerializer.DeserializeAsync<AppSettings>(stream, Options, cancellationToken)
             ?? throw new InvalidDataException("設定ファイルが空です。元のファイルを確認してください。");
         Validate(settings);
-        return settings;
+        return Migrate(settings);
+    }
+
+    private static AppSettings Migrate(AppSettings settings)
+    {
+        var migrated = settings with { SchemaVersion = 2,
+            Management = settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality) };
+        Validate(migrated);
+        return migrated; // Persist only when the user saves; failed/cancelled edits never rewrite the old file.
     }
 
     public async Task SaveAsync(AppSettings settings, CancellationToken cancellationToken = default)
