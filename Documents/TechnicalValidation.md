@@ -498,3 +498,5 @@ ChatGPTでのツール読み込みと正常/拒否/検査失敗の実取得が�
 全体テストは**118成功・失敗0・スキップ0**（`TestResults/mcp-reconnect-full.trx`、実DBを含む）。本体停止中の列挙、同じstdio接続での再接続、MCP無効化と設定変更が追加検証範囲。ホスト側の登録・初期化検証を`scripts/Test-PluginDiscovery.ps1`として残した。ZIP作成時もマニフェスト・MCP設定・実行ファイルの格納を検査する。
 
 正式候補は0.0.0-rc.3とする。現在の会話でのモデル自身によるsearch/fetch呼び出しと、ChatGPTの回答は引き続き未確認。ホスト診断でツールが列挙されたことを、ChatGPTからの実取得成功に置き換えない。
+
+最終rc.3のパッケージを生成し、同じローカルプラグインIDを維持して更新。再利用可能なホスト診断でもVersion=0.0.0-rc.3、Enabled=true、Tools=[fetch,search]、ToolsError=nullを確認した。検証用設定が自動監視OFF、DB18504、MCP18767であることを確認して本体を起動。インストール済みrc.3の中継実行ファイルから`mcp-check`で検索1件・全文Allowed/21文字・終了値0。既定保存先を使用する配布用プラグインZIPも別に生成した。Computer Useによる画面操作は今回行っていない。
