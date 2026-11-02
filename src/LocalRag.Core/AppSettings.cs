@@ -8,6 +8,7 @@ public sealed record AppSettings
     public List<WatchedFolder> Folders { get; init; } = [];
     public AiConnectionSettings Ai { get; init; } = new();
     public DatabaseSettings Database { get; init; } = new();
+    public McpSettings Mcp { get; init; } = new();
     public TextRagSettings TextPipeline { get; init; } = new();
     public ConfidentialityPolicy Confidentiality { get; init; } = new();
 
@@ -21,6 +22,12 @@ public sealed record AppSettings
         else errors.AddRange(Ai.Validate());
         if (Database is null) errors.Add("DB設定がありません。");
         else errors.AddRange(Database.Validate());
+        if (Mcp is null) errors.Add("MCP設定がありません。");
+        else
+        {
+            errors.AddRange(Mcp.Validate());
+            if (Mcp.Port == Database?.Port) errors.Add("MCPとDBには異なるポートを指定してください。");
+        }
         if (TextPipeline is null) errors.Add("テキスト処理設定がありません。");
         else errors.AddRange(TextPipeline.Validate());
         if (Confidentiality is null || Confidentiality.Patterns is null || Confidentiality.Patterns.Count > 100 ||

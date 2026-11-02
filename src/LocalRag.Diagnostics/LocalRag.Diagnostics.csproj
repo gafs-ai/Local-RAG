@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../LocalRag.Infrastructure/LocalRag.Infrastructure.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../LocalRag.Infrastructure/LocalRag.Infrastructure.csproj" /><ProjectReference Include="../LocalRag.Mcp/LocalRag.Mcp.csproj" /></ItemGroup>
 </Project>

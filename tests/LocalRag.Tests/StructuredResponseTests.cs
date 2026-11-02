@@ -8,6 +8,24 @@ namespace LocalRag.Tests;
 
 public class StructuredResponseTests
 {
+    [Theory]
+    [InlineData("{\"remove\":[]},{\"remove\":[]}")]
+    [InlineData("```json\n{\"remove\":[]}\n{\"remove\":[]}\n```")]
+    public void RepeatedIdenticalObjectsAreCollapsedWithoutChangingMeaning(string response)
+    {
+        using var result = TextAiPipeline.ParseResponse(response);
+        Assert.Empty(result.RootElement.GetProperty("remove").EnumerateArray());
+    }
+
+    [Theory]
+    [InlineData("{\"decision\":\"withhold\"},{\"decision\":\"allow\"}")]
+    [InlineData("{\"remove\":[]},")]
+    [InlineData("{\"remove\":[]} prose")]
+    [InlineData("{\"remove\":[]},{\"remove\":[],\"remove\":[]}")]
+    [InlineData("{\"remove\":[]},,{\"remove\":[]}")]
+    public void ConflictingOrIncompleteRepeatedObjectsAreRejected(string response) =>
+        Assert.ThrowsAny<Exception>(() => TextAiPipeline.ParseResponse(response));
+
     [Fact]
     public async Task NumericStringsAndDuplicateRemovalIdsAreCorrectedWithoutAnotherCall()
     {

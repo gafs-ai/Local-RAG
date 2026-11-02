@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Windows;
 using LocalRag.Core;
 using LocalRag.Infrastructure;
+using LocalRag.Mcp;
 
 namespace LocalRag.Desktop;
 
@@ -14,6 +15,7 @@ public partial class MainWindow
     private TextRagRepository? _repository;
     private LemonadeTextAi? _ragAi;
     private TextRagService? _rag;
+    private LocalMcpHost? _mcp;
     private PersistentMonitor? _persistentMonitor;
     private CancellationTokenSource? _monitorCancellation;
     private CancellationTokenSource? _ragCancellation;
@@ -53,6 +55,18 @@ public partial class MainWindow
                 ? $"機密検査：パターン {(_loadedSettings.Confidentiality.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM {(_loadedSettings.Confidentiality.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
             RagPanel.IsEnabled = true;
             RagStatus.Text = "取り込みと検索を利用できます。";
+            McpStatus.Text = "MCPは無効です。";
+            if (_loadedSettings.Mcp.Enabled)
+            {
+                try
+                {
+                    var secret = await new McpTokenStore(_dataDirectory).GetOrCreateAsync(_lifetime.Token);
+                    _mcp = await LocalMcpHost.StartAsync(_rag, _loadedSettings.Mcp.Port, secret, _lifetime.Token);
+                    McpStatus.Text = $"MCP待機中：127.0.0.1:{_loadedSettings.Mcp.Port}（このPCのみ・認証必須）。接続にはLocalRag.Mcpのstdio中継を使用します。";
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception) { McpStatus.Text = "MCPを開始できません。ポートの競合・設定を確認し、設定を保存して再試行してください。"; }
+            }
             if (_loadedSettings.AutomaticMonitoring) StartMonitoring();
         }
         catch (OperationCanceledException) { }
@@ -169,6 +183,8 @@ public partial class MainWindow
     {
         _ragCancellation?.Cancel();
         _monitorCancellation?.Cancel();
+        if (_mcp is not null) { await _mcp.DisposeAsync(); _mcp = null; }
+        McpStatus.Text = "MCPは停止しています。";
         await Task.WhenAll(_monitorTask, _ragTask);
         _rag?.Dispose(); _rag = null;
         _persistentMonitor = null;

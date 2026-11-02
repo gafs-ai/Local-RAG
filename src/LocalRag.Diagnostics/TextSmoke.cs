@@ -1,10 +1,13 @@
 using System.Text.Json;
 using LocalRag.Core;
 using LocalRag.Infrastructure;
+using LocalRag.Mcp;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 
 internal static class TextSmoke
 {
-    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token, bool includeSingleParagraph = false)
+    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token, bool includeSingleParagraph = false, bool viaMcp = false)
     {
         // Each diagnostic run owns fresh synthetic files. Never replace or scan user documents.
         var run = Path.Combine(Path.GetFullPath(root), Guid.NewGuid().ToString("N"));
@@ -33,7 +36,26 @@ internal static class TextSmoke
             using var ai = new LemonadeTextAi(settings);
             var traced = new TracingAi(ai, Path.Combine(run, "synthetic-model-responses.jsonl"));
             using var service = new TextRagService(repository, traced, settings, data);
-            var cycle = await service.ScanAsync(new Progress<string>(Console.WriteLine), token);
+            TextCycleResult cycle = new(0, 0, 0, 0, 0, 0);
+            var monitor = new PersistentMonitor(repository, MonitoringCheckpoint.ScopeFor(settings));
+            await monitor.RunCycleAsync(async ct => cycle = await service.ScanAsync(new Progress<string>(Console.WriteLine), ct), token);
+            if (viaMcp && cycle.Failed > 0)
+            {
+                Console.WriteLine("Initial cycle held invalid model output: " + JsonSerializer.Serialize(cycle));
+                var initialIndexed = cycle.Indexed;
+                // Exercise the same checkpoint recovery as the next scheduled cycle, without a 15-minute test delay.
+                await monitor.RunCycleAsync(async ct => cycle = await service.ScanAsync(new Progress<string>(Console.WriteLine), ct), token);
+                Console.WriteLine("One retry cycle: " + JsonSerializer.Serialize(cycle));
+                cycle = cycle with { Indexed = cycle.Indexed + initialIndexed };
+            }
+            var secret = viaMcp ? await new McpTokenStore(data).GetOrCreateAsync(token) : "";
+            await using var host = viaMcp ? await LocalMcpHost.StartAsync(service, settings.Mcp.Port, secret, token) : null;
+            await using var client = viaMcp ? await McpClient.CreateAsync(new StdioClientTransport(new()
+            {
+                Command = "dotnet", Arguments = [Path.Combine(AppContext.BaseDirectory, "LocalRag.Mcp.dll"), "--data-dir", data]
+            }), cancellationToken: token) : null;
+            ITextRetrieval retrieval = client is null ? service : new McpRetrieval(client);
+            if (client is not null) Console.WriteLine("MCP stdio bridge -> authenticated HTTP: " + string.Join(",", (await client.ListToolsAsync(cancellationToken: token)).Select(t => t.Name)));
             Console.WriteLine("Text cycle: " + JsonSerializer.Serialize(cycle));
             var documents = await repository.DocumentsAsync(token);
             Console.WriteLine($"Diagnostic data: {run}");
@@ -43,7 +65,7 @@ internal static class TextSmoke
             if (includeSingleParagraph)
             {
                 var single = documents.Single(d => Path.GetFileName(d.Path) == "monitor.txt");
-                var singleFetch = await service.FetchAsync(single.DocumentId, token);
+                var singleFetch = await retrieval.FetchAsync(single.DocumentId, token);
                 // The inspection also sees the source path. A generated public body alone does not
                 // guarantee disclosure permission; verify either exact allowed data or a closed result.
                 var validDisclosure = singleFetch?.DocumentId == single.DocumentId && (singleFetch.Decision switch
@@ -55,23 +77,55 @@ internal static class TextSmoke
                 Console.WriteLine($"Single paragraph fetch: decision={singleFetch?.Decision}, exact-source={singleFetch?.Content == single.Original}, valid-disclosure={validDisclosure}");
                 if (!validDisclosure) return 2;
             }
-            var hits = await service.SearchAsync("夏の鉢植えには、いつどのように水をあげればよいですか？", 3, token);
+            var hits = await retrieval.SearchAsync("夏の鉢植えには、いつどのように水をあげればよいですか？", 3, token);
             var nearest = hits.FirstOrDefault();
             Console.WriteLine($"Japanese search: hits={hits.Count}, first={Path.GetFileName(nearest?.SourcePath)}, decision={nearest?.Decision}");
             var documentId = documents.Single(d => d.Path == guide).DocumentId;
-            var fetched = await service.FetchAsync(documentId, token);
+            var fetched = await retrieval.FetchAsync(documentId, token);
             Console.WriteLine($"Public fetch: decision={fetched?.Decision}, length={fetched?.Content?.Length ?? 0}");
             var secretId = documents.Single(d => Path.GetFileName(d.Path) == "restricted.txt").DocumentId;
-            var denied = await service.FetchAsync(secretId, token);
+            var denied = await retrieval.FetchAsync(secretId, token);
             Console.WriteLine($"Restricted fetch: decision={denied?.Decision}, content-null={denied?.Content is null}, source-null={denied?.SourcePath is null}");
             await File.WriteAllTextAsync(guide, "公開資料：更新された内容です。", token);
-            var stale = await service.FetchAsync(documentId, token);
+            var stale = await retrieval.FetchAsync(documentId, token);
             Console.WriteLine($"Modified-before-scan: omitted={stale is null}");
             Console.WriteLine($"Diagnostic data: {run}");
             return nearest?.DocumentId == documentId && nearest.Decision == DisclosureDecision.Allowed &&
                 fetched?.Content is not null && denied?.Decision == DisclosureDecision.Withheld && denied.Content is null && denied.SourcePath is null && stale is null ? 0 : 2;
         }
         finally { await manager.ShutdownAsync(true); }
+    }
+
+    private sealed class McpRetrieval(McpClient client) : ITextRetrieval
+    {
+        public async Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default)
+        {
+            var result = await client.CallToolAsync("search", new Dictionary<string, object?> { ["query"] = query, ["limit"] = limit }, cancellationToken: token);
+            if (result.IsError == true) throw new InvalidOperationException("MCP search failed.");
+            return Parse(result).GetProperty("results").EnumerateArray().Select(Convert).ToArray();
+        }
+        public async Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default)
+        {
+            var result = await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = documentId.ToString("D") }, cancellationToken: token);
+            var json = Parse(result);
+            if (result.IsError == true)
+            {
+                if (json.GetProperty("error").GetString() == "not_available") return null;
+                throw new InvalidOperationException("MCP fetch failed.");
+            }
+            return Convert(json);
+        }
+        private static JsonElement Parse(CallToolResult result)
+        {
+            using var json = JsonDocument.Parse(result.Content.OfType<TextContentBlock>().Single().Text);
+            return json.RootElement.Clone();
+        }
+        private static TextSearchResult Convert(JsonElement e) => new(e.GetProperty("id").GetGuid(),
+            Enum.Parse<DisclosureDecision>(e.GetProperty("decision").GetString()!, true),
+            e.TryGetProperty("text", out var text) ? text.GetString() : null,
+            e.TryGetProperty("source", out var source) ? source.GetString() : null,
+            e.TryGetProperty("start_paragraph", out var start) ? start.GetInt32() : null,
+            e.TryGetProperty("end_paragraph", out var end) ? end.GetInt32() : null);
     }
 
     private sealed class TracingAi(ITextRagAi inner, string trace) : ITextRagAi

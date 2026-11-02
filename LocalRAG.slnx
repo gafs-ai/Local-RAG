@@ -4,6 +4,7 @@
     <Project Path="src/LocalRag.Desktop/LocalRag.Desktop.csproj" />
     <Project Path="src/LocalRag.Diagnostics/LocalRag.Diagnostics.csproj" />
     <Project Path="src/LocalRag.Infrastructure/LocalRag.Infrastructure.csproj" />
+    <Project Path="src/LocalRag.Mcp/LocalRag.Mcp.csproj" />
     <Project Path="src/LocalRag.ServerControl/LocalRag.ServerControl.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -260,9 +260,11 @@ Embeddingの空間IDはモデル識別子・版・次元数・前処理・距離
 
 読み取り専用のsearch(query, limit, filters)とfetch(document_id, revision, representation, cursor)を公開する。limitや返却サイズを制限し、任意パスや任意SQLを受け取らない。設定変更・インデックス削除をMCPに公開しない。
 
-Streamable HTTPを標準候補とし、ローカルMCPクライアント向けstdioは必要に応じた薄い接続アダプターとする。stdioではstdoutにログを混ぜない。
+0.0.0では公式C# SDK 2.3.0によるStreamable HTTPをアプリ内で起動し、ローカルクライアントとデスクトッププラグイン用にstdio中継を同梱する。HTTPは127.0.0.1限定、DPAPIで保護したランダムBearer認証、Host検証、Origin付き要求の拒否を行う。stdioではstdoutにログを混ぜない。詳細は[MCPConnection.md](MCPConnection.md)を参照。
 
-ChatGPT向けはSecure MCP Tunnelを第一候補として実機検証する。Tunnelの導入、Platformの権限・実行用キー、ChatGPT側接続設定は別途必要。接続先がブラウザ版かWindows版か、アカウントの利用権限は未確定。
+初版で実装する引数はsearch(query, limit=5)とfetch(id)に限定する。fetchは原文の現在公開版全文を返す。上記のfilters、revision、representation、cursorは将来拡張であり、0.0.0には含めない。返却前の原文照合・機密検査は管理画面と同じサービスで実施する。設定変更時・終了時はリスナーを止め、進行中の呼び出しの取消・完了後にサービスとDB参照を破棄する。
+
+ChatGPT Business内での利用を前提とし、Windowsデスクトップのローカルstdioプラグインを優先する。API Platform、APIキー、Secure MCP Tunnelを必須にしない。ブラウザ版も利用要望があるため、認証付きHTTPS MCPの接続経路を後続で設計する。ローカルプラグインの登録成功だけでChatGPTからの実取得成功とは扱わない。
 
 ローカルエンドポイントはループバックに限定し、接続元認証と許可範囲を設計する。外部接続時も利用者の識別を維持し、機密検査を認証の代わりにしない。未認証の公開エンドポイントを自動起動しない。
 
@@ -301,7 +303,7 @@ ChatGPT向けはSecure MCP Tunnelを第一候補として実機検証する。Tu
 ## 16. 未確定事項
 
 1. APU型番、最終的なLLM・STTモデルとEmbeddingの日本語検索品質。
-2. ChatGPTの主な利用環境とTunnelの利用可否。
+2. ChatGPT Businessデスクトップでの実取得、ブラウザ版向け接続経路と認証方式。
 3. 変換ツールの正確な版と配布方式、SurrealDBの将来の更新・移行方式。
 4. 画像の返却に必要な検査方式、初版で対応する画像表現の範囲。
 5. 旧形式や暗号化文書など、初版の対応拡張子の最終範囲。
@@ -322,11 +324,11 @@ ChatGPT向けはSecure MCP Tunnelを第一候補として実機検証する。Tu
 - [Office unattended automation](https://learn.microsoft.com/en-us/office/client-developer/integration/considerations-unattended-automation-office-microsoft-365-for-unattended-rpa)
 - [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
 - [ChatGPT custom MCP](https://developers.openai.com/api/docs/guides/custom-mcp-server)
-- [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels)
+- [Desktop-only plugins](https://developers.openai.com/plugins/deploy/desktop-only)
 
 ## 18. 最小テキストRAGの実装仕様（2026-11-02）
 
-前節までの完成形に対し、P1では以下の範囲を実装した。Word/PDF/音声、MCPは未実装。設定保存・入力エラー・再起動・終了等はユーザー許可後に画面操作を検証した。検証範囲とモデル別の結果はTechnicalValidation.mdに記録する。
+前節までの完成形に対し、P1では以下の範囲を実装した。Word/PDF/音声は未実装。MCPは後続の0.0.0作業でsearch/fetchとstdio中継を追加した。設定保存・入力エラー・再起動・終了等はユーザー許可後に画面操作を検証した。検証範囲とモデル別の結果はTechnicalValidation.mdに記録する。
 
 ### 18.1 入力・処理・返却
 

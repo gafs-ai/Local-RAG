@@ -8,6 +8,14 @@ try
 {
     switch (args.FirstOrDefault())
     {
+        case "mcp-check" when args.Length is 3 or 4:
+            return await McpProbe.RunAsync(args[1], args[2], cancellation.Token, args.ElementAtOrDefault(3));
+        case "recovery-smoke":
+            return await RecoverySmoke.RunAsync(args.ElementAtOrDefault(1) ?? ".local/recovery-smoke", args.ElementAtOrDefault(2), cancellation.Token);
+        case "recovery-worker" when args.Length == 4:
+            return await RecoverySmoke.WorkerAsync(args[1], args[2], int.Parse(args[3]), cancellation.Token);
+        case "mcp-smoke" when args.Length >= 3:
+            return await TextSmoke.RunAsync(args[1], args[2], args.ElementAtOrDefault(3) ?? ".local/mcp-smoke", args.ElementAtOrDefault(4), cancellation.Token, includeSingleParagraph: true, viaMcp: true);
         case "chunk-probe" when args.Length >= 2:
             return await ChunkProbe.RunAsync(args[1], args.ElementAtOrDefault(2) ?? ".local/chunk-probe", cancellation.Token);
         case "chunk-repair-probe" when args.Length >= 2:
@@ -64,7 +72,7 @@ try
             return 0;
         }
         default:
-            Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe/ chunk-repair-probe <chat-model-id> [data-directory]");
+            Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke/ mcp-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe/ chunk-repair-probe <chat-model-id> [data-directory] | mcp-check <data-directory> <query> [bridge-executable] | recovery-smoke [data-directory] [tools-directory]");
             return 1;
     }
 }

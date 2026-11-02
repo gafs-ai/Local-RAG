@@ -30,9 +30,30 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             if (!text.EndsWith("```", StringComparison.Ordinal)) throw new PipelineValidationException("response_schema", "JSON応答が完結していません。");
             text = text[(text.IndexOf('\n') + 1)..^3].Trim();
         }
-        var parsed = JsonDocument.Parse(text);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text);
+        var reader = new Utf8JsonReader(bytes);
+        var parsed = JsonDocument.ParseValue(ref reader);
         if (parsed.RootElement.ValueKind != JsonValueKind.Object || HasDuplicateProperties(parsed.RootElement))
         { parsed.Dispose(); throw new PipelineValidationException("response_schema", "JSON応答のオブジェクトが不正です。"); }
+        try
+        {
+            // Collapse only exact repeated objects, a local-model generation defect. Never select
+            // one of conflicting answers or extract JSON from surrounding prose.
+            var tail = bytes.AsSpan((int)reader.BytesConsumed);
+            for (var count = 1; ; count++)
+            {
+                while (tail.Length > 0 && tail[0] is (byte)' ' or (byte)'\r' or (byte)'\n' or (byte)'\t') tail = tail[1..];
+                if (tail.IsEmpty) break;
+                if (count >= 8) throw new JsonException("Too many repeated responses.");
+                if (tail[0] == (byte)',') tail = tail[1..];
+                var repeatedReader = new Utf8JsonReader(tail);
+                using var repeated = JsonDocument.ParseValue(ref repeatedReader);
+                if (HasDuplicateProperties(repeated.RootElement) || !JsonElement.DeepEquals(parsed.RootElement, repeated.RootElement))
+                    throw new JsonException("Conflicting responses.");
+                tail = tail[(int)repeatedReader.BytesConsumed..];
+            }
+        }
+        catch { parsed.Dispose(); throw; }
         return parsed;
     }
 

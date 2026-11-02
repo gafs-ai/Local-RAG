@@ -7,12 +7,14 @@ Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**
 - [設計書](Documents/LocalRAGDesign.md)
 - [実装計画・進捗](Documents/ImplementationPlan.md)
 - [技術検証結果と既知の制約](Documents/TechnicalValidation.md)
+- [MCP・ChatGPT接続手順](Documents/MCPConnection.md)
+- [0.0.0のリリース判定・配布手順](Documents/Release-0.0.0.md)
 
 ## 現在の実装範囲
 
-**テキストRAGの開発版です。UTF-8の.txt/.mdの取り込み・検索に対応しました。Word・PDF・音声・MCP連携は未実装です。**
+**0.0.0候補版です。UTF-8の.txt/.mdの取り込み・常駐監視・MCP検索/全文取得に対応しました。Word・PDF・音声は未実装です。**
 
-最初のリリースは**0.0.0**を予定しています。UTF-8の.txt/.mdを対象に、取り込み・常駐監視・MCPの検索/全文取得までを実機で確認してリリースします。現在は未リリースで、MCP対応が残っています。Word・PDF・音声、長文・形式対応の拡充は0.0.0以降に進めます。詳細は[リリース条件と実装順序](Documents/ImplementationPlan.md#1-進め方)を参照してください。
+最初のリリースは**0.0.0**を予定しています。実モデル・実DB・実MCPクライアントによる一連処理に成功しました。現在は正式版未リリースで、ChatGPT Businessデスクトップの実接続試験が残っています。Word・PDF・音声、長文・形式対応の拡充は0.0.0以降に進めます。詳細は[リリース条件と実装順序](Documents/ImplementationPlan.md#1-進め方)を参照してください。
 
 実装済み:
 
@@ -30,6 +32,7 @@ Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**
 - 原文と返却候補に対するパターン・実LLM機密検査。拒否・検査失敗時は文書IDだけを返し、本文・パスを返さない。
 - ローカル検索・全文取得、分類追加・工程省略・分類別除外・プロンプト編集（詳細設定のJSON）。
 - DB・AI診断用CLI、自動テスト。
+- 認証付きのローカルMCP HTTPとstdio中継。search/fetchを管理画面と同じ機密検査に通し、設定変更・終了時に進行中の呼び出しを停止。
 
 現在の主要な制約:
 
@@ -37,7 +40,7 @@ Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**
 2. 整形はLLMが指定した不要段落の除去まで。本文の書き換え、大きな段落の再分割、CP932、Markdown画像の抽出は未対応です。
 3. Gemma-3-4b-it-mm-NPU + nomic-embed-text-v2-moe-GGUFで小さな日本語文書の一連処理が成功しました。旧Qwen構成の成功とは別に記録しています。広い検索精度・機密検出精度の保証ではなく、Gemmaでも不正応答の保留・再試行が起こり得ます。
 4. 設定保存・不正入力拒否・取り込み・検索・全文取得・監視開始/一時停止・再起動・終了をComputer Useで確認しました。トレイからの再表示はユーザーの協力を受けて確認しました。詳細は技術検証記録を参照してください。
-5. MCP等の外部返却エンドポイントはまだ起動しません。検索・取得は管理画面と診断からのローカル処理です。
+5. MCPは127.0.0.1限定・認証必須。ローカルクライアントは同梱stdio中継を利用します。ChatGPT Businessにはローカルプラグイン方式を用意しています。API Platformは必須にせず、デスクトップでの実取得試験は継続中です。ブラウザ版は後続対応です。
 
 nomic-embed-text-v2-moeは検索語と文書の専用接頭辞を自動適用します。Lemonadeが8,192を表示していてもモデルの公称512トークンを上限として検査します。現在はUTF-8バイト数に256の余裕分を加える保守的な制限のため、日本語の実用入力長はかなり短くなります。長文対応は後続工程です。同じモデルでも今回の入力形式変更前の索引は再取り込みが必要です。
 
@@ -56,7 +59,7 @@ dotnet build LocalRAG.slnx --configuration Release --no-restore
 dotnet test tests/LocalRag.Tests --configuration Release --no-build --no-restore
 ```
 
-実DBを使う9件のテストは、検証済みSurrealDB実行ファイルがあるtoolsフォルダを指定して実行します。未指定の場合はその9件をスキップし、DB統合の成功とは扱いません。
+実DBを使う10件のテストは、検証済みSurrealDB実行ファイルがあるtoolsフォルダを指定して実行します。未指定の場合はその10件をスキップし、DB統合の成功とは扱いません。
 
 ```powershell
 $env:LOCALRAG_TEST_TOOLS = Join-Path $PWD '.local/tools'

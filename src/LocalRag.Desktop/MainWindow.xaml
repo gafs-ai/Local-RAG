@@ -24,7 +24,7 @@
                         <TextBlock Text="現在の状態" FontSize="21" FontWeight="SemiBold" Foreground="#17334B" />
                         <Border Background="#FFF7E6" Padding="16" CornerRadius="6" Margin="0,14,0,22">
                             <TextBlock TextWrapping="Wrap" Foreground="#755620"
-                                       Text="UTF-8の.txtと.mdの取り込み・検索に対応しました。フォルダとAIモデルを保存すると監視を開始します。Word・PDF・音声・MCP連携は開発中です。長文は上限を超えると保留します。" />
+                                       Text="UTF-8の.txtと.mdの取り込み・検索・MCP取得に対応します。フォルダとAIモデルを保存すると監視を開始します。Word・PDF・音声は後続版の予定です。長文は上限を超えると保留します。" />
                         </Border>
                         <TextBlock Text="AI接続" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock x:Name="AiStatus" Text="未確認。設定タブの接続先を使って確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
@@ -33,6 +33,8 @@
                         <TextBlock Text="データ保存・ベクトル検索" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock x:Name="DatabaseStatus" Text="未確認。診断専用の小さなデータで確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
                         <Button x:Name="DbButton" Content="保存・検索機能を確認" Click="CheckDatabase" HorizontalAlignment="Left" />
+                        <TextBlock Text="MCP接続" FontSize="17" FontWeight="SemiBold" Margin="0,22,0,0" />
+                        <TextBlock x:Name="McpStatus" Text="未準備。フォルダとAIモデルを設定してください。" TextWrapping="Wrap" Margin="0,8" />
                         <TextBlock Text="閉じるボタンはタスクトレイに格納します。トレイの「管理画面を開く」で再表示できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,26,0,0" />
                     </StackPanel>
                 </ScrollViewer>
@@ -94,6 +96,10 @@
                         <TextBlock Text="このPCのDBポート（変更はアプリ再起動後）" />
                         <TextBox x:Name="DbPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="DBポート" />
                         <CheckBox x:Name="StopDbBox" Content="アプリ終了時に、このアプリが起動したSurrealDBも終了する" Margin="0,0,0,12" AutomationProperties.Name="DBも終了する" />
+                        <TextBlock Text="MCP" FontSize="18" FontWeight="SemiBold" />
+                        <CheckBox x:Name="McpEnabledBox" Content="MCPからの検索・全文取得を有効にする" Margin="0,8" />
+                        <TextBlock Text="このPCのMCPポート（設定保存で反映）" />
+                        <TextBox x:Name="McpPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="MCPポート" />
                         <Expander Header="既存のSurrealDBへ接続する場合">
                             <StackPanel Margin="12,8">
                                 <TextBlock Text="接続できない場合に、既存サーバーの管理用認証情報を保存して再試行します。パスワードはWindowsのユーザー別保護を使って保存します。" TextWrapping="Wrap" />

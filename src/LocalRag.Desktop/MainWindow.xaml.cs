@@ -60,6 +60,8 @@ public partial class MainWindow : Window, IDisposable
             SpeechModelBox.Text = settings.Ai.SpeechModel;
             DbPortBox.Text = settings.Database.Port.ToString();
             StopDbBox.IsChecked = settings.Database.StopOnExit;
+            McpEnabledBox.IsChecked = settings.Mcp.Enabled;
+            McpPortBox.Text = settings.Mcp.Port.ToString();
             _settingsLoaded = true;
             SettingsStatus.Text = "設定はローカルに保存します。機密検査は標準で有効です。";
         }
@@ -79,11 +81,13 @@ public partial class MainWindow : Window, IDisposable
     {
         if (!int.TryParse(IntervalBox.Text, out var interval)) throw new InvalidDataException("監視間隔を整数で入力してください。");
         if (!int.TryParse(DbPortBox.Text, out var port)) throw new InvalidDataException("DBポートを整数で入力してください。");
+        if (!int.TryParse(McpPortBox.Text, out var mcpPort)) throw new InvalidDataException("MCPポートを整数で入力してください。");
         var advanced = JsonSerializer.Deserialize<AdvancedSettings>(AdvancedBox.Text, AdvancedJson) ?? throw new InvalidDataException("詳細設定が空です。");
         var settings = _loadedSettings with
         {
             MonitoringIntervalMinutes = interval,
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
+            Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
             TextPipeline = advanced.TextPipeline,
             Confidentiality = advanced.Confidentiality,
             Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true },

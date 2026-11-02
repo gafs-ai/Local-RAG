@@ -95,11 +95,18 @@ public sealed class SurrealServerManager : IAsyncDisposable
                     startup.Token.ThrowIfCancellationRequested();
                     if (await IsPortOpenAsync(settings.Port, startup.Token).ConfigureAwait(false))
                     {
-                        var version = await VerifyConnectionAsync(proposed, startup.Token).ConfigureAwait(false);
-                        // If another process won the port race, our child must not be recorded as ready.
-                        if (process.HasExited) break;
-                        Connection = proposed;
-                        return Status = new(version, true, settings.Port);
+                        try
+                        {
+                            var version = await VerifyConnectionAsync(proposed, startup.Token).ConfigureAwait(false);
+                            // A listening socket can precede HTTP readiness during crash recovery.
+                            if (process.HasExited) break;
+                            Connection = proposed;
+                            return Status = new(version, true, settings.Port);
+                        }
+                        catch (HttpRequestException ex) when (ex.StatusCode is null or System.Net.HttpStatusCode.ServiceUnavailable or System.Net.HttpStatusCode.BadGateway or System.Net.HttpStatusCode.GatewayTimeout)
+                        { /* Only startup transport failures are retried, within the existing deadline. */ }
+                        catch (OperationCanceledException) when (!startup.IsCancellationRequested)
+                        { /* The readiness probe has its own shorter HTTP timeout. */ }
                     }
                     await Task.Delay(200, startup.Token).ConfigureAwait(false);
                 }

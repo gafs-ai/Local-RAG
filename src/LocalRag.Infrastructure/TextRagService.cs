@@ -3,7 +3,7 @@ using LocalRag.Core;
 namespace LocalRag.Infrastructure;
 
 /// <summary>A single writer/AI lane. Settings are immutable for this service's lifetime.</summary>
-public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, AppSettings settings, string dataDirectory) : IDisposable
+public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, AppSettings settings, string dataDirectory) : ITextRetrieval, IDisposable
 {
     private readonly SemaphoreSlim _operations = new(1, 1);
     private readonly string _configuration = settings.TextPipeline.ConfigurationId(settings.Ai);

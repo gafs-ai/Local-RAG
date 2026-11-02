@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../LocalRag.Infrastructure/LocalRag.Infrastructure.csproj" />
+    <ProjectReference Include="../LocalRag.Mcp/LocalRag.Mcp.csproj" />
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
     <Using Include="System.IO" />
