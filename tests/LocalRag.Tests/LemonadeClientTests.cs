@@ -34,7 +34,8 @@ public class LemonadeClientTests
         var handler = new Handler("""{"data":[{"id":"local","recipe":"llamacpp","downloaded":true,"labels":["chat"]}]}""",
             """{"choices":[{"finish_reason":"length","message":{"content":"partial"}}]}""");
         using var client = new LemonadeClient(new(), handler);
-        await Assert.ThrowsAsync<InvalidDataException>(() => client.CompleteAsync("local", "system", "input"));
+        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => client.CompleteAsync("local", "system", "input"));
+        Assert.Equal("output_incomplete", error.Code);
         Assert.Equal(1, handler.Posts);
     }
 

@@ -49,7 +49,7 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
                 using var json = ParseResponse(output);
                 return validate(json.RootElement);
             }
-            catch (Exception ex) when (attempt == 0 && ex is JsonException or InvalidDataException or KeyNotFoundException or InvalidOperationException)
+            catch (Exception ex) when (attempt == 0 && ex is JsonException or InvalidDataException or PipelineValidationException or KeyNotFoundException or InvalidOperationException)
             { await Task.Delay(200, token).ConfigureAwait(false); }
         }
     }
@@ -89,10 +89,31 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             if (text.Length > settings.MaxChunkCharacters) throw new InvalidDataException("分割OFFの本文がチャンク上限を超えています。");
             return [new(paragraphs[0].Id, paragraphs[^1].Id, text)];
         }
-        var prompt = (category.ChunkPrompt ?? settings.ChunkPrompt) +
+        var configuredPrompt = category.ChunkPrompt ?? settings.ChunkPrompt;
+        // Upgrade only the exact former built-in prompt. Keep user-authored prompts intact.
+        if (configuredPrompt == TextRagSettings.LegacyChunkPrompt) configuredPrompt = TextRagSettings.DefaultChunkPrompt;
+        var example = new List<object>();
+        var start = paragraphs[0].Id;
+        var end = start;
+        var length = 0;
+        foreach (var paragraph in paragraphs)
+        {
+            if (length > 0 && length + 2 + paragraph.Text.Length > settings.MaxChunkCharacters)
+            {
+                example.Add(new { start, end });
+                start = paragraph.Id;
+                length = 0;
+            }
+            length += (length == 0 ? 0 : 2) + paragraph.Text.Length;
+            end = paragraph.Id;
+        }
+        example.Add(new { start, end });
+        var prompt = configuredPrompt +
             $"\nFor THIS input, the only valid paragraph IDs are [{string.Join(',', paragraphs.Select(p => p.Id))}]." +
             $" The first chunk must start at {paragraphs[0].Id}; the last must end at {paragraphs[^1].Id}." +
-            " Use these actual IDs even when they differ from example IDs in the instructions.";
+            " Use these actual IDs even when they differ from example IDs in the instructions." +
+            "\nA complete valid response example for THIS input is: " + JsonSerializer.Serialize(new { chunks = example }) +
+            "\nYou may choose different boundaries to follow the category instructions, but all IDs, coverage and length constraints still apply.";
         return await JsonAsync(prompt,
             new { category = category.Id, maxCharacters = settings.MaxChunkCharacters, paragraphs },
             root => ValidateChunks(root, paragraphs, settings.MaxChunkCharacters), token).ConfigureAwait(false);
@@ -106,16 +127,16 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
         {
             var start = range.GetProperty("start").GetInt32();
             var end = range.GetProperty("end").GetInt32();
-            if (next >= paragraphs.Count || start != paragraphs[next].Id) throw new InvalidDataException("チャンク範囲に欠落・重複・逆転があります。");
+            if (next >= paragraphs.Count || start != paragraphs[next].Id) throw new PipelineValidationException("chunk_order", "チャンク範囲に欠落・重複・逆転があります。");
             var last = next;
             while (last < paragraphs.Count && paragraphs[last].Id != end) last++;
-            if (last >= paragraphs.Count) throw new InvalidDataException("チャンクの終端が不正です。");
+            if (last >= paragraphs.Count) throw new PipelineValidationException("chunk_end", "チャンクの終端が不正です。");
             var text = string.Join("\n\n", paragraphs.Skip(next).Take(last - next + 1).Select(p => p.Text));
-            if (text.Length > limit) throw new InvalidDataException("チャンクが上限を超えています。");
+            if (text.Length > limit) throw new PipelineValidationException("chunk_size", "チャンクが上限を超えています。");
             chunks.Add(new(start, end, text));
             next = last + 1;
         }
-        if (next != paragraphs.Count || chunks.Count == 0) throw new InvalidDataException("未分割の段落があります。");
+        if (next != paragraphs.Count || chunks.Count == 0) throw new PipelineValidationException("chunk_coverage", "未分割の段落があります。");
         return chunks;
     }
 }

@@ -202,6 +202,7 @@ public partial class MainWindow : Window, IDisposable
 
     private static string SafeMessage(Exception ex) => ex switch
     {
+        PipelineValidationException validation => PipelineErrors.Describe(null, validation.Code),
         InvalidDataException or InvalidOperationException or TimeoutException => ex.Message,
         ArgumentException => "入力内容が正しくありません。接続先やパスを確認してください。",
         HttpRequestException => "接続できません。接続先とネットワークの状態を確認してください。",

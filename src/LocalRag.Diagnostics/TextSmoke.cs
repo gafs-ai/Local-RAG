@@ -4,7 +4,7 @@ using LocalRag.Infrastructure;
 
 internal static class TextSmoke
 {
-    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token)
+    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token, bool includeSingleParagraph = false)
     {
         // Each diagnostic run owns fresh synthetic files. Never replace or scan user documents.
         var run = Path.Combine(Path.GetFullPath(root), Guid.NewGuid().ToString("N"));
@@ -15,11 +15,15 @@ internal static class TextSmoke
         await File.WriteAllTextAsync(guide, "公開資料：庭の植物の水やり\n\n夏の鉢植えには、朝の涼しい時間に水を与えます。土の表面が乾いていることを確認し、鉢底から流れるまでゆっくり水を注ぎます。", token);
         await File.WriteAllTextAsync(Path.Combine(inputs, "train.md"), "公開資料：鉄道旅行の準備\n\n旅行前に列車の出発時刻と乗車する駅を確認します。混雑する時期は座席を予約し、切符と荷物を準備します。", token);
         await File.WriteAllTextAsync(Path.Combine(inputs, "restricted.txt"), "社外秘\n\nこれは機密検査のための架空のテスト文書です。新しい植物の栽培計画についての社内限定情報を記載しています。", token);
+        if (includeSingleParagraph)
+            await File.WriteAllTextAsync(Path.Combine(inputs, "monitor.txt"), "公開資料：監視試験。花壇の水やりは朝に行います。", token);
         var settings = new AppSettings
         {
             Folders = [new(inputs)], Ai = new() { ChatModel = chat, EmbeddingModel = embedding },
             Database = new() { Port = 18503 }
         };
+        // Also exercise the exact old default stored by existing installations.
+        if (includeSingleParagraph) settings = settings with { TextPipeline = settings.TextPipeline with { ChunkPrompt = TextRagSettings.LegacyChunkPrompt } };
         await new SettingsStore(data).SaveAsync(settings, token);
         await using var manager = new SurrealServerManager(data, tools);
         try
@@ -35,7 +39,22 @@ internal static class TextSmoke
             Console.WriteLine($"Diagnostic data: {run}");
             foreach (var document in documents)
                 Console.WriteLine($"Document: {Path.GetFileName(document.Path)}, status={document.Status}, error={document.ErrorCode}, category={document.CategoryId}, paragraphs={document.Paragraphs?.Count}, chunks={document.Chunks?.Count}, embedded={document.EmbeddedChunks}");
-            if (cycle.Indexed != 3 || cycle.Failed != 0) return 2;
+            if (cycle.Indexed != (includeSingleParagraph ? 4 : 3) || cycle.Failed != 0) return 2;
+            if (includeSingleParagraph)
+            {
+                var single = documents.Single(d => Path.GetFileName(d.Path) == "monitor.txt");
+                var singleFetch = await service.FetchAsync(single.DocumentId, token);
+                // The inspection also sees the source path. A generated public body alone does not
+                // guarantee disclosure permission; verify either exact allowed data or a closed result.
+                var validDisclosure = singleFetch?.DocumentId == single.DocumentId && (singleFetch.Decision switch
+                {
+                    DisclosureDecision.Allowed => singleFetch.Content == single.Original && singleFetch.SourcePath == single.Path,
+                    DisclosureDecision.Withheld or DisclosureDecision.Pending => singleFetch.Content is null && singleFetch.SourcePath is null,
+                    _ => false
+                });
+                Console.WriteLine($"Single paragraph fetch: decision={singleFetch?.Decision}, exact-source={singleFetch?.Content == single.Original}, valid-disclosure={validDisclosure}");
+                if (!validDisclosure) return 2;
+            }
             var hits = await service.SearchAsync("夏の鉢植えには、いつどのように水をあげればよいですか？", 3, token);
             var nearest = hits.FirstOrDefault();
             Console.WriteLine($"Japanese search: hits={hits.Count}, first={Path.GetFileName(nearest?.SourcePath)}, decision={nearest?.Decision}");
@@ -61,7 +80,7 @@ internal static class TextSmoke
         {
             var result = await inner.CompleteAsync(system, input, token);
             // This diagnostic only owns generated synthetic examples; the production service never logs model bodies.
-            await File.AppendAllTextAsync(trace, JsonSerializer.Serialize(new { system, response = result }) + Environment.NewLine, token);
+            await File.AppendAllTextAsync(trace, JsonSerializer.Serialize(new { system, input, response = result }) + Environment.NewLine, token);
             return result;
         }
         public Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token) => inner.EmbedAsync(inputs, token);

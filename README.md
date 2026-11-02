@@ -54,7 +54,7 @@ dotnet build LocalRAG.slnx --configuration Release --no-restore
 dotnet test tests/LocalRag.Tests --configuration Release --no-build --no-restore
 ```
 
-実DBを使う8件のテストは、検証済みSurrealDB実行ファイルがあるtoolsフォルダを指定して実行します。未指定の場合はその8件をスキップし、DB統合の成功とは扱いません。
+実DBを使う9件のテストは、検証済みSurrealDB実行ファイルがあるtoolsフォルダを指定して実行します。未指定の場合はその9件をスキップし、DB統合の成功とは扱いません。
 
 ```powershell
 $env:LOCALRAG_TEST_TOOLS = Join-Path $PWD '.local/tools'
@@ -81,6 +81,8 @@ dotnet run --project src/LocalRag.Desktop --configuration Release --no-build -- 
 
 取り込みと検索のAI呼び出しは直列です。この段階では検索は実行中の取り込み完了を待ちます。設定変更時は処理を中断し、新しい設定で再開します。機密検査を変更すると既存の検索表示も消去します。
 
+取り込みの保留時は、失敗した工程と内容を含まない理由を文書一覧に表示します。分割プロンプトには実際の段落ID・文字数上限に合う応答例を付けます。保存済みの旧標準プロンプトは実行時に補正し、独自に編集したプロンプトは維持します。今回の処理版（v3）への更新後は旧版の索引を再取り込みします。
+
 同じフォルダ・処理設定で再起動した場合は、前回完了から監視間隔の残り時間を待ちます。途中で中断した場合、期限を過ぎた場合、フォルダや処理設定が変わった場合は自動探索を開始します。間隔だけを変更した場合は前回の完了時刻から計算し直します。今すぐ探索するには監視を一時停止して「今すぐ1回実行」を使ってください。監視状態の保存・復元に失敗した場合は自動監視を停止して表示します。
 
 起動時にSurrealDBへ接続します。未起動・未導入なら公式3.3.5を専用フォルダへ自動ダウンロードします（初回約307MiB、ネット接続が必要）。標準DBポートは8000です。使用中で接続できない場合は、設定画面で別ポートを保存してアプリを再起動するか、既存DBの認証情報を保存して診断を再試行してください。
@@ -96,6 +98,8 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- embed Qwen3-Embedding-0.6B-GGUF .local/embedding-probe .local/tools
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- text-smoke Qwen3-4B-Hybrid Qwen3-Embedding-0.6B-GGUF .local/text-smoke .local/tools
 dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- text-smoke Gemma-3-4b-it-mm-NPU nomic-embed-text-v2-moe-GGUF .local/gemma-nomic-smoke .local/tools
+dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- chunk-probe Gemma-3-4b-it-mm-NPU .local/chunk-probe
+dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build -- chunk-smoke Gemma-3-4b-it-mm-NPU nomic-embed-text-v2-moe-GGUF .local/chunk-smoke .local/tools
 ```
 
 `chat`は選んだローカルモデルに固定の短い接続確認文を送信します。モデルのダウンロードは行いません。モデル一覧にあり、ローカル実行のメタデータを確認できるチャットモデルに限ります。
@@ -103,6 +107,8 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 `db [保存先] [toolsフォルダ]`は検証用ポート18500、`embed <モデルID> [保存先] [toolsフォルダ]`は18501を使います。toolsを省略すると保存先配下に自動導入します。`embed`で保存先を省略した場合はEmbedding応答だけを確認します。モデル自体のダウンロードは行いません。
 
 `text-smoke`は指定先に毎回新しいフォルダを作り、日本語の合成文書3件で一連処理を検証します。ポート18503を使用し、入力・設定・DB・合成入力に対するモデル応答を診断先に保持します。通常のアプリ処理はモデル応答本文をログに記録しません。診断はユーザーの文書を取り込みません。
+
+`chunk-probe`は固定の合成入力3例（段落IDが1、3、1と3）で分割を検証し、プロンプト・入力・応答を専用フォルダへ保存します。DBは使いません。`chunk-smoke`は単一段落の回帰文書を加えた4件を、保存済み旧標準プロンプト相当の設定で取り込み、全文取得・検索・機密検査を検証します。ポート18503は`text-smoke`と共用のため、両診断を同時実行しないでください。
 
 診断CLIの終了値は0が成功、1が実行失敗/引数不正、2が受入条件の未達です。`db`と`embed`のDB診断は一意な検証用DBを作り、そのDBだけを終了時に削除します。サーバーの永続ファイルは保存先の`server/data`に残します。診断が起動したサーバーは診断終了時に通常終了します。
 

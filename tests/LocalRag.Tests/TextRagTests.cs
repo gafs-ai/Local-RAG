@@ -57,7 +57,7 @@ public class TextRagTests
     public void ChunkRangesCannotLoseDuplicateOrInventParagraphs(string json)
     {
         using var parsed = JsonDocument.Parse(json);
-        Assert.Throws<InvalidDataException>(() => TextAiPipeline.ValidateChunks(parsed.RootElement, [new(1, "first"), new(2, "second")], 100));
+        Assert.Throws<PipelineValidationException>(() => TextAiPipeline.ValidateChunks(parsed.RootElement, [new(1, "first"), new(2, "second")], 100));
     }
 
     [Fact]
@@ -157,6 +157,9 @@ public class TextRagTests
             var failed = Assert.Single(await repository.DocumentsAsync(default));
             Assert.Equal(1, failed.EmbeddedChunks);
             Assert.Equal("failed", failed.Status);
+            Assert.Equal("embedding", failed.ErrorStage);
+            Assert.Equal("connection", failed.ErrorDetailCode);
+            Assert.DoesNotContain("simulated interruption", JsonSerializer.Serialize(failed));
             Assert.Empty(await service.SearchAsync("moon"));
         }
         await fixture.Manager.ShutdownAsync(true);
@@ -207,6 +210,7 @@ public class TextRagTests
 
 internal sealed class FakeTextAi : ITextRagAi
 {
+    public bool InvalidSingleParagraphEnd { get; init; }
     public int TransformCalls { get; private set; }
     public int EmbeddingCalls { get; private set; }
     public int FailEmbeddingCall { get; init; }
@@ -225,6 +229,8 @@ internal sealed class FakeTextAi : ITextRagAi
         if (root.TryGetProperty("document", out var document))
             return Task.FromResult(document.GetString()!.Contains("検索対象外") ? "{\"category\":\"excluded\"}" : "{\"category\":\"general\"}");
         var paragraphs = root.GetProperty("paragraphs").EnumerateArray().ToArray();
+        if (InvalidSingleParagraphEnd && root.TryGetProperty("maxCharacters", out _))
+            return Task.FromResult("{\"chunks\":[{\"start\":1,\"end\":2}]}");
         return Task.FromResult(root.TryGetProperty("maxCharacters", out _)
             ? JsonSerializer.Serialize(new { chunks = paragraphs.Select(p => new { start = p.GetProperty("Id").GetInt32(), end = p.GetProperty("Id").GetInt32() }) })
             : JsonSerializer.Serialize(new { remove = paragraphs.Where(p => p.GetProperty("Text").GetString() == "社外秘").Select(p => p.GetProperty("Id").GetInt32()) }));

@@ -27,14 +27,16 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                 var key = TextRagSettings.Hash(Path.GetFullPath(path).ToUpperInvariant());
                 documents.TryGetValue(key, out var previous);
                 TextDocumentState? state = previous;
+                var stage = "read";
                 try
                 {
                     var snapshot = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token).ConfigureAwait(false);
                     if (previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status is "ready" or "excluded")
                     { unchanged++; continue; }
+                    stage = "prepare";
                     if (previous is not null) await repository.DeactivateAsync(previous, token).ConfigureAwait(false);
                     state = previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status != "deleted"
-                        ? previous with { Status = "processing", ErrorCode = null }
+                        ? previous with { Status = "processing", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null }
                         : new TextDocumentState
                         {
                             Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash,
@@ -44,6 +46,7 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                     progress?.Report($"テキスト処理中（今回の対象 {indexed + excluded + unchanged + failed + 1}/{scan.Files.Count}）");
                     if (state.CategoryId is null)
                     {
+                        stage = "classify";
                         state = state with { CategoryId = await _pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
@@ -55,17 +58,20 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                     }
                     if (state.Paragraphs is null)
                     {
+                        stage = "format";
                         var paragraphs = TextFiles.Paragraphs(state.Original, settings.TextPipeline.MaxChunkCharacters);
                         state = state with { Paragraphs = await _pipeline.FormatAsync(paragraphs, category, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
                     if (state.Chunks is null)
                     {
+                        stage = "chunk";
                         state = state with { Chunks = await _pipeline.ChunkAsync(state.Paragraphs, category, token).ConfigureAwait(false) };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
                     for (var ordinal = state.EmbeddedChunks; ordinal < state.Chunks.Count; ordinal++)
                     {
+                        stage = "embedding";
                         var batch = await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, state.Chunks[ordinal].Text)], token).ConfigureAwait(false);
                         ValidateVectors(batch, 1);
                         if (state.SpaceId is null)
@@ -79,6 +85,7 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                         state = state with { EmbeddedChunks = ordinal + 1 };
                         await repository.SaveAsync(state, token).ConfigureAwait(false);
                     }
+                    stage = "publish";
                     var current = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token).ConfigureAwait(false);
                     if (current.Hash != state.SourceHash) throw new IOException("処理中に元ファイルが変更されました。");
                     await repository.PublishAsync(state, token).ConfigureAwait(false);
@@ -91,13 +98,15 @@ public sealed class TextRagService(TextRagRepository repository, ITextRagAi ai, 
                     if (state is not null)
                     {
                         await repository.DeactivateAsync(state, token).ConfigureAwait(false);
-                        await repository.SaveAsync(state with { Status = "failed", ErrorCode = ex.GetType().Name }, token).ConfigureAwait(false);
+                        await repository.SaveAsync(state with { Status = "failed", ErrorCode = ex.GetType().Name,
+                            ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex) }, token).ConfigureAwait(false);
                     }
                     // Persist first-read failures too, without manufacturing content or a source hash.
                     else await repository.SaveAsync(new TextDocumentState
                     {
                         Key = key, DocumentId = Guid.NewGuid(), Path = path, RevisionId = TextRagSettings.Hash(key + _configuration + "unreadable"),
-                        ConfigurationId = _configuration, Status = "failed", ErrorCode = ex.GetType().Name
+                        ConfigurationId = _configuration, Status = "failed", ErrorCode = ex.GetType().Name,
+                        ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex)
                     }, token).ConfigureAwait(false);
                 }
             }

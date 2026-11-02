@@ -64,7 +64,7 @@ public sealed class LemonadeClient : IDisposable
             var context = await GetContextAsync(selected, "chat", cancellationToken).ConfigureAwait(false);
             // UTF-8 bytes provide a conservative budget for the supported byte-fallback tokenizers.
             if ((long)System.Text.Encoding.UTF8.GetByteCount(singleUserTurn ? "" : system) + System.Text.Encoding.UTF8.GetByteCount(userContent) + maxTokens + 256 > context)
-                throw new InvalidDataException("LLMの入力上限を超える可能性があるため保留しました。入力を短くするかモデルのコンテキスト設定を確認してください。");
+                throw new PipelineValidationException("chat_context", "LLMの入力上限を超える可能性があるため保留しました。入力を短くするかモデルのコンテキスト設定を確認してください。");
         }
         var request = new Dictionary<string, object>
         {
@@ -84,7 +84,7 @@ public sealed class LemonadeClient : IDisposable
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
         var choice = json.RootElement.GetProperty("choices")[0];
         if (choice.GetProperty("finish_reason").GetString() != "stop")
-            throw new InvalidDataException("モデル出力が正常に完了しませんでした。");
+            throw new PipelineValidationException("output_incomplete", "モデル出力が正常に完了しませんでした。");
         return choice.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidDataException("モデル応答が空です。");
     }

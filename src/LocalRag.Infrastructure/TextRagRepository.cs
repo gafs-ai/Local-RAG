@@ -83,7 +83,7 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
     {
         if (state.SpaceId is null || state.Chunks is null || state.EmbeddedChunks != state.Chunks.Count)
             throw new InvalidDataException("未完了の文書は公開できません。");
-        var ready = state with { Status = "ready", ErrorCode = null };
+        var ready = state with { Status = "ready", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null };
         var result = await _db.RawQuery($"BEGIN TRANSACTION; UPDATE {Table(state.SpaceId)} SET active=false WHERE document_key=$document; UPDATE {Table(state.SpaceId)} SET active=true WHERE revision=$revision; UPSERT type::record('text_document', $document) SET payload=$payload; UPSERT type::record('text_revision', $revision) SET payload=$payload; COMMIT TRANSACTION;",
             new Dictionary<string, object?> { ["document"] = state.Key, ["revision"] = state.RevisionId, ["payload"] = JsonSerializer.Serialize(ready) }, token).ConfigureAwait(false);
         result.EnsureAllOks();

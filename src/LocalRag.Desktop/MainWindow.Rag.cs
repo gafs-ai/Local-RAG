@@ -103,7 +103,8 @@ public partial class MainWindow
     }
 
     private void ShowDocuments(IReadOnlyList<TextDocumentState> documents) =>
-        DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" + (d.ErrorCode is null ? "" : $"（{d.ErrorCode}）")).ToArray();
+        DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" +
+            (d.ErrorCode is null ? "" : $"（{PipelineErrors.Describe(d.ErrorStage, d.ErrorDetailCode)}）")).ToArray();
 
     private async void PauseMonitoring(object sender, RoutedEventArgs e)
     {

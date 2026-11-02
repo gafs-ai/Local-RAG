@@ -8,6 +8,10 @@ try
 {
     switch (args.FirstOrDefault())
     {
+        case "chunk-probe" when args.Length >= 2:
+            return await ChunkProbe.RunAsync(args[1], args.ElementAtOrDefault(2) ?? ".local/chunk-probe", cancellation.Token);
+        case "chunk-smoke" when args.Length >= 3:
+            return await TextSmoke.RunAsync(args[1], args[2], args.ElementAtOrDefault(3) ?? ".local/chunk-smoke", args.ElementAtOrDefault(4), cancellation.Token, includeSingleParagraph: true);
         case "text-smoke" when args.Length >= 3:
             return await TextSmoke.RunAsync(args[1], args[2], args.ElementAtOrDefault(3) ?? ".local/text-smoke", args.ElementAtOrDefault(4), cancellation.Token);
         case "db":
@@ -58,7 +62,7 @@ try
             return 0;
         }
         default:
-            Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory]");
+            Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe <chat-model-id> [data-directory]");
             return 1;
     }
 }
