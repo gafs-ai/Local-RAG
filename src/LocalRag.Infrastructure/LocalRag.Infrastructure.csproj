@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../LocalRag.Core/LocalRag.Core.csproj" />
+    <ProjectReference Include="../LocalRag.ServerControl/LocalRag.ServerControl.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <PackageReference Include="SurrealDb.Net" Version="1.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../LocalRag.ServerControl/bin/$(Configuration)/$(TargetFramework)/LocalRag.ServerControl.exe" Link="LocalRag.ServerControl.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LocalRag.ServerControl/bin/$(Configuration)/$(TargetFramework)/LocalRag.ServerControl.dll" Link="LocalRag.ServerControl.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LocalRag.ServerControl/bin/$(Configuration)/$(TargetFramework)/LocalRag.ServerControl.runtimeconfig.json" Link="LocalRag.ServerControl.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LocalRag.ServerControl/bin/$(Configuration)/$(TargetFramework)/LocalRag.ServerControl.deps.json" Link="LocalRag.ServerControl.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

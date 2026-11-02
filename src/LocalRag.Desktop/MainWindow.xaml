@@ -1,0 +1,124 @@
+<Window x:Class="LocalRag.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Local RAG — 管理" Width="1020" Height="840" MinWidth="820" MinHeight="620"
+        FontFamily="Yu Gothic UI" FontSize="14" Background="#F5F7FA"
+        Loaded="OnLoaded" Closing="OnClosing" WindowStartupLocation="CenterScreen">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,22">
+            <Border DockPanel.Dock="Right" Background="#E1EAF5" CornerRadius="6" Padding="12,6" VerticalAlignment="Center">
+                <TextBlock Text="開発版 · テキストRAG" Foreground="#234B72" />
+            </Border>
+            <StackPanel>
+                <TextBlock Text="Local RAG" FontSize="30" FontWeight="SemiBold" Foreground="#17334B" />
+                <TextBlock Text="ローカル文書の検索環境を準備する" Foreground="#526477" Margin="0,4,0,0" />
+            </StackPanel>
+        </DockPanel>
+        <TabControl Grid.Row="1" Padding="20" BorderBrush="#D9E1EA" Background="White">
+            <TabItem Header="  概要・接続確認  ">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4,12">
+                        <TextBlock Text="現在の状態" FontSize="21" FontWeight="SemiBold" Foreground="#17334B" />
+                        <Border Background="#FFF7E6" Padding="16" CornerRadius="6" Margin="0,14,0,22">
+                            <TextBlock TextWrapping="Wrap" Foreground="#755620"
+                                       Text="UTF-8の.txtと.mdの取り込み・検索に対応しました。フォルダとAIモデルを保存すると監視を開始します。Word・PDF・音声・MCP連携は開発中です。長文は上限を超えると保留します。" />
+                        </Border>
+                        <TextBlock Text="AI接続" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="AiStatus" Text="未確認。設定タブの接続先を使って確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
+                        <Button x:Name="AiButton" Content="モデル一覧を確認" Click="CheckAi" HorizontalAlignment="Left" />
+                        <ListBox x:Name="ModelList" Height="155" Margin="0,12,0,22" BorderBrush="#D9E1EA" />
+                        <TextBlock Text="データ保存・ベクトル検索" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="DatabaseStatus" Text="未確認。診断専用の小さなデータで確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
+                        <Button x:Name="DbButton" Content="保存・検索機能を確認" Click="CheckDatabase" HorizontalAlignment="Left" />
+                        <TextBlock Text="閉じるボタンはタスクトレイに格納します。トレイの「管理画面を開く」で再表示できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,26,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="  取り込み・検索  ">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="RagPanel" Margin="4,12" IsEnabled="False">
+                        <TextBlock Text="テキストの取り込み" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock x:Name="RagStatus" Text="フォルダとチャット・Embeddingモデルを設定してください。" TextWrapping="Wrap" Margin="0,10" />
+                        <WrapPanel>
+                            <Button x:Name="ScanButton" Content="今すぐ1回実行" Click="ScanNow" Margin="0,0,10,0" />
+                            <Button x:Name="PauseButton" Content="監視を一時停止" Click="PauseMonitoring" />
+                        </WrapPanel>
+                        <ListBox x:Name="DocumentStatusList" Height="110" Margin="0,12" />
+                        <TextBlock Text="ローカル検索" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" />
+                        <TextBlock Text="本文と出典は返却前に機密検査します。拒否・判定できない場合は文書IDのみ表示します。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6" />
+                        <TextBlock x:Name="PolicyStatus" TextWrapping="Wrap" Foreground="#755620" />
+                        <TextBox x:Name="QueryBox" AutomationProperties.Name="検索語" />
+                        <WrapPanel>
+                            <Button x:Name="SearchButton" Content="検索" Click="SearchText" Margin="0,0,10,0" />
+                            <Button x:Name="FetchButton" Content="選択した文書の全文を取得" Click="FetchText" />
+                        </WrapPanel>
+                        <TextBlock x:Name="SearchStatus" TextWrapping="Wrap" Margin="0,8" />
+                        <ListBox x:Name="SearchList" DisplayMemberPath="Label" Height="100" />
+                        <TextBox x:Name="SearchOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Height="180" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="検索結果" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="  フォルダ・AI・DB設定  ">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="SettingsPanel" Margin="4,12">
+                        <TextBlock Text="監視フォルダ" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="1行に1つの絶対パス。配下のフォルダも対象にします。" Foreground="#526477" Margin="0,6,0,0" />
+                        <TextBox x:Name="FoldersBox" Height="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="監視フォルダ" />
+                        <CheckBox x:Name="AutomaticMonitoringBox" Content="起動時・設定保存後に自動監視を開始する" Margin="0,0,0,12" />
+                        <DockPanel>
+                            <TextBlock Text="処理完了後の監視間隔（分）" VerticalAlignment="Center" Margin="0,0,16,14" />
+                            <TextBox x:Name="IntervalBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="監視間隔" />
+                        </DockPanel>
+                        <TextBlock Text="Lemonade Server" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,4" />
+                        <TextBlock Text="このPCのAPI接続先" />
+                        <TextBox x:Name="BaseUrlBox" AutomationProperties.Name="AI接続先" />
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="20" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="チャット・整形用モデル" />
+                                <ComboBox x:Name="ChatModelBox" IsEditable="True" AutomationProperties.Name="チャットモデル" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Embedding用モデル" />
+                                <ComboBox x:Name="EmbeddingModelBox" IsEditable="True" AutomationProperties.Name="Embeddingモデル" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="音声認識用モデル" />
+                        <ComboBox x:Name="SpeechModelBox" IsEditable="True" AutomationProperties.Name="音声認識モデル" />
+                        <TextBlock Text="モデル一覧を確認すると、各用途のローカルモデルを選べます。未選択の用途は未準備として保存します。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,18" />
+                        <TextBlock Text="SurrealDB" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="DBが起動していない場合は、必要な実行ファイルを自動取得して起動します。初回は約307MiBのダウンロードが必要です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6,0,8" />
+                        <TextBlock Text="このPCのDBポート（変更はアプリ再起動後）" />
+                        <TextBox x:Name="DbPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="DBポート" />
+                        <CheckBox x:Name="StopDbBox" Content="アプリ終了時に、このアプリが起動したSurrealDBも終了する" Margin="0,0,0,12" AutomationProperties.Name="DBも終了する" />
+                        <Expander Header="既存のSurrealDBへ接続する場合">
+                            <StackPanel Margin="12,8">
+                                <TextBlock Text="接続できない場合に、既存サーバーの管理用認証情報を保存して再試行します。パスワードはWindowsのユーザー別保護を使って保存します。" TextWrapping="Wrap" />
+                                <TextBlock Text="ユーザー名" /><TextBox x:Name="DbUserBox" AutomationProperties.Name="DBユーザー名" />
+                                <TextBlock Text="パスワード" /><PasswordBox x:Name="DbPasswordBox" Padding="8" Margin="0,6,0,14" AutomationProperties.Name="DBパスワード" />
+                            </StackPanel>
+                        </Expander>
+                        <Expander Header="詳細設定（分類・プロンプト・機密検査）" Margin="0,8">
+                            <StackPanel Margin="8">
+                                <TextBlock Text="JSONで編集します。ClassifyEnabled・FormatEnabled・ChunkEnabledで工程を省略できます。Categoriesで分類と分類別設定を変更できます。Confidentiality.Enabled=falseは機密検査全体を無効にします。変更後は下の保存ボタンで反映します。" TextWrapping="Wrap" Margin="0,4,0,8" />
+                                <TextBox x:Name="AdvancedBox" Height="300" AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="パイプラインと機密検査の詳細設定" />
+                            </StackPanel>
+                        </Expander>
+                        <Button x:Name="SaveButton" Content="設定を保存" Click="SaveSettings" HorizontalAlignment="Left" Background="#173F66" Foreground="White" />
+                        <TextBlock x:Name="SettingsStatus" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="#526477" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        <DockPanel Grid.Row="2" Margin="0,16,0,0">
+            <Button DockPanel.Dock="Right" Content="アプリを終了" Click="ExitClick" Margin="10,0,0,0" />
+            <StackPanel>
+                <TextBlock Text="保存先" FontSize="11" Foreground="#526477" />
+                <TextBlock x:Name="DataPathText" FontSize="11" Foreground="#526477" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>
