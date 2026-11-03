@@ -30,7 +30,7 @@ public sealed record RetrievalPipelineSettings
     public string ConfidentialityPromptId { get; init; } = "system.confidentiality";
     public bool ConfidentialityEnabled { get; init; } = true;
     public bool PatternsEnabled { get; init; } = true;
-    public bool LlmEnabled { get; init; } = true;
+    public bool LlmEnabled { get; init; } = false;
     public List<string> Patterns { get; init; } = ["社外秘", "極秘", "CONFIDENTIAL"];
     public ConfidentialityPolicy Policy() => new()
     {

@@ -4,15 +4,14 @@ using System.Runtime.ExceptionServices;
 
 namespace LocalRag.Core;
 
-/// <summary>Persists running/completed cycles, and resumes the remaining completion-based interval.</summary>
+/// <summary>Persists periodic discovery checks. AI work runs separately from this schedule.</summary>
 public sealed class PersistentMonitor(
     IMonitoringCheckpointStore store, string scope, TimeProvider? timeProvider = null,
     Func<TimeSpan, CancellationToken, Task>? delay = null)
 {
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay = delay ?? Task.Delay;
-    private readonly CompletionScheduler _scheduler = new();
-    private MonitoringCheckpoint? _checkpoint;
+    private int _running;
     private int _cycleRunning;
 
     public async Task RunAsync(Func<CancellationToken, Task> cycle, TimeSpan interval,
@@ -23,34 +22,46 @@ public sealed class PersistentMonitor(
         try { checkpoint = await store.LoadMonitoringAsync(token).ConfigureAwait(false); checkpoint?.Validate(); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) { throw new MonitoringPersistenceException(ex); }
-        var initialDelay = checkpoint?.Remaining(scope, _clock.GetUtcNow(), interval) ?? TimeSpan.Zero;
-        _checkpoint = checkpoint;
-        await _scheduler.RunAsync(ct => RunCycleAsync(cycle, ct), interval,
-            ex => ex is MonitoringPersistenceException ? Task.FromException(ex) : onFailure(ex), token,
-            async (duration, ct) =>
+        if (Interlocked.CompareExchange(ref _running, 1, 0) != 0)
+            throw new InvalidOperationException("監視はすでに実行中です。");
+        try
+        {
+            var now = _clock.GetUtcNow();
+            var due = now + (checkpoint?.Remaining(scope, now, interval) ?? TimeSpan.Zero);
+            while (true)
             {
-                var now = _clock.GetUtcNow();
-                var remaining = _checkpoint?.Remaining(scope, now, interval) ?? duration;
-                var due = now + remaining;
-                await onWaiting(due).ConfigureAwait(false);
-                await WaitAsync(due, interval, ct).ConfigureAwait(false);
-            }, initialDelay).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                if (due > _clock.GetUtcNow())
+                {
+                    await onWaiting(due).ConfigureAwait(false);
+                    await WaitAsync(due, interval, token).ConfigureAwait(false);
+                }
+                var started = _clock.GetUtcNow();
+                try { await RunCycleAsync(cycle, token).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                catch (MonitoringPersistenceException) { throw; }
+                catch (Exception ex) { await onFailure(ex).ConfigureAwait(false); }
+                due = IntervalSchedule.Next(due < started - interval ? started : due, _clock.GetUtcNow(), interval);
+            }
+        }
+        finally { Volatile.Write(ref _running, 0); }
     }
 
-    // Manual scans also update the completion timestamp, but bypass any pending interval.
+    // Manual checks bypass the pending interval, and preserve their start time.
     public async Task RunCycleAsync(Func<CancellationToken, Task> cycle, CancellationToken token)
     {
         if (Interlocked.CompareExchange(ref _cycleRunning, 1, 0) != 0)
             throw new InvalidOperationException("取り込みはすでに実行中です。");
         try
         {
-            await SaveAsync(new(scope, true, null), token).ConfigureAwait(false);
+            var started = _clock.GetUtcNow();
+            await SaveAsync(new(scope, true, null, LastStartedUtc: started), token).ConfigureAwait(false);
             Exception? failure = null;
             try { await cycle(token).ConfigureAwait(false); }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex) { failure = ex; }
             token.ThrowIfCancellationRequested();
-            await SaveAsync(new(scope, false, _clock.GetUtcNow()), token).ConfigureAwait(false);
+            await SaveAsync(new(scope, false, _clock.GetUtcNow(), LastStartedUtc: started), token).ConfigureAwait(false);
             if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         }
         finally { Volatile.Write(ref _cycleRunning, 0); }
@@ -58,7 +69,7 @@ public sealed class PersistentMonitor(
 
     private async Task SaveAsync(MonitoringCheckpoint checkpoint, CancellationToken token)
     {
-        try { await store.SaveMonitoringAsync(checkpoint, token).ConfigureAwait(false); _checkpoint = checkpoint; }
+        try { await store.SaveMonitoringAsync(checkpoint, token).ConfigureAwait(false); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) { throw new MonitoringPersistenceException(ex); }
     }

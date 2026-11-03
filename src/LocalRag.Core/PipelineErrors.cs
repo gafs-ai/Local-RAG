@@ -24,6 +24,14 @@ public static class PipelineErrors
 
     public static string Describe(string? stage, string? code) => Stage(stage) + "：" + Detail(code);
 
+    public static string Notice(string code) => code switch
+    {
+        "format_preserved_long" => "長い段落は整形を省略して原文を保持",
+        "format_preserved_invalid" => "整形応答が再試行後も不正のため原文を保持",
+        "chunk_code_fallback" => "分割応答が再試行後も不正のためコードで分割",
+        _ => "代替処理あり"
+    };
+
     private static string Stage(string? stage) => stage switch
     {
         "read" => "ファイル読み取り", "prepare" => "処理準備", "classify" => "分類",
@@ -39,6 +47,9 @@ public static class PipelineErrors
         "chunk_coverage" => "未分割の段落があります",
         "response_schema" => "モデル応答の形式が不正です",
         "category_unknown" => "未定義の分類IDが指定されました",
+        "category_conflict" => "区間ごとの分類が食い違っています。カテゴリを絞るか分類を省略して指定してください",
+        "context_configuration" => "指示文またはカテゴリ一覧が長すぎます。プロンプトを短くするか有効カテゴリを絞ってください",
+        "context_capacity" => "指示文と応答の予約を除くと本文を処理する余地がありません",
         "format_ids" => "除去対象に存在しない段落IDが指定されました",
         "format_destructive" => "整形による削除量が大きいため保留しました",
         "decision_invalid" => "機密検査の判定値が不正です",

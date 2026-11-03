@@ -35,15 +35,16 @@ public class ChunkRegressionTests
     }
 
     [Fact]
-    public async Task ObservedInvalidEndIsStillRejectedAfterOneRetry()
+    public async Task InvalidModelEndIsDiscardedAfterRetryAndSourceIsSplitByCode()
     {
         var ai = new CapturingAi("```json\n{\"chunks\":[{\"start\":1,\"end\":2}]}\n```");
-        var error = await Assert.ThrowsAsync<PipelineValidationException>(() =>
-            new TextAiPipeline(ai, new()).ChunkAsync([new(1, "source"), new(3, "next")], new(), default));
-        Assert.Equal("chunk_end", error.Code);
+        var pipeline = new TextAiPipeline(ai, new());
+        var chunks = await pipeline.ChunkAsync([new(1, "source"), new(3, "next")], new(), default);
+        Assert.Equal(new[] { new TextChunk(1, 1, "source"), new(3, 3, "next") }, chunks);
+        Assert.Contains("chunk_code_fallback", pipeline.Notices);
         Assert.Equal(2, ai.Calls);
         Assert.Contains("A chunk end does not identify an existing paragraph", ai.Prompt);
-        Assert.Contains("終端段落", PipelineErrors.Describe("chunk", error.Code));
+        Assert.Contains("終端段落", PipelineErrors.Describe("chunk", "chunk_end"));
     }
 
     [Fact]
@@ -54,42 +55,44 @@ public class ChunkRegressionTests
     }
 
     [ServerFact]
-    public async Task FailedChunkIsPersistedNotSearchableAndResumesFromSavedParagraphs()
+    public async Task FallbackChunksAndNoticesPersistAndResumeAfterEmbeddingFailure()
     {
         await using var fixture = await ServerFixture.StartAsync();
         var input = fixture.Root + "-inputs";
         Directory.CreateDirectory(input);
         await File.WriteAllTextAsync(Path.Combine(input, "monitor.txt"), "公開資料：監視試験。\n\n花壇の水やりは朝に行います。");
-        var settings = TextRagTests.Settings(input);
+        var settings = TextRagTests.Settings(input) with { TextPipeline = new() { ParagraphChildren = false } };
         Guid id;
         await using (var repository = await TextRagRepository.OpenAsync(fixture.Manager.Connection!))
-        using (var service = new TextRagService(repository, new FakeTextAi { InvalidChunkEnd = true }, settings, fixture.Root))
+        using (var service = new TextRagService(repository, new FakeTextAi { InvalidChunkEnd = true, FailEmbeddingCall = 2 }, settings, fixture.Root))
         {
             Assert.Equal(1, (await service.ScanAsync()).Failed);
             var failed = Assert.Single(await repository.DocumentsAsync(default));
             id = failed.DocumentId;
-            Assert.Equal("chunk", failed.ErrorStage);
-            Assert.Equal("chunk_end", failed.ErrorDetailCode);
+            Assert.Equal("embedding", failed.ErrorStage);
+            Assert.Equal("connection", failed.ErrorDetailCode);
+            Assert.Contains("chunk_code_fallback", failed.ProcessingNotices);
             Assert.NotNull(failed.Paragraphs);
-            Assert.Null(failed.Chunks);
-            Assert.Equal(0, failed.EmbeddedChunks);
+            Assert.Equal(2, failed.Chunks!.Count);
+            Assert.Equal(1, failed.EmbeddedChunks);
             Assert.Empty(await service.SearchAsync("水やり", 5));
             Assert.Null(await service.FetchAsync(id));
         }
         await fixture.Manager.ShutdownAsync(true);
         await fixture.Manager.EnsureRunningAsync(fixture.Settings);
         await using var reopened = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
-        Assert.Equal("chunk_end", Assert.Single(await reopened.DocumentsAsync(default)).ErrorDetailCode);
+        Assert.Equal("connection", Assert.Single(await reopened.DocumentsAsync(default)).ErrorDetailCode);
         var ai = new FakeTextAi();
         using var resumed = new TextRagService(reopened, ai, settings, fixture.Root);
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
-        Assert.Equal(1, ai.TransformCalls); // Classification and formatting checkpoints were reused.
-        Assert.Equal(2, ai.EmbeddingCalls);
+        Assert.Equal(0, ai.TransformCalls); // All text checkpoints were reused.
+        Assert.Equal(1, ai.EmbeddingCalls);
         var ready = Assert.Single(await reopened.DocumentsAsync(default));
         Assert.Equal(id, ready.DocumentId);
         Assert.Null(ready.ErrorCode);
         Assert.Null(ready.ErrorStage);
         Assert.Null(ready.ErrorDetailCode);
+        Assert.Contains("chunk_code_fallback", ready.ProcessingNotices);
         Assert.Equal(ready.Original, (await resumed.FetchAsync(id))!.Content);
     }
 

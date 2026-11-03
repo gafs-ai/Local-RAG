@@ -20,7 +20,7 @@ public partial class MainWindow
     private bool _ragChanging;
     private readonly SemaphoreSlim _ragConfiguration = new(1, 1);
 
-    private async Task ReconfigureRagAsync()
+    private async Task ReconfigureRagAsync(bool refreshAi = false)
     {
         await _ragConfiguration.WaitAsync();
         _ragChanging = true;
@@ -31,6 +31,7 @@ public partial class MainWindow
         try
         {
             await StopRagAsync();
+            if (refreshAi && !_shuttingDown) await (_aiTask = RefreshModelsAsync(_loadedSettings.Ai));
             SearchList.ItemsSource = null;
             SearchOutput.Clear();
             SearchStatus.Text = "";
@@ -49,7 +50,7 @@ public partial class MainWindow
             ShowDocuments(await _repository.DocumentsAsync(_lifetime.Token));
             var policy = _loadedSettings.DisclosurePolicy();
             PolicyStatus.Text = policy.Enabled
-                ? $"機密検査：パターン {(policy.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM {(policy.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
+                ? $"機密検査：パターン {(policy.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM（試験的）{(policy.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
             RagPanel.IsEnabled = true;
             RagStatus.Text = "取り込みと検索を利用できます。";
             McpStatus.Text = "MCPは無効です。";
@@ -84,15 +85,21 @@ public partial class MainWindow
         ScanButton.IsEnabled = false;
         try
         {
-            await _persistentMonitor!.RunAsync(async ct =>
+            var progress = new Progress<string>(message => Dispatcher.Invoke(() => RagStatus.Text = message));
+            await _rag!.RunMonitoringAsync(_persistentMonitor!, progress, async result =>
             {
-                await RunCycleAsync(ct).ConfigureAwait(false);
-            }, TimeSpan.FromMinutes(_loadedSettings.MonitoringIntervalMinutes), ex => Dispatcher.InvokeAsync(() =>
+                var documents = await _repository!.DocumentsAsync(token).ConfigureAwait(false);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    ShowDocuments(documents);
+                    RagStatus.Text = $"直近の処理：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、更新除外 {result.Deferred}。定期チェックと待ち行列の処理を継続します。";
+                });
+            }, ex => Dispatcher.InvokeAsync(() =>
             {
-                RagStatus.Text = $"取り込みを保留しました（{ex.GetType().Name}）。指定間隔の後に再試行します。";
+                RagStatus.Text = $"チェックを保留しました（{ex.GetType().Name}）。次の定期チェックで再試行します。";
             }).Task, due => Dispatcher.InvokeAsync(() =>
             {
-                RagStatus.Text = $"前回の処理完了から監視間隔を待っています。次回探索予定：{due.ToLocalTime():yyyy/MM/dd HH:mm:ss}。";
+                RagStatus.Text = $"次回チェック予定：{due.ToLocalTime():yyyy/MM/dd HH:mm:ss}。処理待ちのファイルは順次取り込みます。";
             }).Task, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -107,15 +114,15 @@ public partial class MainWindow
         var documents = await _repository!.DocumentsAsync(token).ConfigureAwait(false);
         await Dispatcher.InvokeAsync(() =>
         {
-            RagStatus.Text = $"完了：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、未探索フォルダ {result.InaccessibleRoots}。" +
-                (_loadedSettings.AutomaticMonitoring && _monitorCancellation is { IsCancellationRequested: false } ? $" 次回は完了から{_loadedSettings.MonitoringIntervalMinutes}分後です。" : "");
+            RagStatus.Text = $"完了：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、更新除外 {result.Deferred}、未探索フォルダ {result.InaccessibleRoots}。";
             ShowDocuments(documents);
         });
     }
 
     private void ShowDocuments(IReadOnlyList<TextDocumentState> documents) =>
         DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" +
-            (d.ErrorCode is null ? "" : $"（{PipelineErrors.Describe(d.ErrorStage, d.ErrorDetailCode)}）")).ToArray();
+            (d.ErrorCode is null ? "" : $"（{PipelineErrors.Describe(d.ErrorStage, d.ErrorDetailCode)}）") +
+            (d.ProcessingNotices.Count == 0 ? "" : " / " + string.Join("、", d.ProcessingNotices.Select(PipelineErrors.Notice)))).ToArray();
 
     private async void PauseMonitoring(object sender, RoutedEventArgs e)
     {
@@ -161,7 +168,8 @@ public partial class MainWindow
     private static string Describe(TextSearchResult result) => result.Content is null
         ? $"文書ID: {result.DocumentId}\n存在のみ通知（{result.Decision}）。本文・出典は表示しません。"
         : $"{result.SourcePath}\n文書ID: {result.DocumentId} ／ {result.Decision}" +
-            (result.StartParagraph is null ? "\n" : $" ／ 段落 {result.StartParagraph}～{result.EndParagraph}\n") + result.Content;
+            (result.StartParagraph is null ? "\n" : $" ／ 段落 {result.StartParagraph}～{result.EndParagraph}\n") +
+            (result.ParentChunkId is null ? "" : $"親チャンク: {result.SectionTitle ?? "文書全体"}\n") + result.Content;
 
     private async Task RunUserActionAsync(Func<Task> action)
     {

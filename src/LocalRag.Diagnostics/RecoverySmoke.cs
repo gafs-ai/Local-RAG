@@ -104,6 +104,8 @@ internal static class RecoverySmoke
 
     private static AppSettings Settings(string run, int port) => new()
     {
+        UpdateExclusionMinutes = 0, // Synthetic fixtures are intentionally processed immediately.
+        ExcludeDotHiddenEntries = false, // This isolated diagnostic intentionally uses .local fixtures.
         Folders = [new(Path.Combine(run, "input"))], Database = new() { Port = port },
         Ai = new() { ChatModel = "synthetic-recovery", EmbeddingModel = "synthetic-recovery" },
         TextPipeline = new() { ClassifyEnabled = false, FormatEnabled = false },

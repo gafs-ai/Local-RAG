@@ -6,6 +6,19 @@ namespace LocalRag.Tests;
 public class DisclosureGateTests
 {
     [Fact]
+    public async Task DefaultPolicyUsesPatternsWithoutCallingExperimentalClassifier()
+    {
+        var classifier = new Classifier(DisclosureDecision.Withheld);
+        var gate = new DisclosureGate(classifier);
+        var policy = new ConfidentialityPolicy();
+        Assert.True(policy.Enabled);
+        Assert.True(policy.PatternsEnabled);
+        Assert.False(policy.LlmEnabled);
+        Assert.Equal(DisclosureDecision.Allowed, (await gate.EvaluateAsync(Guid.NewGuid(), "公開資料", "公開資料", policy)).Decision);
+        Assert.Equal(DisclosureDecision.Withheld, (await gate.EvaluateAsync(Guid.NewGuid(), "社外秘", "資料", policy)).Decision);
+        Assert.Equal(0, classifier.Calls);
+    }
+    [Fact]
     public async Task RemovedConfidentialHeaderStillBlocksCleanCandidate()
     {
         var gate = new DisclosureGate(new Classifier(DisclosureDecision.Allowed));
@@ -29,7 +42,7 @@ public class DisclosureGateTests
     public async Task OnlyExplicitLlmAllowCanReleaseContent(DisclosureDecision decision)
     {
         var gate = new DisclosureGate(new Classifier(decision));
-        var result = await gate.EvaluateAsync(Guid.NewGuid(), "原文", "返却候補", new());
+        var result = await gate.EvaluateAsync(Guid.NewGuid(), "原文", "返却候補", new() { LlmEnabled = true });
         Assert.Null(result.Content);
     }
 
@@ -37,7 +50,7 @@ public class DisclosureGateTests
     public async Task ProviderFailureDoesNotReleaseContentOrErrorText()
     {
         var gate = new DisclosureGate(new Classifier(DisclosureDecision.Allowed, new InvalidDataException("機密の応答")));
-        var result = await gate.EvaluateAsync(Guid.NewGuid(), "原文", "機密の応答", new());
+        var result = await gate.EvaluateAsync(Guid.NewGuid(), "原文", "機密の応答", new() { LlmEnabled = true });
         Assert.Equal(DisclosureDecision.Pending, result.Decision);
         Assert.Null(result.Content);
         Assert.DoesNotContain("機密の応答", JsonSerializer.Serialize(result));
@@ -80,7 +93,11 @@ public class DisclosureGateTests
 
     private sealed class Classifier(DisclosureDecision decision, Exception? failure = null) : IConfidentialityClassifier
     {
+        public int Calls { get; private set; }
         public Task<DisclosureDecision> InspectAsync(string original, string candidate, CancellationToken cancellationToken)
-            => failure is null ? Task.FromResult(decision) : Task.FromException<DisclosureDecision>(failure);
+        {
+            Calls++;
+            return failure is null ? Task.FromResult(decision) : Task.FromException<DisclosureDecision>(failure);
+        }
     }
 }

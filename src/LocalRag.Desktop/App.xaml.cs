@@ -46,7 +46,7 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             _exitRequested = false;
-            MessageBox.Show($"DBの終了を確認できませんでした（{ex.GetType().Name}）。アプリは開いたままです。少し待って再度終了するか、DBを残す設定を保存して終了してください。", "Local RAG");
+            MessageBox.Show($"サーバーの終了を確認できませんでした（{ex.GetType().Name}）。アプリは開いたままです。Lemonade・DBの状態を確認し、少し待って再度終了してください。必要なら対象サーバーを残す設定を保存して終了できます。", "Local RAG");
         }
     }
 

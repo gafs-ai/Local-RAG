@@ -11,6 +11,8 @@ try
     {
         case "configured-scan" when args.Length is 2 or 3:
             return await ConfiguredScan.RunAsync(args[1], args.ElementAtOrDefault(2), cancellation.Token);
+        case "configured-evaluate" when args.Length is 3 or 4:
+            return await ConfiguredScan.RunAsync(args[1], args.ElementAtOrDefault(3), cancellation.Token, args[2]);
         case "mcp-check" when args.Length is 3 or 4:
             return await McpProbe.RunAsync(args[1], args[2], cancellation.Token, args.ElementAtOrDefault(3));
         case "recovery-smoke":
@@ -76,6 +78,7 @@ try
         }
         default:
             Console.WriteLine("Configured evaluation: configured-scan <dedicated-data-directory> [tools-directory] (saved settings required; close the desktop app first)");
+            Console.WriteLine("With retrieval: configured-evaluate <dedicated-data-directory> <query> [tools-directory]");
             Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke/ mcp-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe/ chunk-repair-probe <chat-model-id> [data-directory] | mcp-check <data-directory> <query> [bridge-executable] | recovery-smoke [data-directory] [tools-directory]");
             return 1;
     }

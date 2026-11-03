@@ -58,6 +58,16 @@
        <DataGridComboBoxColumn x:Name="ChunkColumn" Header="チャンク分割" SelectedValueBinding="{Binding ChunkKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
       </DataGrid.Columns>
      </DataGrid>
+     <TextBlock Text="親子チャンク（全拡張子共通）" FontWeight="SemiBold" Margin="0,16,0,8"/>
+     <CheckBox x:Name="ParentChunksBox" Content="子チャンクで検索し、親チャンクを返す" Margin="0,4"/>
+     <StackPanel Orientation="Horizontal" Margin="0,4">
+      <TextBlock Text="Markdownの章区切り：見出しレベル" VerticalAlignment="Center"/>
+      <ComboBox x:Name="ParentLevelBox" Width="70" Margin="8,0" AutomationProperties.Name="親チャンクの見出しレベル"/>
+      <TextBlock Text="までを区切りにする（既定：2）" VerticalAlignment="Center"/>
+     </StackPanel>
+     <CheckBox x:Name="ParagraphChildrenBox" Content="子チャンクを段落単位にする（チャンク用プロンプトを使わない）" Margin="0,4"/>
+     <TextBlock Text="段落単位をOFFにすると、章の中で上記のチャンク設定を適用します。長い段落はモデル上限内に分割します。Markdown以外・見出しなしの文書は全文を親にします。返却する親は整形前の原文です。設定変更後は再取り込みが必要です。"
+                TextWrapping="Wrap" Margin="0,4" Foreground="#555555"/>
      <Expander Header="入力と出力の上限" Margin="0,16,0,0"><UniformGrid Columns="3" Margin="0,8">
       <StackPanel Margin="0,0,14,0"><TextBlock Text="文書上限（文字）"/><TextBox x:Name="DocumentLimitBox" AutomationProperties.Name="文書上限"/></StackPanel>
       <StackPanel Margin="0,0,14,0"><TextBlock Text="チャンク上限（文字）"/><TextBox x:Name="ChunkLimitBox" AutomationProperties.Name="チャンク上限"/></StackPanel>
@@ -76,7 +86,8 @@
      <CheckBox x:Name="PatternsBox" Content="一致パターンで検査する" Margin="0,0,0,8"/>
      <TextBlock Text="一致パターン（1行に1件・正規表現。大文字小文字を区別しません）" TextWrapping="Wrap"/>
      <TextBox x:Name="PatternTextBox" Height="140" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="秘匿パターン"/>
-     <CheckBox x:Name="LlmBox" Content="ローカルAIで秘匿判定する" Margin="0,0,0,8"/>
+     <CheckBox x:Name="LlmBox" Content="ローカルAIで秘匿判定する（試験的 / experimental）" Margin="0,0,0,8"/>
+     <TextBlock Text="既定はOFFです。モデルによっては公開してよい文書も非開示と判定するため、必要な場合に有効にしてください。一致パターン検査の設定は独立しています。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
      <TextBlock Text="秘匿判定用プロンプト"/><ComboBox x:Name="ConfidentialityPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="秘匿判定プロンプト"/>
     </StackPanel></ScrollViewer>
    </TabItem>

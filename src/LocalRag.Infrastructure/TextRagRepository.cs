@@ -4,7 +4,7 @@ using SurrealDb.Net;
 
 namespace LocalRag.Infrastructure;
 
-public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text);
+public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text, string? ParentId = null);
 
 public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointStore
 {
@@ -60,7 +60,7 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
     public async Task StageChunkAsync(TextDocumentState state, int ordinal, float[] embedding, CancellationToken token)
     {
         var chunk = state.Chunks![ordinal];
-        var payload = JsonSerializer.Serialize(new StoredTextChunk(state.Key, state.RevisionId, ordinal, chunk.Start, chunk.End, chunk.Text));
+        var payload = JsonSerializer.Serialize(new StoredTextChunk(state.Key, state.RevisionId, ordinal, chunk.Start, chunk.End, chunk.Text, chunk.ParentId));
         var result = await _db.RawQuery($"UPSERT type::record('{Table(state.SpaceId!)}', $key) SET document_key=$document, revision=$revision, configuration=$configuration, active=false, payload=$payload, embedding=$embedding;",
             new Dictionary<string, object?>
             {
@@ -83,6 +83,10 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
     {
         if (state.SpaceId is null || state.Chunks is null || state.EmbeddedChunks != state.Chunks.Count)
             throw new InvalidDataException("未完了の文書は公開できません。");
+        if (state.Parents is not null && (state.Parents.Select(p => p.Id).Distinct().Count() != state.Parents.Count ||
+            state.Chunks.Any(c => !state.Parents.Any(p => p.Id == c.ParentId && p.Start <= c.Start && p.End >= c.End))) ||
+            state.Parents is null && state.Chunks.Any(c => c.ParentId is not null))
+            throw new InvalidDataException("親子チャンクの対応が不正です。");
         var ready = state with { Status = "ready", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null };
         var result = await _db.RawQuery($"BEGIN TRANSACTION; UPDATE {Table(state.SpaceId)} SET active=false WHERE document_key=$document; UPDATE {Table(state.SpaceId)} SET active=true WHERE revision=$revision; UPSERT type::record('text_document', $document) SET payload=$payload; UPSERT type::record('text_revision', $revision) SET payload=$payload; COMMIT TRANSACTION;",
             new Dictionary<string, object?> { ["document"] = state.Key, ["revision"] = state.RevisionId, ["payload"] = JsonSerializer.Serialize(ready) }, token).ConfigureAwait(false);
@@ -91,9 +95,9 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
 
     public async Task<IReadOnlyList<StoredTextChunk>> SearchAsync(string space, string configuration, float[] query, int limit, CancellationToken token)
     {
-        if (limit is < 1 or > 20) throw new ArgumentOutOfRangeException(nameof(limit));
+        if (limit is < 1 or > 256) throw new ArgumentOutOfRangeException(nameof(limit));
         // K and EF are bounded integers, the table is a validated digest; all user text is bound as parameters.
-        var result = await _db.RawQuery($"SELECT VALUE payload FROM (SELECT payload, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},64|> $query AND active=true AND configuration=$configuration ORDER BY distance);",
+        var result = await _db.RawQuery($"SELECT VALUE payload FROM (SELECT payload, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},{Math.Max(64, limit)}|> $query AND active=true AND configuration=$configuration ORDER BY distance);",
             new Dictionary<string, object?> { ["query"] = query, ["configuration"] = configuration }, token).ConfigureAwait(false);
         result.EnsureAllOks();
         return (result.GetValue<string[]>(0) ?? []).Select(x => JsonSerializer.Deserialize<StoredTextChunk>(x) ?? throw new InvalidDataException("チャンクが不正です。")).ToArray();

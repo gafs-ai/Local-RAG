@@ -22,8 +22,11 @@ internal static class TextSmoke
             await File.WriteAllTextAsync(Path.Combine(inputs, "monitor.txt"), "公開資料：監視試験。花壇の水やりは朝に行います。", token);
         var settings = new AppSettings
         {
+            UpdateExclusionMinutes = 0, // Immediate synthetic smoke test.
+            ExcludeDotHiddenEntries = false, // This isolated diagnostic intentionally uses .local fixtures.
             Folders = [new(inputs)], Ai = new() { ChatModel = chat, EmbeddingModel = embedding },
-            Database = new() { Port = 18503 }
+            Database = new() { Port = 18503 },
+            Confidentiality = new() { LlmEnabled = true } // This diagnostic explicitly exercises experimental LLM inspection.
         };
         // Also exercise the exact old default stored by existing installations.
         if (includeSingleParagraph) settings = settings with { TextPipeline = settings.TextPipeline with { ChunkPrompt = TextRagSettings.LegacyChunkPrompt } };

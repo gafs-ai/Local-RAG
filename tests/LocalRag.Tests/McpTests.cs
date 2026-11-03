@@ -37,6 +37,8 @@ public class McpTests
         var search = Body(await client.CallToolAsync("search", new Dictionary<string, object?> { ["query"] = "public" }));
         var hit = Assert.Single(search.GetProperty("results").EnumerateArray());
         Assert.Equal(stub.Id.ToString("D"), hit.GetProperty("id").GetString());
+        Assert.Equal("revision:p1", hit.GetProperty("parent_chunk_id").GetString());
+        Assert.Equal("Chapter", hit.GetProperty("section_title").GetString());
         var fetched = Body(await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = stub.Id.ToString("D") }));
         Assert.Equal("full original text", fetched.GetProperty("text").GetString());
         Assert.Equal("public.md", fetched.GetProperty("title").GetString());
@@ -52,6 +54,7 @@ public class McpTests
         var fetch = Body(await calls.CallAsync("fetch", null, 0, stub.Id.ToString("D"), default));
         Assert.Equal(["decision", "id"], fetch.EnumerateObject().Select(p => p.Name).Order().ToArray());
         var hits = Body(await calls.CallAsync("search", "text", 5, null, default)).GetProperty("results");
+        Assert.Equal(["decision", "id"], Assert.Single(hits.EnumerateArray()).EnumerateObject().Select(p => p.Name).Order().ToArray());
         Assert.DoesNotContain("private", hits.ToString());
         Assert.DoesNotContain("original", hits.ToString());
     }
@@ -177,7 +180,7 @@ public class McpTests
         var file = Path.Combine(input, "public.txt");
         await File.WriteAllTextAsync(file, "moon guide\n\npublic launch");
         await File.WriteAllTextAsync(Path.Combine(input, "secret.md"), "社外秘\n\nmoon private design");
-        var settings = new AppSettings { Folders = [new(input)], Ai = new() { ChatModel = "test", EmbeddingModel = "test" } };
+        var settings = new AppSettings { UpdateExclusionMinutes = 0, Folders = [new(input)], Ai = new() { ChatModel = "test", EmbeddingModel = "test" } };
         await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         using var service = new TextRagService(repo, new FakeTextAi(), settings, fixture.Root);
         Assert.Equal(2, (await service.ScanAsync()).Indexed);
@@ -206,7 +209,7 @@ public class McpTests
         public DisclosureDecision Decision { get; init; } = DisclosureDecision.Allowed;
         public bool Fails { get; init; }
         public int Calls { get; private set; }
-        private TextSearchResult Result() => new(Id, Decision, "full original text", "C:\\private\\public.md", null, null);
+        private TextSearchResult Result() => new(Id, Decision, "full original text", "C:\\private\\public.md", null, null, "revision:p1", "Chapter");
         public Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default)
         { Calls++; if (Fails) throw new IOException("PRIVATE SECRET PATH"); return Task.FromResult<IReadOnlyList<TextSearchResult>>([Result()]); }
         public Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default) { Calls++; return Task.FromResult<TextSearchResult?>(Result()); }

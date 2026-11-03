@@ -5,6 +5,33 @@ namespace LocalRag.Tests;
 
 public class SettingsTests
 {
+    [Fact]
+    public async Task NewSettingsEnablePatternsAndDisableExperimentalLlmInspection()
+    {
+        var store = NewStore();
+        var settings = await store.LoadAsync();
+        Assert.NotNull(settings.Management);
+        Assert.False(settings.Management.Retrieval.LlmEnabled);
+        Assert.True(settings.DisclosurePolicy().Enabled);
+        Assert.True(settings.DisclosurePolicy().PatternsEnabled);
+        Assert.False(settings.DisclosurePolicy().LlmEnabled);
+        Assert.False(File.Exists(store.FilePath));
+        await store.SaveAsync(settings);
+        Assert.False((await store.LoadAsync()).DisclosurePolicy().LlmEnabled);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SavedExplicitInspectionChoiceIsPreservedAcrossLegacyMigrationAndReload(bool enabled)
+    {
+        var store = NewStore();
+        await store.SaveAsync(new AppSettings { SchemaVersion = 1, Confidentiality = new() { LlmEnabled = enabled } });
+        var migrated = await store.LoadAsync();
+        Assert.Equal(enabled, migrated.DisclosurePolicy().LlmEnabled);
+        await store.SaveAsync(migrated);
+        Assert.Equal(enabled, (await store.LoadAsync()).DisclosurePolicy().LlmEnabled);
+    }
     [Theory]
     [InlineData("https://example.com/api/v1")]
     [InlineData("http://localhost:13305/api/v1?token=secret")]
@@ -33,7 +60,7 @@ public class SettingsTests
         var store = NewStore();
         await store.SaveAsync(new AppSettings());
         await Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(new AppSettings { MonitoringIntervalMinutes = 0 }));
-        Assert.Equal(15, (await store.LoadAsync()).MonitoringIntervalMinutes);
+        Assert.Equal(5, (await store.LoadAsync()).MonitoringIntervalMinutes);
     }
 
     [Fact]
@@ -72,6 +99,7 @@ public class SettingsTests
         await File.WriteAllTextAsync(store.FilePath, "{\"SchemaVersion\":1,\"MonitoringIntervalMinutes\":17}");
         var settings = await store.LoadAsync();
         Assert.Equal(17, settings.MonitoringIntervalMinutes);
+        Assert.False(settings.DisclosurePolicy().LlmEnabled); // Missing fields use the current default.
         Assert.Equal(8000, settings.Database.Port);
         Assert.True(settings.Database.StopOnExit);
         Assert.NotEmpty(new AppSettings { Database = new() { Port = 0 } }.Validate());

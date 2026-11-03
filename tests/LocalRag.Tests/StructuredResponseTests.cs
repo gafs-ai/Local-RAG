@@ -8,6 +8,17 @@ namespace LocalRag.Tests;
 
 public class StructuredResponseTests
 {
+    [Fact]
+    public async Task InvalidFormattingAfterRetryKeepsSourceAndRecordsFallback()
+    {
+        var ai = new SequenceAi("{\"remove\":[99]}", "{\"remove\":[1,2]}");
+        var pipeline = new TextAiPipeline(ai, new());
+        var paragraphs = new List<TextParagraph> { new(1, "original"), new(2, "CONFIDENTIAL") };
+        Assert.Equal(paragraphs, await pipeline.FormatAsync(paragraphs, new(), default));
+        Assert.Contains("format_preserved_invalid", pipeline.Notices);
+        Assert.Equal(2, ai.Prompts.Count);
+    }
+
     [Theory]
     [InlineData("{\"remove\":[]},{\"remove\":[]}")]
     [InlineData("```json\n{\"remove\":[]}\n{\"remove\":[]}\n```")]
@@ -104,7 +115,7 @@ public class StructuredResponseTests
     {
         var ai = new SequenceAi("{\"decision\":\"unknown\"}", "{\"decision\":\"yes\"}");
         var gate = new DisclosureGate(new TextConfidentialityClassifier(ai, new()));
-        var result = await gate.EvaluateAsync(Guid.NewGuid(), "source", "candidate", new(), default);
+        var result = await gate.EvaluateAsync(Guid.NewGuid(), "source", "candidate", new() { LlmEnabled = true }, default);
         Assert.Equal(DisclosureDecision.Pending, result.Decision);
         Assert.Null(result.Content);
         Assert.Equal(2, ai.Prompts.Count);
@@ -118,7 +129,10 @@ public class StructuredResponseTests
         var pipeline = new TextAiPipeline(ai, new() { MaxChunkCharacters = 50 });
         var chunk = Assert.Single(await pipeline.ChunkAsync([new(7, "exact source")], new(), default));
         Assert.Equal(new TextChunk(7, 7, "exact source"), chunk);
-        await Assert.ThrowsAsync<PipelineValidationException>(() => pipeline.ChunkAsync([new(7, new string('a', 51))], new(), default));
+        var divided = await pipeline.ChunkAsync([new(7, new string('a', 51))], new(), default);
+        Assert.Equal(2, divided.Count);
+        Assert.Equal(new string('a', 51), string.Concat(divided.Select(c => c.Text)));
+        Assert.All(divided, c => Assert.Equal(7, c.Start));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pipeline.ChunkAsync([new(7, "source")], new(), new CancellationToken(true)));
         Assert.Empty(ai.Prompts);
     }

@@ -6,9 +6,17 @@ namespace LocalRag.Infrastructure;
 public sealed class LemonadeTextAi(AppSettings settings, HttpMessageHandler? handler = null) : ITextRagAi, IDisposable
 {
     private readonly LemonadeClient _client = new(settings.Ai, handler);
+    private const string JsonInstruction = "\nReturn exactly one JSON object matching the requested schema. No explanations or Markdown. /no_think";
     public Task<string> CompleteAsync(string system, string input, CancellationToken token) =>
-        _client.CompleteAsync(settings.Ai.ChatModel, system + "\nReturn exactly one JSON object matching the requested schema. No explanations or Markdown. /no_think",
+        _client.CompleteAsync(settings.Ai.ChatModel, system + JsonInstruction,
             input, settings.TextPipeline.MaxOutputTokens, token, jsonObject: true);
+    public Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token) =>
+        _client.ChatInputBudgetAsync(settings.Ai.ChatModel, system + JsonInstruction, outputTokens, token);
+    public Task<string> CompleteBoundedAsync(string system, string input, int outputTokens, CancellationToken token) =>
+        _client.CompleteAsync(settings.Ai.ChatModel, system + JsonInstruction, input, outputTokens, token, jsonObject: true);
+    public async Task<int> DocumentEmbeddingBudgetAsync(CancellationToken token) => Math.Max(0,
+        await _client.EmbeddingInputBudgetAsync(settings.Ai.EmbeddingModel, token).ConfigureAwait(false) -
+        System.Text.Encoding.UTF8.GetByteCount(EmbeddingInput.Document(settings.Ai.EmbeddingModel, "")));
     public async Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token)
     {
         var result = await _client.EmbedAsync(settings.Ai.EmbeddingModel, inputs, token).ConfigureAwait(false);
@@ -20,6 +28,13 @@ public sealed class LemonadeTextAi(AppSettings settings, HttpMessageHandler? han
 public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
 {
     private static readonly JsonSerializerOptions InputJson = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private const int RetryReserveBytes = 160;
+    private readonly HashSet<string> _notices = [];
+    public IReadOnlyCollection<string> Notices => _notices;
+    private int OutputTokens => Math.Min(settings.MaxOutputTokens, 128);
+    internal static int InputBytes(object input) => System.Text.Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(input, InputJson));
+    internal async Task<int> InputBudgetAsync(string prompt, CancellationToken token) =>
+        Math.Max(0, await ai.ChatInputBudgetAsync(prompt, OutputTokens, token).ConfigureAwait(false) - RetryReserveBytes);
 
     public static JsonDocument ParseResponse(string output)
     {
@@ -89,6 +104,8 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
     {
         // One correction request, with a trusted, specific reason. Never echo provider text as instructions.
         string? feedback = null;
+        string? feedbackCode = null;
+        var serialized = JsonSerializer.Serialize(input, InputJson);
         for (var attempt = 0; ; attempt++)
         {
             token.ThrowIfCancellationRequested();
@@ -96,7 +113,15 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             {
                 var instruction = feedback is null ? prompt : prompt + "\nVALIDATION ERROR: " + feedback +
                     "\nGenerate a corrected complete JSON object from the original input. Do not change source text. No prose or Markdown.";
-                var output = await ai.CompleteAsync(instruction, JsonSerializer.Serialize(input, InputJson), token).ConfigureAwait(false);
+                var budget = await ai.ChatInputBudgetAsync(instruction, OutputTokens, token).ConfigureAwait(false);
+                if (feedback is not null && System.Text.Encoding.UTF8.GetByteCount(serialized) > budget)
+                {
+                    instruction = prompt + "\nVALIDATION ERROR: " + feedbackCode + ". Correct the JSON schema, actual IDs, coverage and limits. Use the original data.";
+                    budget = await ai.ChatInputBudgetAsync(instruction, OutputTokens, token).ConfigureAwait(false);
+                }
+                if (System.Text.Encoding.UTF8.GetByteCount(serialized) > budget)
+                    throw new PipelineValidationException("chat_context", "モデルの入力上限を超えるため保留しました。");
+                var output = await ai.CompleteBoundedAsync(instruction, serialized, OutputTokens, token).ConfigureAwait(false);
                 using var json = ParseResponse(output);
                 try { return validate(json.RootElement); }
                 catch (Exception ex) when (ex is KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
@@ -108,6 +133,7 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             catch (Exception ex) when (attempt == 0 && CorrectionFeedback(ex) is not null)
             {
                 feedback = CorrectionFeedback(ex);
+                feedbackCode = ex is PipelineValidationException validation ? validation.Code : "response_schema";
                 await Task.Delay(200, token).ConfigureAwait(false);
             }
         }
@@ -133,21 +159,70 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
         _ => null
     };
 
-    public Task<string> ClassifyAsync(string original, CancellationToken token)
+    private static bool CanPreserveSource(Exception error) => error is JsonException || error is PipelineValidationException v &&
+        v.Code is "response_schema" or "format_ids" or "format_destructive" or "chunk_order" or "chunk_end" or "chunk_size" or "chunk_coverage" or "output_incomplete";
+
+    public async Task<string> ClassifyAsync(string original, CancellationToken token)
     {
-        if (!settings.ClassifyEnabled) return Task.FromResult(settings.DefaultCategory);
-        return JsonAsync(settings.ClassifyPrompt, new { categories = settings.Categories.Select(c => new { c.Id, c.Description }), document = original },
-            root =>
-            {
-                var id = StringProperty(root, "category");
-                return settings.Categories.Any(c => c.Id == id) ? id : throw new PipelineValidationException("category_unknown", "分類応答のIDが不正です。");
-            }, token);
+        token.ThrowIfCancellationRequested();
+        if (!settings.ClassifyEnabled) return settings.DefaultCategory;
+        var categories = settings.Categories.Select(c => new { c.Id, c.Description }).ToArray();
+        object Input(string text) => new { categories, document = text };
+        var budget = await InputBudgetAsync(settings.ClassifyPrompt, token).ConfigureAwait(false);
+        if (InputBytes(Input("")) >= budget) throw new PipelineValidationException("context_configuration", "分類プロンプトとカテゴリ一覧が入力上限に収まりません。");
+        var votes = new Dictionary<string, long>();
+        foreach (var part in TextWindows.Split(original, text => InputBytes(Input(text)) <= budget))
+        {
+            var category = await JsonAsync(settings.ClassifyPrompt, Input(part), root =>
+                {
+                    var id = StringProperty(root, "category");
+                    return settings.Categories.Any(c => c.Id == id) ? id : throw new PipelineValidationException("category_unknown", "分類応答のIDが不正です。");
+                }, token).ConfigureAwait(false);
+            votes[category] = votes.GetValueOrDefault(category) + part.Length;
+        }
+        // Weight by source coverage rather than the number of tiny windows. Exclusion requires unanimity.
+        if (votes.Count == 1) return votes.Keys.Single();
+        var winner = votes.OrderByDescending(v => v.Value).FirstOrDefault();
+        if (winner.Key is not null && winner.Value * 2 > votes.Values.Sum() && !settings.Categories.Single(c => c.Id == winner.Key).Excluded)
+            return winner.Key;
+        throw new PipelineValidationException("category_conflict", "区間ごとの分類結果が一致せず、安全に分類を確定できません。");
     }
 
     public async Task<List<TextParagraph>> FormatAsync(List<TextParagraph> paragraphs, TextCategory category, CancellationToken token)
     {
         if (!(category.FormatEnabled ?? settings.FormatEnabled)) return paragraphs;
-        return await JsonAsync(category.FormatPrompt ?? settings.FormatPrompt, new { category = category.Id, paragraphs }, root =>
+        var prompt = category.FormatPrompt ?? settings.FormatPrompt;
+        var budget = await InputBudgetAsync(prompt, token).ConfigureAwait(false);
+        bool Fits(IReadOnlyList<TextParagraph> items) => InputBytes(new { category = category.Id, paragraphs = items }) <= budget;
+        if (!Fits([])) throw new PipelineValidationException("context_configuration", "整形プロンプトが入力上限に収まりません。");
+        var remaining = new List<TextParagraph>();
+        var batch = new List<TextParagraph>();
+        async Task Flush()
+        {
+            if (batch.Count == 0) return;
+            try { remaining.AddRange(await FormatBatchAsync(batch, category, prompt, token).ConfigureAwait(false)); }
+            catch (Exception ex) when (CanPreserveSource(ex))
+            {
+                // The invalid model answer is discarded. Keeping the complete source needs no inference.
+                remaining.AddRange(batch);
+                _notices.Add("format_preserved_invalid");
+            }
+            batch = [];
+        }
+        foreach (var paragraph in paragraphs)
+        {
+            token.ThrowIfCancellationRequested();
+            if (batch.Count >= 8 || !Fits(batch.Append(paragraph).ToArray())) await Flush().ConfigureAwait(false);
+            // Partial paragraph removal can corrupt meaning. Preserve it verbatim when context is insufficient.
+            if (!Fits([paragraph])) { remaining.Add(paragraph); _notices.Add("format_preserved_long"); }
+            else batch.Add(paragraph);
+        }
+        await Flush().ConfigureAwait(false);
+        return remaining;
+    }
+
+    private Task<List<TextParagraph>> FormatBatchAsync(List<TextParagraph> paragraphs, TextCategory category, string prompt, CancellationToken token) =>
+        JsonAsync(prompt, new { category = category.Id, paragraphs }, root =>
         {
             // Removal is a set operation: duplicate entries do not change its meaning.
             var remove = Property(root, "remove", JsonValueKind.Array).EnumerateArray().Select(ParagraphId).Distinct().ToArray();
@@ -158,22 +233,73 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             if (remaining.Count == 0 || remaining.Sum(p => p.Text.Length) < paragraphs.Sum(p => p.Text.Length) * 0.5)
                 throw new PipelineValidationException("format_destructive", "整形による削除量が大きいため保留しました。");
             return remaining;
-        }, token).ConfigureAwait(false);
-    }
+        }, token);
 
     public async Task<List<TextChunk>> ChunkAsync(List<TextParagraph> paragraphs, TextCategory category, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        if (paragraphs.Count == 0 || paragraphs.Any(p => string.IsNullOrEmpty(p.Text) || p.Text.Length > settings.MaxChunkCharacters))
-            throw new PipelineValidationException("chunk_size", "段落が空、または文字数上限を超えています。");
-        // Under the paragraph-boundary/complete-coverage contract, a single paragraph has one answer.
-        if (paragraphs.Count == 1) return [new(paragraphs[0].Id, paragraphs[0].Id, paragraphs[0].Text)];
+        if (paragraphs.Count == 0 || paragraphs.Any(p => string.IsNullOrEmpty(p.Text)))
+            throw new PipelineValidationException("chunk_size", "空の段落は分割できません。");
+        var embeddingBudget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
+        var result = new List<TextChunk>();
+        void Add(TextChunk chunk)
+        {
+            foreach (var part in TextWindows.Split(chunk.Text, settings.MaxChunkCharacters, embeddingBudget))
+            {
+                token.ThrowIfCancellationRequested();
+                result.Add(new(chunk.Start, chunk.End, part));
+            }
+        }
         if (!(category.ChunkEnabled ?? settings.ChunkEnabled))
         {
-            var text = string.Join("\n\n", paragraphs.Select(p => p.Text));
-            if (text.Length > settings.MaxChunkCharacters) throw new InvalidDataException("分割OFFの本文がチャンク上限を超えています。");
-            return [new(paragraphs[0].Id, paragraphs[^1].Id, text)];
+            Add(new(paragraphs[0].Id, paragraphs[^1].Id, string.Join("\n\n", paragraphs.Select(p => p.Text))));
+            return result;
         }
+        var batch = new List<TextParagraph>();
+        async Task Flush()
+        {
+            if (batch.Count == 0) return;
+            if (batch.Count == 1) Add(new(batch[0].Id, batch[0].Id, batch[0].Text));
+            else
+            {
+                try
+                {
+                    var chunks = await JsonAsync(ChunkPrompt(batch, category), ChunkInput(batch, category),
+                        root => ValidateChunks(root, batch, settings.MaxChunkCharacters), token).ConfigureAwait(false);
+                    foreach (var chunk in chunks) Add(chunk);
+                }
+                catch (Exception ex) when (CanPreserveSource(ex))
+                {
+                    foreach (var paragraph in batch) Add(new(paragraph.Id, paragraph.Id, paragraph.Text));
+                    _notices.Add("chunk_code_fallback");
+                }
+            }
+            batch = [];
+        }
+        foreach (var paragraph in paragraphs)
+        {
+            token.ThrowIfCancellationRequested();
+            // A long original paragraph is divided losslessly by code, keeping its original source ID.
+            if (paragraph.Text.Length > settings.MaxChunkCharacters || System.Text.Encoding.UTF8.GetByteCount(paragraph.Text) > embeddingBudget)
+            {
+                await Flush().ConfigureAwait(false);
+                Add(new(paragraph.Id, paragraph.Id, paragraph.Text));
+                continue;
+            }
+            var candidate = batch.Append(paragraph).ToList();
+            if (batch.Count > 0 && (candidate.Count > 4 || InputBytes(ChunkInput(candidate, category)) > await InputBudgetAsync(ChunkPrompt(candidate, category), token).ConfigureAwait(false)))
+                await Flush().ConfigureAwait(false);
+            batch.Add(paragraph);
+        }
+        await Flush().ConfigureAwait(false);
+        return result;
+    }
+
+    private object ChunkInput(List<TextParagraph> paragraphs, TextCategory category) =>
+        new { category = category.Id, maxCharacters = settings.MaxChunkCharacters, paragraphs };
+
+    private string ChunkPrompt(List<TextParagraph> paragraphs, TextCategory category)
+    {
         var configuredPrompt = category.ChunkPrompt ?? settings.ChunkPrompt;
         // Upgrade only the exact former built-in prompt. Keep user-authored prompts intact.
         if (configuredPrompt == TextRagSettings.LegacyChunkPrompt) configuredPrompt = TextRagSettings.DefaultChunkPrompt;
@@ -193,15 +319,9 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             end = paragraph.Id;
         }
         example.Add(new { start, end });
-        var prompt = configuredPrompt +
-            $"\nFor THIS input, the only valid paragraph IDs are [{string.Join(',', paragraphs.Select(p => p.Id))}]." +
-            $" The first chunk must start at {paragraphs[0].Id}; the last must end at {paragraphs[^1].Id}." +
-            " Use these actual IDs even when they differ from example IDs in the instructions." +
-            "\nA complete valid response example for THIS input is: " + JsonSerializer.Serialize(new { chunks = example }) +
-            "\nYou may choose different boundaries to follow the category instructions, but all IDs, coverage and length constraints still apply.";
-        return await JsonAsync(prompt,
-            new { category = category.Id, maxCharacters = settings.MaxChunkCharacters, paragraphs },
-            root => ValidateChunks(root, paragraphs, settings.MaxChunkCharacters), token).ConfigureAwait(false);
+        return configuredPrompt + $"\nActual IDs: [{string.Join(',', paragraphs.Select(p => p.Id))}]." +
+            " Valid complete coverage example: " + JsonSerializer.Serialize(new { chunks = example }) +
+            " Use actual IDs, preserve coverage and respect maxCharacters.";
     }
 
     public static List<TextChunk> ValidateChunks(JsonElement root, IReadOnlyList<TextParagraph> paragraphs, int limit)
@@ -233,12 +353,16 @@ public sealed class TextConfidentialityClassifier(ITextRagAi ai, TextRagSettings
     public async Task<DisclosureDecision> InspectAsync(string original, string candidate, CancellationToken cancellationToken)
     {
         var pipeline = new TextAiPipeline(ai, settings);
+        var budget = await pipeline.InputBudgetAsync(settings.ConfidentialityPrompt, cancellationToken).ConfigureAwait(false);
+        if (TextAiPipeline.InputBytes(new { fragment = "" }) >= budget)
+            throw new PipelineValidationException("context_configuration", "秘匿判定プロンプトが入力上限に収まりません。");
         foreach (var content in new[] { original, candidate })
         {
-            for (var offset = 0; offset < content.Length; offset += 500)
+            var overlap = "";
+            foreach (var part in TextWindows.Split(content, text => text.Length <= 600 && TextAiPipeline.InputBytes(new { fragment = overlap + text }) <= budget))
             {
                 // Overlap helps preserve a marking straddling a boundary; every character is inspected.
-                var fragment = content.Substring(offset, Math.Min(600, content.Length - offset));
+                var fragment = overlap + part;
                 var decision = await pipeline.JsonAsync(settings.ConfidentialityPrompt, new { fragment }, root =>
                     TextAiPipeline.StringProperty(root, "decision") switch
                     {
@@ -248,6 +372,7 @@ public sealed class TextConfidentialityClassifier(ITextRagAi ai, TextRagSettings
                         _ => throw new PipelineValidationException("decision_invalid", "機密検査の判定値が不正です。")
                     }, cancellationToken).ConfigureAwait(false);
                 if (decision != DisclosureDecision.Allowed) return decision;
+                overlap = TextWindows.Tail(part, Math.Min(100, budget / 4));
             }
         }
         return DisclosureDecision.Allowed;

@@ -37,6 +37,10 @@ public partial class ManagementWindow : Window
         DocumentLimitBox.Text = Limits.MaxDocumentCharacters.ToString();
         ChunkLimitBox.Text = Limits.MaxChunkCharacters.ToString();
         OutputLimitBox.Text = Limits.MaxOutputTokens.ToString();
+        ParentChunksBox.IsChecked = Limits.ParentChunksEnabled;
+        ParagraphChildrenBox.IsChecked = Limits.ParagraphChildren;
+        ParentLevelBox.ItemsSource = Enumerable.Range(1, 6).ToArray();
+        ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
         ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
         PatternsBox.IsChecked = _retrieval.PatternsEnabled;
         LlmBox.IsChecked = _retrieval.LlmEnabled;
@@ -225,7 +229,9 @@ public partial class ManagementWindow : Window
                 ConfidentialityEnabled = ConfidentialityBox.IsChecked == true, PatternsEnabled = PatternsBox.IsChecked == true, LlmEnabled = LlmBox.IsChecked == true,
                 Patterns = PatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() }
         };
-        var limits = Limits with { MaxDocumentCharacters = document, MaxChunkCharacters = chunk, MaxOutputTokens = output };
+        var limits = Limits with { MaxDocumentCharacters = document, MaxChunkCharacters = chunk, MaxOutputTokens = output,
+            ParentChunksEnabled = ParentChunksBox.IsChecked == true, ParagraphChildren = ParagraphChildrenBox.IsChecked == true,
+            ParentHeadingLevel = ParentLevelBox.SelectedItem is int level ? level : 2 };
         var errors = management.Validate().Concat(limits.Validate()).ToList();
         if (errors.Count > 0) { ManagerStatus.Text = string.Join("\n", errors.Distinct()); return; }
         Result = management; Limits = limits; DialogResult = true;

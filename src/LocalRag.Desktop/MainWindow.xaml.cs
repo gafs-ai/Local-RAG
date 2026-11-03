@@ -10,11 +10,20 @@ namespace LocalRag.Desktop;
 
 public partial class MainWindow : Window, IDisposable
 {
+    public sealed class FolderDraft
+    {
+        public string Path { get; set; } = "";
+        public string Priority { get; set; } = "0";
+        public bool Recursive { get; set; } = true;
+    }
+    private readonly System.Collections.ObjectModel.ObservableCollection<FolderDraft> _folderRows = [];
     private readonly string _dataDirectory;
     private readonly SettingsStore _settingsStore;
     private readonly Forms.NotifyIcon _tray;
     private CancellationTokenSource _lifetime = new();
     private readonly SurrealServerManager _server;
+    private readonly LemonadeServerManager _lemonade = new();
+    private Task _aiTask = Task.CompletedTask;
     private Task _startupTask = Task.CompletedTask;
     private Task _databaseTask = Task.CompletedTask;
     private Task _saveTask = Task.CompletedTask;
@@ -50,10 +59,17 @@ public partial class MainWindow : Window, IDisposable
         {
             var settings = await _settingsStore.LoadAsync(_lifetime.Token);
             _loadedSettings = settings;
-            FoldersBox.Text = string.Join(Environment.NewLine, settings.Folders.Select(x => x.Path));
+            foreach (var folder in settings.Folders) _folderRows.Add(new() { Path = folder.Path, Recursive = folder.Recursive, Priority = folder.Priority.ToString() });
+            FolderGrid.ItemsSource = _folderRows;
             IntervalBox.Text = settings.MonitoringIntervalMinutes.ToString();
+            UpdateExclusionBox.Text = settings.UpdateExclusionMinutes.ToString();
+            ExcludeDotHiddenBox.IsChecked = settings.ExcludeDotHiddenEntries;
+            GlobalIgnoreBox.Text = string.Join(Environment.NewLine, settings.GlobalIgnorePatterns);
             AutomaticMonitoringBox.IsChecked = settings.AutomaticMonitoring;
             BaseUrlBox.Text = settings.Ai.BaseUrl;
+            AutoStartAiBox.IsChecked = settings.Ai.AutoStartServer;
+            StopAiBox.IsChecked = settings.Ai.StopServerOnExit;
+            AiExecutableBox.Text = settings.Ai.ServerExecutablePath;
             ChatModelBox.Text = settings.Ai.ChatModel;
             EmbeddingModelBox.Text = settings.Ai.EmbeddingModel;
             SpeechModelBox.Text = settings.Ai.SpeechModel;
@@ -62,7 +78,7 @@ public partial class MainWindow : Window, IDisposable
             McpEnabledBox.IsChecked = settings.Mcp.Enabled;
             McpPortBox.Text = settings.Mcp.Port.ToString();
             _settingsLoaded = true;
-            SettingsStatus.Text = "設定はローカルに保存します。機密検査は標準で有効です。";
+            SettingsStatus.Text = "設定はローカルに保存します。一致パターン検査は既定ON、LLM機密判定は試験的な機能で既定OFFです。";
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -72,29 +88,91 @@ public partial class MainWindow : Window, IDisposable
             AiStatus.Text = "設定を読み込めません。元の設定を上書きしないため編集を停止しました。";
             SettingsStatus.Text = SafeMessage(ex);
         }
-        if (_settingsLoaded && !_shuttingDown) await (_databaseTask = StartServerAsync());
+        if (_settingsLoaded && !_shuttingDown)
+            await Task.WhenAll(_databaseTask = StartServerAsync(), _aiTask = RefreshModelsAsync(_loadedSettings.Ai));
         if (_settingsLoaded && !_shuttingDown) await ReconfigureRagAsync();
+    }
+
+    private void BrowseAiExecutable(object sender, RoutedEventArgs e)
+    {
+        if (!_settingsLoaded || _shuttingDown) return;
+        var picker = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Lemonadeサーバーの実行ファイルを選択", Filter = "実行ファイル (*.exe)|*.exe", CheckFileExists = true
+        };
+        if (picker.ShowDialog(this) == true) AiExecutableBox.Text = picker.FileName;
+    }
+
+    private void BrowseFolders(object sender, RoutedEventArgs e)
+    {
+        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted) return;
+        if (!FolderGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true) ||
+            !FolderGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true))
+        {
+            SettingsStatus.Text = "編集中のフォルダ設定を確認してください。";
+            return;
+        }
+        try
+        {
+            var picker = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "監視するフォルダを選択", Multiselect = true
+            };
+            if (FolderGrid.SelectedItem is FolderDraft selected && Directory.Exists(selected.Path))
+                picker.InitialDirectory = selected.Path;
+            if (picker.ShowDialog(this) != true) return;
+
+            static string? Normalize(string path)
+            {
+                try { return Path.IsPathFullyQualified(path.Trim()) ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(path.Trim())) : null; }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return null; }
+            }
+            var added = 0;
+            FolderDraft? last = null;
+            foreach (var path in picker.FolderNames)
+            {
+                var normalized = Normalize(path);
+                if (normalized is null) continue;
+                last = _folderRows.FirstOrDefault(row => string.Equals(Normalize(row.Path), normalized, StringComparison.OrdinalIgnoreCase));
+                if (last is not null) continue;
+                last = new FolderDraft { Path = normalized };
+                _folderRows.Add(last);
+                added++;
+            }
+            if (last is not null) { FolderGrid.SelectedItem = last; FolderGrid.ScrollIntoView(last); }
+            SettingsStatus.Text = added > 0
+                ? $"{added}件のフォルダを追加しました。優先度・サブフォルダ設定を確認し、「設定を保存」で反映してください。"
+                : "選択したフォルダはすでに一覧にあります。";
+        }
+        catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
     }
 
     private AppSettings ReadSettings()
     {
         if (!int.TryParse(IntervalBox.Text, out var interval)) throw new InvalidDataException("監視間隔を整数で入力してください。");
+        if (!int.TryParse(UpdateExclusionBox.Text, out var exclusion)) throw new InvalidDataException("更新除外期間を整数で入力してください。");
+        FolderGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true);
+        FolderGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
+        var folders = _folderRows.Select(row => new WatchedFolder(row.Path.Trim(), row.Recursive,
+            int.TryParse(row.Priority, out var priority) ? priority : throw new InvalidDataException("フォルダ優先度を整数で入力してください。"))).ToList();
         if (!int.TryParse(DbPortBox.Text, out var port)) throw new InvalidDataException("DBポートを整数で入力してください。");
         if (!int.TryParse(McpPortBox.Text, out var mcpPort)) throw new InvalidDataException("MCPポートを整数で入力してください。");
         var settings = _loadedSettings with
         {
             MonitoringIntervalMinutes = interval,
+            UpdateExclusionMinutes = exclusion,
+            ExcludeDotHiddenEntries = ExcludeDotHiddenBox.IsChecked == true,
+            GlobalIgnorePatterns = GlobalIgnoreBox.Text.Split('\n').Select(line => line.TrimEnd('\r')).ToList(),
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
             Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
             Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true },
-            Folders = FoldersBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(path => new WatchedFolder(path,
-                    _loadedSettings.Folders.FirstOrDefault(f => string.Equals(f.Path, path, StringComparison.OrdinalIgnoreCase))?.Recursive ?? true))
-                .ToList(),
+            Folders = folders,
             Ai = new AiConnectionSettings
             {
                 BaseUrl = BaseUrlBox.Text.Trim(), ChatModel = ChatModelBox.Text.Trim(),
-                EmbeddingModel = EmbeddingModelBox.Text.Trim(), SpeechModel = SpeechModelBox.Text.Trim()
+                EmbeddingModel = EmbeddingModelBox.Text.Trim(), SpeechModel = SpeechModelBox.Text.Trim(),
+                AutoStartServer = AutoStartAiBox.IsChecked == true, StopServerOnExit = StopAiBox.IsChecked == true,
+                ServerExecutablePath = AiExecutableBox.Text.Trim()
             }
         };
         var errors = settings.Validate();
@@ -106,7 +184,7 @@ public partial class MainWindow : Window, IDisposable
 
     private async void OpenManager(object sender, RoutedEventArgs e)
     {
-        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted) return;
+        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted || !_startupTask.IsCompleted) return;
         var tab = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
         var editor = new ManagementWindow(_loadedSettings, tab) { Owner = this };
         if (editor.ShowDialog() != true) return;
@@ -131,10 +209,11 @@ public partial class MainWindow : Window, IDisposable
 
     private async Task SaveSettingsAsync()
     {
-        if (!_settingsLoaded || _shuttingDown) return;
+        if (!_settingsLoaded || _shuttingDown || !_startupTask.IsCompleted) return;
         SaveButton.IsEnabled = false;
         try
         {
+            await _aiTask;
             var settings = ReadSettings();
             if (DbPasswordBox.Password.Length > 0 || DbUserBox.Text.Length > 0)
             {
@@ -146,7 +225,7 @@ public partial class MainWindow : Window, IDisposable
             }
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
-            await ReconfigureRagAsync();
+            await ReconfigureRagAsync(refreshAi: true);
             SettingsStatus.Text = "設定を保存しました。取り込み・検索タブで状態を確認できます。DBポート変更は再起動後に反映します。";
         }
         catch (OperationCanceledException) { }
@@ -156,26 +235,44 @@ public partial class MainWindow : Window, IDisposable
 
     private async void CheckAi(object sender, RoutedEventArgs e)
     {
-        if (!_settingsLoaded || _shuttingDown) return;
+        if (!_settingsLoaded || _shuttingDown || !_aiTask.IsCompleted || !_startupTask.IsCompleted || !_saveTask.IsCompleted) return;
+        await (_aiTask = RefreshModelsAsync(_loadedSettings.Ai with
+        {
+            BaseUrl = BaseUrlBox.Text.Trim(), AutoStartServer = AutoStartAiBox.IsChecked == true,
+            ServerExecutablePath = AiExecutableBox.Text.Trim()
+        }));
+    }
+
+    private async Task RefreshModelsAsync(AiConnectionSettings settings)
+    {
         AiButton.IsEnabled = false;
         AiStatus.Text = "接続とモデル一覧を確認しています…";
         try
         {
-            using var client = new LemonadeClient(new AiConnectionSettings { BaseUrl = BaseUrlBox.Text.Trim() });
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
-            timeout.CancelAfter(TimeSpan.FromSeconds(15));
-            var models = await client.GetModelsAsync(timeout.Token);
+            var status = await _lemonade.EnsureRunningAsync(settings,
+                new Progress<string>(message => AiStatus.Text = message), _lifetime.Token);
+            if (_shuttingDown || BaseUrlBox.Text.Trim() != settings.BaseUrl) return;
+            var models = status.Models;
             ModelList.ItemsSource = models.Select(m => $"{m.Id}   ·   {string.Join(", ", m.Labels)}   ·   {(m.VerifiedLocal ? "ローカル" : "ローカル性未確認／利用不可")}");
             FillModels(ChatModelBox, models, "chat");
             FillModels(EmbeddingModelBox, models, "embeddings");
             FillModels(SpeechModelBox, models, "transcription");
             var hasEmbedding = models.Any(m => m.VerifiedLocal && m.Labels.Contains("embeddings"));
             AiStatus.Text = $"接続できました（{models.Count}モデル）。" +
+                (status.ManagedByApplication ? "このアプリが起動したLemonadeです。" : "既存のLemonadeです。アプリ終了時にも停止しません。") +
                 (hasEmbedding ? "Embedding候補があります。推論の実動作は別途検証します。" : "Embedding用モデルが未準備です。索引作成には追加設定が必要です。");
         }
-        catch (OperationCanceledException) { AiStatus.Text = "接続確認を中断しました（時間切れまたは終了）。"; }
-        catch (Exception ex) { AiStatus.Text = SafeMessage(ex); }
-        finally { AiButton.IsEnabled = true; }
+        catch (OperationCanceledException) { ClearModels(); AiStatus.Text = "接続確認を中断しました（時間切れまたは終了）。"; }
+        catch (Exception ex) { ClearModels(); AiStatus.Text = SafeMessage(ex); }
+        finally { AiButton.IsEnabled = !_shuttingDown; }
+    }
+
+    private void ClearModels()
+    {
+        ModelList.ItemsSource = null;
+        FillModels(ChatModelBox, [], "chat");
+        FillModels(EmbeddingModelBox, [], "embeddings");
+        FillModels(SpeechModelBox, [], "transcription");
     }
 
     private static void FillModels(System.Windows.Controls.ComboBox combo, IReadOnlyList<LemonadeModel> models, string label)
@@ -253,8 +350,9 @@ public partial class MainWindow : Window, IDisposable
         _lifetime.Cancel();
         try
         {
-            await Task.WhenAll(_startupTask, _databaseTask, _saveTask);
+            await Task.WhenAll(_startupTask, _databaseTask, _saveTask, _aiTask);
             await StopRagAsync();
+            await _lemonade.ShutdownAsync(_loadedSettings.Ai.StopServerOnExit);
             await _server.ShutdownAsync(_loadedSettings.Database.StopOnExit);
         }
         catch
@@ -278,5 +376,6 @@ public partial class MainWindow : Window, IDisposable
         _lifetime.Dispose();
         _monitorCancellation?.Dispose();
         _server.DisposeAsync().GetAwaiter().GetResult();
+        _lemonade.DisposeAsync().GetAwaiter().GetResult();
     }
 }

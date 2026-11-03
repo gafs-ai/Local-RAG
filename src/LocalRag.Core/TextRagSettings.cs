@@ -21,8 +21,11 @@ public sealed record TextRagSettings
     public bool ClassifyEnabled { get; init; } = true;
     public bool FormatEnabled { get; init; } = true;
     public bool ChunkEnabled { get; init; } = true;
+    public bool ParentChunksEnabled { get; init; } = true;
+    public int ParentHeadingLevel { get; init; } = 2;
+    public bool ParagraphChildren { get; init; } = true;
     public string DefaultCategory { get; init; } = "general";
-    public int MaxDocumentCharacters { get; init; } = 6000;
+    public int MaxDocumentCharacters { get; init; } = 64000;
     public int MaxChunkCharacters { get; init; } = 1200;
     public int MaxOutputTokens { get; init; } = 512;
     public string EmbeddingRevision { get; init; } = "1";
@@ -44,7 +47,8 @@ public sealed record TextRagSettings
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
-        if (MaxDocumentCharacters is < 100 or > 24000) errors.Add("テキスト上限は100～24000文字で指定してください。");
+        if (ParentHeadingLevel is < 1 or > 6) errors.Add("親チャンクの見出しレベルは1～6で指定してください。");
+        if (MaxDocumentCharacters is < 100 or > 262144) errors.Add("テキスト上限は100～262144文字で指定してください（ファイルは256KiB以内）。");
         if (MaxChunkCharacters is < 50 or > 24000 || MaxChunkCharacters > MaxDocumentCharacters) errors.Add("チャンク上限は50文字以上、文書上限以下で指定してください。");
         if (MaxOutputTokens is < 128 or > 8192) errors.Add("LLM出力上限は128～8192トークンで指定してください。");
         foreach (var prompt in new[] { ClassifyPrompt, FormatPrompt, ChunkPrompt, ConfidentialityPrompt })
@@ -69,7 +73,8 @@ public sealed record TextRagSettings
 
     public string ConfigurationId(AiConnectionSettings ai) => Hash(JsonSerializer.Serialize(new
     {
-        version = "text-pipeline-v4", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
+        version = "text-pipeline-v6-parents", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
+        ParentChunksEnabled, ParentHeadingLevel, ParagraphChildren,
         ClassifyEnabled, FormatEnabled, ChunkEnabled, DefaultCategory, MaxDocumentCharacters, MaxChunkCharacters,
         MaxOutputTokens, EmbeddingRevision, QueryInstruction = EffectiveQueryInstruction(ai), ClassifyPrompt, FormatPrompt, ChunkPrompt, Categories
     }));
@@ -80,12 +85,18 @@ public sealed record TextRagSettings
 }
 
 public sealed record TextParagraph(int Id, string Text);
-public sealed record TextChunk(int Start, int End, string Text);
+public sealed record TextChunk(int Start, int End, string Text, string? ParentId = null);
+public sealed record TextParentChunk(string Id, int Start, int End, string Text, string? Title);
 public sealed record VectorBatch(int Dimension, IReadOnlyList<float[]> Vectors);
 public interface ITextRagAi
 {
     Task<string> CompleteAsync(string system, string input, CancellationToken token);
     Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token);
+    // Optional capabilities keep other adapters compatible. A finite budget is in UTF-8 bytes,
+    // after accounting for the complete transport prompt, output reservation and model overhead.
+    Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token) => Task.FromResult(int.MaxValue);
+    Task<string> CompleteBoundedAsync(string system, string input, int outputTokens, CancellationToken token) => CompleteAsync(system, input, token);
+    Task<int> DocumentEmbeddingBudgetAsync(CancellationToken token) => Task.FromResult(int.MaxValue);
 }
 
 public sealed record TextDocumentState
@@ -101,8 +112,10 @@ public sealed record TextDocumentState
     public string? ErrorCode { get; init; }
     public string? ErrorStage { get; init; }
     public string? ErrorDetailCode { get; init; }
+    public List<string> ProcessingNotices { get; init; } = [];
     public string? CategoryId { get; init; }
     public List<TextParagraph>? Paragraphs { get; init; }
+    public List<TextParentChunk>? Parents { get; init; }
     public List<TextChunk>? Chunks { get; init; }
     public int EmbeddedChunks { get; init; }
     public string? SpaceId { get; init; }
@@ -111,5 +124,5 @@ public sealed record TextDocumentState
 
 // Source metadata is omitted along with content unless disclosure was explicitly permitted.
 public sealed record TextSearchResult(Guid DocumentId, DisclosureDecision Decision, string? Content,
-    string? SourcePath, int? StartParagraph, int? EndParagraph);
-public sealed record TextCycleResult(int Indexed, int Excluded, int Unchanged, int Failed, int Deleted, int InaccessibleRoots);
+    string? SourcePath, int? StartParagraph, int? EndParagraph, string? ParentChunkId = null, string? SectionTitle = null);
+public sealed record TextCycleResult(int Indexed, int Excluded, int Unchanged, int Failed, int Deleted, int InaccessibleRoots, int Deferred = 0);

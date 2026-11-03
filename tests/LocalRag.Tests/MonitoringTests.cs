@@ -12,6 +12,32 @@ public class MonitoringTests
     private static readonly TimeSpan Interval = TimeSpan.FromMinutes(15);
 
     [Fact]
+    public void LegacyCompletionCheckpointTriggersOneImmediateCheck()
+    {
+        var legacy = new MonitoringCheckpoint(Scope, false, Start, SchemaVersion: 1);
+        Assert.Equal(TimeSpan.Zero, legacy.Remaining(Scope, Start.AddMinutes(1), Interval));
+    }
+
+    [Fact]
+    public async Task SlowDiscoverySkipsMissedTicksWithoutWaitingAFullIntervalAfterCompletion()
+    {
+        var clock = new Clock();
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var monitor = new PersistentMonitor(new Store(), Scope, clock, (duration, token) =>
+        {
+            token.ThrowIfCancellationRequested(); clock.Now += duration; return Task.CompletedTask;
+        });
+        var calls = 0;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => monitor.RunAsync(token =>
+        {
+            if (++calls == 1) { clock.Now += TimeSpan.FromMinutes(12); return Task.CompletedTask; }
+            Assert.Equal(Start.AddMinutes(15), clock.Now);
+            stop.Cancel(); return Task.FromCanceled(token);
+        }, TimeSpan.FromMinutes(5), ex => Task.FromException(ex), _ => Task.CompletedTask, stop.Token));
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
     public async Task RestartWaitsOnlyTheRemainingInterval()
     {
         var clock = new Clock { Now = Start.AddMinutes(5) };
@@ -40,7 +66,7 @@ public class MonitoringTests
     }
 
     [Fact]
-    public async Task CompletionTimeIsAfterWorkAndIncludesManualScans()
+    public async Task IntervalIsMeasuredFromStartIncludingManualChecks()
     {
         var clock = new Clock();
         var store = new Store();
@@ -53,7 +79,7 @@ public class MonitoringTests
         }, default);
         Assert.False(store.State!.Running);
         Assert.Equal(Start.AddMinutes(2), store.State.LastCompletedUtc);
-        Assert.Equal(Interval, store.State.Remaining(Scope, clock.Now, Interval));
+        Assert.Equal(TimeSpan.FromMinutes(13), store.State.Remaining(Scope, clock.Now, Interval));
     }
 
     [Fact]
@@ -81,7 +107,7 @@ public class MonitoringTests
     }
 
     [Fact]
-    public async Task SubsequentCycleIsDueFromCompletionNotFromStatusCallback()
+    public async Task SubsequentCheckIsDueFromStartNotCompletionOrStatusCallback()
     {
         var clock = new Clock();
         var store = new Store();
@@ -100,12 +126,12 @@ public class MonitoringTests
                 clock.Now += TimeSpan.FromMinutes(2);
                 return Task.CompletedTask;
             }
-            Assert.Equal(Start.AddMinutes(17), clock.Now);
+            Assert.Equal(Start.AddMinutes(15), clock.Now);
             stop.Cancel();
             return Task.FromCanceled(token);
         }, Interval, _ => throw new Exception("Unexpected failure"), due =>
         {
-            Assert.Equal(Start.AddMinutes(17), due);
+            Assert.Equal(Start.AddMinutes(15), due);
             clock.Now += TimeSpan.FromMinutes(3); // Slow status update must not extend the deadline.
             return Task.CompletedTask;
         }, stop.Token));

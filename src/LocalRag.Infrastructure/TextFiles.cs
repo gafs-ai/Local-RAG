@@ -9,6 +9,10 @@ public sealed record TextScan(IReadOnlyList<string> Files, IReadOnlyList<Watched
 
 public static class TextFiles
 {
+    // Normalize . and .. first; a hidden ancestor also excludes explicitly selected descendants.
+    public static bool IsDotHidden(string path) => Path.GetFullPath(path)
+        .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)
+        .Any(part => part.StartsWith('.'));
     public static bool Supported(string path) => new[] { ".txt", ".md" }.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
     public static bool Within(string path, string root) => string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)),
         Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)), StringComparison.OrdinalIgnoreCase) ||
@@ -23,8 +27,10 @@ public static class TextFiles
                 throw new InvalidDataException("リンク先のファイルは取り込みません。");
     }
 
-    public static TextScan Scan(IReadOnlyList<WatchedFolder> folders, string dataDirectory, CancellationToken token, IReadOnlyList<string>? extensions = null)
+    public static TextScan Scan(IReadOnlyList<WatchedFolder> folders, string dataDirectory, CancellationToken token,
+        IReadOnlyList<string>? extensions = null, bool excludeDotHiddenEntries = true, IReadOnlyList<string>? globalIgnorePatterns = null)
     {
+        var ignore = new IgnorePolicy(folders, globalIgnorePatterns ?? []);
         var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var complete = new List<WatchedFolder>();
         var failed = 0;
@@ -34,6 +40,7 @@ public static class TextFiles
             try
             {
                 RejectLinks(root.Path);
+                if (ignore.IsIgnored(root.Path, directory: true, traversal: true)) { complete.Add(root); continue; }
                 var pending = new Stack<string>();
                 pending.Push(Path.GetFullPath(root.Path));
                 while (pending.TryPop(out var directory))
@@ -46,6 +53,8 @@ public static class TextFiles
                         token.ThrowIfCancellationRequested();
                         var attributes = File.GetAttributes(entry);
                         if ((attributes & FileAttributes.ReparsePoint) != 0 || Within(entry, dataDirectory)) continue;
+                        if (ignore.IsIgnored(entry, (attributes & FileAttributes.Directory) != 0,
+                            traversal: true, excludeDotHiddenEntries: excludeDotHiddenEntries)) continue;
                         if ((attributes & FileAttributes.Directory) != 0) { if (root.Recursive) pending.Push(entry); }
                         else if ((extensions is null ? Supported(entry) : extensions.Contains(Path.GetExtension(entry), StringComparer.OrdinalIgnoreCase)) &&
                             !Path.GetFileName(entry).StartsWith("~$", StringComparison.Ordinal)) files.Add(Path.GetFullPath(entry));
@@ -53,7 +62,7 @@ public static class TextFiles
                 }
                 complete.Add(root);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { failed++; }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { failed++; }
         }
         return new(files.Order(StringComparer.OrdinalIgnoreCase).ToArray(), complete, failed);
     }

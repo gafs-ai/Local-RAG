@@ -18,7 +18,9 @@ public class TextRagTests
         var paragraphs = await pipeline.FormatAsync([new(1, "source A"), new(2, "source B")], category, default);
         Assert.Equal("source A\n\nsource B", Assert.Single(await pipeline.ChunkAsync(paragraphs, category, default)).Text);
         Assert.Equal(0, ai.TransformCalls);
-        await Assert.ThrowsAsync<PipelineValidationException>(() => pipeline.ChunkAsync([new(1, new string('a', 1201))], category, default));
+        var longChunks = await pipeline.ChunkAsync([new(1, new string('a', 1201))], category, default);
+        Assert.Equal(new string('a', 1201), string.Concat(longChunks.Select(c => c.Text)));
+        Assert.All(longChunks, c => Assert.True(c.Text.Length <= 1200));
     }
 
     [Fact]
@@ -203,6 +205,8 @@ public class TextRagTests
 
     internal static AppSettings Settings(string input) => new()
     {
+        UpdateExclusionMinutes = 0, // Synthetic fixtures are intentionally processed immediately.
+        Confidentiality = new() { LlmEnabled = true }, // Exercise the opt-in inspection path in integration tests.
         Ai = new() { ChatModel = "fake-chat", EmbeddingModel = "fake-embedding" },
         Folders = [new(input)]
     };

@@ -8,7 +8,8 @@ public sealed record ConfidentialityPolicy
 {
     public bool Enabled { get; init; } = true;
     public bool PatternsEnabled { get; init; } = true;
-    public bool LlmEnabled { get; init; } = true;
+    // Experimental semantic inspection is opt-in; pattern inspection remains enabled by default.
+    public bool LlmEnabled { get; init; } = false;
     public IReadOnlyList<string> Patterns { get; init; } = ["社外秘", "極秘", "CONFIDENTIAL"];
 }
 

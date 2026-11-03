@@ -74,16 +74,47 @@
                             <Button Content="取得パイプライン" Tag="3" Click="OpenManager" Margin="0,0,8,8"/>
                         </WrapPanel>
                         <TextBlock Text="監視フォルダ" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock Text="1行に1つの絶対パス。配下のフォルダも対象にします。" Foreground="#526477" Margin="0,6,0,0" />
-                        <TextBox x:Name="FoldersBox" Height="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="監視フォルダ" />
+                        <Button Content="フォルダを選んで追加…" Click="BrowseFolders" HorizontalAlignment="Left" Margin="0,8,0,6" AutomationProperties.Name="フォルダを選んで追加"/>
+                        <TextBlock Text="ボタンからフォルダを選択できます（複数選択可）。パスの直接入力もできます。優先度は0～100で、大きいほど先に処理します。同じ優先度では更新日時の新しい順です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6,0,0" />
+                        <DataGrid x:Name="FolderGrid" Height="150" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" AutomationProperties.Name="監視フォルダと優先度">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="フォルダの絶対パス" Binding="{Binding Path, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                                <DataGridTextColumn Header="優先度" Binding="{Binding Priority, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                                <DataGridCheckBoxColumn Header="サブフォルダ" Binding="{Binding Recursive, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <CheckBox x:Name="ExcludeDotHiddenBox" Content="名前が「.」で始まるファイル・フォルダを除外する（既定ON）" Margin="0,8,0,4"/>
+                        <TextBlock Text="監視フォルダ自体や、その上位にある「.」始まりのフォルダも対象です。取り込む場合は除外をOFFにするか、ignoreの ! で例外を指定してください。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
                         <CheckBox x:Name="AutomaticMonitoringBox" Content="起動時・設定保存後に自動監視を開始する" Margin="0,0,0,12" />
+                        <Expander Header="全フォルダ共通の除外パターン（ignore）" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="1行1パターン。例：*.tmp、**/bin/。# はコメント、! は例外です。各フォルダの .gitignore / .dockerignore / .npmignore / .ragignore も自動で読み取ります。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6"/>
+                                <TextBox x:Name="GlobalIgnoreBox" Height="120" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="全体の除外パターン"/>
+                                <TextBlock Text="例外が最優先です。どれかの設定の ! に一致すれば、ほかの設定や「.」始まりによる除外より優先して取り込み対象に戻します。行の順番は問いません。" TextWrapping="Wrap" Foreground="#526477"/>
+                            </StackPanel>
+                        </Expander>
                         <DockPanel>
-                            <TextBlock Text="処理完了後の監視間隔（分）" VerticalAlignment="Center" Margin="0,0,16,14" />
+                            <TextBlock Text="定期チェック間隔（分・既定5）" VerticalAlignment="Center" Margin="0,0,16,14" />
                             <TextBox x:Name="IntervalBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="監視間隔" />
                         </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="更新除外期間（分・既定10、0で無効）" VerticalAlignment="Center" Margin="0,0,16,14" />
+                            <TextBox x:Name="UpdateExclusionBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="更新除外期間"/>
+                        </DockPanel>
+                        <TextBlock Text="処理中も定期チェックし、待ち順を更新します。実行中のファイルは中断しません。更新除外期間内のファイルは手動実行でも対象外です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
                         <TextBlock Text="Lemonade Server" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,4" />
                         <TextBlock Text="このPCのAPI接続先" />
                         <TextBox x:Name="BaseUrlBox" AutomationProperties.Name="AI接続先" />
+                        <CheckBox x:Name="AutoStartAiBox" Content="Lemonadeが起動していなければ自動起動する（既定ON）" Margin="0,6" />
+                        <CheckBox x:Name="StopAiBox" Content="アプリ終了時に、このアプリが起動したLemonadeも終了する" Margin="0,0,0,6" />
+                        <TextBlock Text="起動時にモデル一覧を自動更新します。起動済みのLemonadeを利用した場合は終了しません。" TextWrapping="Wrap" Foreground="#526477" />
+                        <Expander Header="Lemonade実行ファイル（通常は自動検出）" Margin="0,6,0,10">
+                            <StackPanel>
+                                <TextBox x:Name="AiExecutableBox" AutomationProperties.Name="Lemonade実行ファイル" />
+                                <Button Content="実行ファイルを選択…" Click="BrowseAiExecutable" HorizontalAlignment="Left" />
+                                <TextBlock Text="空欄ならインストール先とPATHから検出します。LemonadeServer.exeまたはlemond.exeを選択してください。" TextWrapping="Wrap" Foreground="#526477" />
+                            </StackPanel>
+                        </Expander>
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="20" /><ColumnDefinition /></Grid.ColumnDefinitions>
                             <StackPanel>

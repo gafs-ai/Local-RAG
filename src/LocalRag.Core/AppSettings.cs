@@ -3,7 +3,10 @@ namespace LocalRag.Core;
 public sealed record AppSettings
 {
     public int SchemaVersion { get; init; } = 2;
-    public int MonitoringIntervalMinutes { get; init; } = 15;
+    public int MonitoringIntervalMinutes { get; init; } = 5;
+    public int UpdateExclusionMinutes { get; init; } = 10;
+    public bool ExcludeDotHiddenEntries { get; init; } = true;
+    public List<string> GlobalIgnorePatterns { get; init; } = [];
     public bool AutomaticMonitoring { get; init; } = true;
     public List<WatchedFolder> Folders { get; init; } = [];
     public AiConnectionSettings Ai { get; init; } = new();
@@ -22,9 +25,17 @@ public sealed record AppSettings
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
+        if (GlobalIgnorePatterns is null) errors.Add("全体のignore設定がありません。");
+        else
+        {
+            try { _ = IgnorePattern.Parse(GlobalIgnorePatterns); }
+            catch (InvalidDataException ex) { errors.Add(ex.Message); }
+        }
         if (SchemaVersion is not (1 or 2)) errors.Add("この設定ファイルの版には対応していません。");
         if (MonitoringIntervalMinutes is < 1 or > 10080)
             errors.Add("監視間隔は1～10080分で指定してください。");
+        if (UpdateExclusionMinutes is < 0 or > 10080)
+            errors.Add("更新除外期間は0～10080分で指定してください（0で無効）。");
         if (Ai is null) errors.Add("AI接続設定がありません。");
         else errors.AddRange(Ai.Validate());
         if (Database is null) errors.Add("DB設定がありません。");
@@ -53,6 +64,7 @@ public sealed record AppSettings
                 }
                 try
                 {
+                    if (folder.Priority is < 0 or > 100) errors.Add("フォルダ優先度は0～100で指定してください（大きいほど先に処理）。");
                     var path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder.Path));
                     if (!paths.Add(path)) errors.Add("同じ監視フォルダが重複しています。");
                 }
@@ -66,7 +78,7 @@ public sealed record AppSettings
     }
 }
 
-public sealed record WatchedFolder(string Path, bool Recursive = true);
+public sealed record WatchedFolder(string Path, bool Recursive = true, int Priority = 0);
 
 public sealed record DatabaseSettings
 {
@@ -82,6 +94,9 @@ public sealed record DatabaseSettings
 public sealed record AiConnectionSettings
 {
     public string BaseUrl { get; init; } = "http://localhost:13305/api/v1/";
+    public bool AutoStartServer { get; init; } = true;
+    public bool StopServerOnExit { get; init; } = true;
+    public string ServerExecutablePath { get; init; } = "";
     public string ChatModel { get; init; } = "";
     public string EmbeddingModel { get; init; } = "";
     public string SpeechModel { get; init; } = "";
@@ -92,6 +107,9 @@ public sealed record AiConnectionSettings
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
             !uri.IsLoopback || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
             return ["AI接続先には、このPCのHTTP/HTTPSアドレスを指定してください（認証情報・クエリは含めません）。"];
+        if (ServerExecutablePath is null || ServerExecutablePath.Length > 0 &&
+            (!Path.IsPathFullyQualified(ServerExecutablePath) || !Path.GetExtension(ServerExecutablePath).Equals(".exe", StringComparison.OrdinalIgnoreCase)))
+            return ["Lemonadeの実行ファイルは絶対パスの.exeを指定してください。空欄なら自動検出します。"];
         return [];
     }
 
