@@ -20,7 +20,7 @@ public sealed record AppSettings
     public TextRagSettings RetrievalPrompts() => Management?.ApplyRetrieval(TextPipeline) ?? TextPipeline;
     public ConfidentialityPolicy DisclosurePolicy() => Management?.Retrieval.Policy() ?? Confidentiality;
     public string PipelineConfigurationId() => Management?.ConfigurationId(TextPipeline, Ai) ?? TextPipeline.ConfigurationId(Ai);
-    public IReadOnlyList<string> AllowedTextExtensions() => Management?.TextExtensions ?? [".txt", ".md"];
+    public IReadOnlyList<string> AllowedTextExtensions() => Management?.AllowedExtensions() ?? [".txt", ".md"];
 
     public IReadOnlyList<string> Validate()
     {

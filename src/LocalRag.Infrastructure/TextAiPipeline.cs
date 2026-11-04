@@ -152,7 +152,7 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             "chunk_end" => "A chunk end does not identify an existing paragraph at or after its start. Use only the actual paragraph IDs supplied with this input.",
             "chunk_size" => "A chunk exceeds maxCharacters, including two characters between paragraphs. Choose smaller paragraph groups; never truncate text.",
             "chunk_coverage" => "Some paragraphs are not covered, or chunks is empty. Include every supplied paragraph exactly once.",
-            "decision_invalid" => "decision must be exactly allow, withhold, or pending. Reassess the original fragment under the inspection policy; use pending if uncertain.",
+            "decision_invalid" => "decision must be exactly allowed, withhold, or pending. Reassess the original fragment under the inspection policy; use pending if uncertain.",
             "output_incomplete" => "The output did not finish normally. Return a compact complete JSON object within the output budget.",
             _ => null // Input limits, connectivity and unknown failures cannot be fixed by regenerating JSON.
         },
@@ -366,7 +366,7 @@ public sealed class TextConfidentialityClassifier(ITextRagAi ai, TextRagSettings
                 var decision = await pipeline.JsonAsync(settings.ConfidentialityPrompt, new { fragment }, root =>
                     TextAiPipeline.StringProperty(root, "decision") switch
                     {
-                        "allow" => DisclosureDecision.Allowed,
+                        "allowed" or "allow" => DisclosureDecision.Allowed,
                         "withhold" => DisclosureDecision.Withheld,
                         "pending" => DisclosureDecision.Pending,
                         _ => throw new PipelineValidationException("decision_invalid", "機密検査の判定値が不正です。")

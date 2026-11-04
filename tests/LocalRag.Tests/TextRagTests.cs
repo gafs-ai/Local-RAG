@@ -6,6 +6,43 @@ namespace LocalRag.Tests;
 
 public class TextRagTests
 {
+    [Theory]
+    [InlineData("allowed", DisclosureDecision.Allowed)]
+    [InlineData("allow", DisclosureDecision.Allowed)]
+    [InlineData("withhold", DisclosureDecision.Withheld)]
+    [InlineData("pending", DisclosureDecision.Pending)]
+    public async Task ConfidentialityAcceptsCurrentAndLegacyDecisionValues(string value, DisclosureDecision expected)
+    {
+        var ai = new DecisionAi(value);
+        var decision = await new TextConfidentialityClassifier(ai, new()).InspectAsync("original", "candidate", default);
+        Assert.Equal(expected, decision);
+        Assert.Equal(expected == DisclosureDecision.Allowed ? 2 : 1, ai.Calls);
+    }
+
+    [Fact]
+    public async Task InvalidDecisionIsRetriedAndNeverSilentlyAllowed()
+    {
+        var repaired = new DecisionAi("unknown", "allowed");
+        Assert.Equal(DisclosureDecision.Allowed,
+            await new TextConfidentialityClassifier(repaired, new()).InspectAsync("original", "candidate", default));
+        Assert.Equal(3, repaired.Calls);
+        var invalid = new DecisionAi("unknown");
+        await Assert.ThrowsAsync<PipelineValidationException>(() =>
+            new TextConfidentialityClassifier(invalid, new()).InspectAsync("original", "candidate", default));
+        Assert.Equal(2, invalid.Calls);
+    }
+
+    private sealed class DecisionAi(params string[] decisions) : ITextRagAi
+    {
+        public int Calls { get; private set; }
+        public Task<string> CompleteAsync(string system, string input, CancellationToken token)
+        {
+            Assert.StartsWith("ドキュメントの機密性を判定してください。", system);
+            return Task.FromResult(JsonSerializer.Serialize(new { decision = decisions[Math.Min(Calls++, decisions.Length - 1)] }));
+        }
+        public Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token) => throw new NotSupportedException();
+    }
+
     [Fact]
     public async Task CustomDefaultCategoryAndDisabledStagesKeepExactTextWithoutLlmCalls()
     {
@@ -224,6 +261,7 @@ internal sealed class FakeTextAi : ITextRagAi
     {
         using var parsed = JsonDocument.Parse(input);
         var root = parsed.RootElement;
+        if (root.TryGetProperty("language", out _)) return Task.FromResult("{\"description\":\"文書を検索して取得するインターフェースです。\"}");
         if (root.TryGetProperty("fragment", out _))
         {
             if (InspectionFails) throw new HttpRequestException("provider private details");

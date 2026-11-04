@@ -9,11 +9,46 @@ public class ManagementTests
     private static ManagementSettings Defaults() => ManagementSettings.FromLegacy(new(), new());
 
     [Fact]
+    public async Task OldSearchSettingsAreRemovedWithoutChangingCustomPromptsOrDisclosurePolicy()
+    {
+        var managed = Defaults() with
+        {
+            UserPrompts = [new("custom", "独自分類", PromptPurpose.Classification, "Keep my prompt"),
+                new("query", "旧検索指示", PromptPurpose.Search, "Old instruction")],
+            Retrieval = new() { LlmEnabled = true, Patterns = ["private"] }
+        };
+        var json = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(new AppSettings { Management = managed }))!;
+        json["TextPipeline"]!["QueryInstruction"] = "Old instruction";
+        json["Management"]!["Retrieval"]!["SearchPromptId"] = "query";
+        var store = new SettingsStore(Path.Combine(Path.GetTempPath(), "LocalRag.Tests", Guid.NewGuid().ToString("N")));
+        Directory.CreateDirectory(Path.GetDirectoryName(store.FilePath)!);
+        var original = json.ToJsonString();
+        await File.WriteAllTextAsync(store.FilePath, original);
+
+        var loaded = await store.LoadAsync();
+        Assert.Equal(original, await File.ReadAllTextAsync(store.FilePath));
+        var settings = Assert.IsType<ManagementSettings>(loaded.Management);
+        Assert.Empty(settings.Validate());
+        Assert.Equal("Keep my prompt", Assert.Single(settings.UserPrompts).Text);
+        Assert.DoesNotContain(settings.Prompts, p => p.Purpose == PromptPurpose.Search);
+        Assert.True(settings.Retrieval.LlmEnabled);
+        Assert.Equal(["private"], settings.Retrieval.Patterns);
+        Assert.Equal(new TextRagSettings().ClassifyPrompt, loaded.PipelineFor("a.txt").ClassifyPrompt);
+
+        await store.SaveAsync(loaded);
+        var saved = await File.ReadAllTextAsync(store.FilePath);
+        Assert.DoesNotContain("QueryInstruction", saved);
+        Assert.DoesNotContain("SearchPromptId", saved);
+        Assert.DoesNotContain("Old instruction", saved);
+        Assert.Equal(JsonSerializer.Serialize(settings), JsonSerializer.Serialize((await store.LoadAsync()).Management));
+    }
+
+    [Fact]
     public async Task LegacyMigrationPreservesCustomAndInactivePromptsWithoutRewritingFile()
     {
         var legacy = new TextRagSettings
         {
-            ClassifyPrompt = "custom classification", FormatEnabled = false, QueryInstruction = "",
+            ClassifyPrompt = "custom classification", FormatEnabled = false,
             Categories = [new() { Description = new string('名', 500), FormatEnabled = false, FormatPrompt = "inactive custom" },
                 new() { Id = "code", Description = "", FormatEnabled = true, FormatPrompt = "active custom", ChunkEnabled = false }]
         };
@@ -35,7 +70,6 @@ public class ManagementTests
         Assert.Equal("active custom", effective.Categories[1].FormatPrompt);
         Assert.False(effective.Categories[1].ChunkEnabled);
         Assert.False(loaded.DisclosurePolicy().Enabled);
-        Assert.Equal("", loaded.RetrievalPrompts().QueryInstruction);
         await store.SaveAsync(loaded);
         var reopened = await store.LoadAsync();
         Assert.Equal(JsonSerializer.Serialize(managed), JsonSerializer.Serialize(reopened.Management));
@@ -87,8 +121,8 @@ public class ManagementTests
         var changed = settings with
         {
             UserPrompts = [new("private_prompt", "秘密検査", PromptPurpose.Confidentiality, "custom inspection"),
-                new("unused", "未使用", PromptPurpose.Chunk, "unused"), new("query", "検索", PromptPurpose.Search, "ignored by nomic")],
-            Retrieval = settings.Retrieval with { ConfidentialityEnabled = false, ConfidentialityPromptId = "private_prompt", SearchPromptId = "query" }
+                new("unused", "未使用", PromptPurpose.Chunk, "unused")],
+            Retrieval = settings.Retrieval with { ConfidentialityEnabled = false, ConfidentialityPromptId = "private_prompt" }
         };
         Assert.Equal(settings.ConfigurationId(limits, ai), changed.ConfigurationId(limits, ai));
         Assert.Equal(settings.ApplyRetrieval(limits).SpaceId(ai, 768), changed.ApplyRetrieval(limits).SpaceId(ai, 768));

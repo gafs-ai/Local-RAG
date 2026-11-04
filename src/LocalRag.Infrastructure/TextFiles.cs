@@ -4,7 +4,7 @@ using LocalRag.Core;
 
 namespace LocalRag.Infrastructure;
 
-public sealed record TextSnapshot(string Path, string Hash, string Text);
+public sealed record TextSnapshot(string Path, string Hash, string Text, TextEncodingMode EncodingMode, bool EncodingAutomatic);
 public sealed record TextScan(IReadOnlyList<string> Files, IReadOnlyList<WatchedFolder> CompletedRoots, int FailedRoots);
 
 public static class TextFiles
@@ -67,7 +67,7 @@ public static class TextFiles
         return new(files.Order(StringComparer.OrdinalIgnoreCase).ToArray(), complete, failed);
     }
 
-    public static async Task<TextSnapshot> ReadAsync(string path, int maxCharacters, CancellationToken token)
+    public static async Task<TextSnapshot> ReadAsync(string path, int maxCharacters, CancellationToken token, TextEncodingMode encodingMode = TextEncodingMode.Auto)
     {
         RejectLinks(path);
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, true);
@@ -75,11 +75,11 @@ public static class TextFiles
         var bytes = new byte[checked((int)stream.Length)];
         await stream.ReadExactlyAsync(bytes, token).ConfigureAwait(false);
         if (stream.Position != stream.Length) throw new IOException("読み取り中にファイルが変更されました。");
-        var start = bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? 3 : 0;
-        var text = new UTF8Encoding(false, true).GetString(bytes, start, bytes.Length - start);
+        var decoded = TextDecoding.Decode(bytes, encodingMode);
+        var text = decoded.Text;
         if (text.Length > maxCharacters || text.IndexOf('\0') >= 0 || string.IsNullOrWhiteSpace(text))
             throw new InvalidDataException("空文書、バイナリ、またはテキスト文字数の上限超過です。");
-        return new(Path.GetFullPath(path), Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), text);
+        return new(Path.GetFullPath(path), Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), text, decoded.Mode, decoded.Automatic);
     }
 
     public static List<TextParagraph> Paragraphs(string text, int maxChunkCharacters)

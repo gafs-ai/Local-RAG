@@ -108,9 +108,9 @@ public class LemonadeClientTests
     {
         const string model = "nomic-embed-text-v2-moe-GGUF";
         Assert.Equal("search_document: 文書", EmbeddingInput.Document(model, "文書"));
-        Assert.Equal("search_query: 質問", EmbeddingInput.Query(model, "Qwen instruction", "質問"));
+        Assert.Equal("search_query: 質問", EmbeddingInput.Query(model, "質問"));
         Assert.Equal("文書", EmbeddingInput.Document("Qwen3-Embedding-0.6B-GGUF", "文書"));
-        Assert.Equal("Instruct: retrieve\nQuery: 質問", EmbeddingInput.Query("Qwen3-Embedding-0.6B-GGUF", "retrieve", "質問"));
+        Assert.Equal("Instruct: Given a question, retrieve relevant passages that answer the question\nQuery: 質問", EmbeddingInput.Query("Qwen3-Embedding-0.6B-GGUF", "質問"));
         Assert.Equal(128, EmbeddingInput.ContextLimit(model, 128));
     }
 

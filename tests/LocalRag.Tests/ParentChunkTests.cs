@@ -116,6 +116,7 @@ public class ParentChunkTests
         var original = first + second;
         await File.WriteAllTextAsync(file, original);
         var settings = Settings(input);
+        settings = settings with { TextPipeline = settings.TextPipeline with { ChildMode = ChildChunkMode.Paragraphs } };
         var ai = new RankedAi();
         await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         using var service = new TextRagService(repo, ai, settings, fixture.Root);

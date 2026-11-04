@@ -1,0 +1,58 @@
+[
+  {
+    "Name": "tree-sitter",
+    "Version": "0.26.0",
+    "FileName": "tree_sitter-0.26.0-cp314-cp314-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/c9/1b/0b36fe2a984ecedc4ce6aefd5d56447a6626a8e9b595c4e48658510ce8f8/tree_sitter-0.26.0-cp314-cp314-win_amd64.whl",
+    "Sha256": "a4033fecc8f606c7f2e8b8014d0057b74668a7f0152763606f7bc25c5f9ec64c"
+  },
+  {
+    "Name": "tree-sitter-typescript",
+    "Version": "0.23.2",
+    "FileName": "tree_sitter_typescript-0.23.2-cp39-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/8b/ab/dd84f0e2337296a5f09749f7b5483215d75c8fa9e33738522e5ed81f7254/tree_sitter_typescript-0.23.2-cp39-abi3-win_amd64.whl",
+    "Sha256": "3f730b66396bc3e11811e4465c41ee45d9e9edd6de355a58bbbc49fa770da8f9"
+  },
+  {
+    "Name": "tree-sitter-javascript",
+    "Version": "0.25.0",
+    "FileName": "tree_sitter_javascript-0.25.0-cp310-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/3b/dc/d90cb1790f8cec9b4878d278ad9faf7c8f893189ce0f855304fd704fc274/tree_sitter_javascript-0.25.0-cp310-abi3-win_amd64.whl",
+    "Sha256": "e5ed840f5bd4a3f0272e441d19429b26eedc257abe5574c8546da6b556865e3c"
+  },
+  {
+    "Name": "tree-sitter-cpp",
+    "Version": "0.23.4",
+    "FileName": "tree_sitter_cpp-0.23.4-cp39-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/37/7e/909e52b3dec09c475140b0e175511e275d0d00ba2dbd7c68102d377ae0f6/tree_sitter_cpp-0.23.4-cp39-abi3-win_amd64.whl",
+    "Sha256": "68606a45bea92669d155399e1239f771a7767d8683cd8f8e30e7d813107030ca"
+  },
+  {
+    "Name": "tree-sitter-c",
+    "Version": "0.24.2",
+    "FileName": "tree_sitter_c-0.24.2-cp310-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/c1/f7/72a1d6b42dd31fd37e03ff67e7dc5ee572301499e6b216002b8dd42a1714/tree_sitter_c-0.24.2-cp310-abi3-win_amd64.whl",
+    "Sha256": "abb549225091f7b25df2dd3a0143ece6e208f7055d8bcb4700b41ee79b9ef1e1"
+  },
+  {
+    "Name": "tree-sitter-rust",
+    "Version": "0.24.2",
+    "FileName": "tree_sitter_rust-0.24.2-cp39-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/34/71/7ef609894dbfe5699eb16f7471f9b8af1d958d8ba3e29c238d7607e8cb47/tree_sitter_rust-0.24.2-cp39-abi3-win_amd64.whl",
+    "Sha256": "4529c125d928882ddfb879fdc6bc0704913261ecc078b6fa7902559e0daf200d"
+  },
+  {
+    "Name": "tree-sitter-java",
+    "Version": "0.23.5",
+    "FileName": "tree_sitter_java-0.23.5-cp39-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/da/d6/0528c7e1e88a18221dbd8ccee3825bf274b1fa300f745fd74eb343878043/tree_sitter_java-0.23.5-cp39-abi3-win_amd64.whl",
+    "Sha256": "1ee45e790f8d31d416bc84a09dac2e2c6bc343e89b8a2e1d550513498eedfde7"
+  },
+  {
+    "Name": "tree-sitter-kotlin",
+    "Version": "1.1.0",
+    "FileName": "tree_sitter_kotlin-1.1.0-cp39-abi3-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/24/c9/5cca0a44db41224f7f10992450af17ff432c1a336852efb312246d5705e5/tree_sitter_kotlin-1.1.0-cp39-abi3-win_amd64.whl",
+    "Sha256": "d4d3f330f515ba8b91da04a5335eb9ff3ce071c7b7855958912f2560f6e14976"
+  }
+]

@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <EmbeddedResource Include="TreeSitterPackages.json" />
+    <EmbeddedResource Include="TreeSitterParse.py" />
     <ProjectReference Include="../LocalRag.Core/LocalRag.Core.csproj" />
     <ProjectReference Include="../LocalRag.ServerControl/LocalRag.ServerControl.csproj" ReferenceOutputAssembly="false" Private="false" />
     <PackageReference Include="SurrealDb.Net" Version="1.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="UTF.Unknown" Version="2.7.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>

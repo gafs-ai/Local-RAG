@@ -44,6 +44,28 @@
         "resolved": "10.0.7",
         "contentHash": "etq8h1XwDw0x5a+6ysEDR4vO3Ktqh29TTswkIbv3WEyIXbrtbRYRb3b+HMr7JdySMFn7utIbFla938iNhxR/0w=="
       },
+      "Microsoft.CodeAnalysis.Analyzers": {
+        "type": "Transitive",
+        "resolved": "5.9.0-1.26328.17",
+        "contentHash": "HP9NNk8ZjOSI2hgOyXnQg+kv7/X837Vr2nAlXiGAtqtYnYKjRRa1UmQFr8KFs5ynGYKqfbb8zB9APoWjiAGdMg=="
+      },
+      "Microsoft.CodeAnalysis.Common": {
+        "type": "Transitive",
+        "resolved": "5.9.0",
+        "contentHash": "IYaIaUWdIx539AReKZOBEqTskFusZfCh/wFSPilDvCn5Say8MegLw2LONcSIcVy+v3Gzv53qYBspgvBGSErfbQ==",
+        "dependencies": {
+          "Microsoft.CodeAnalysis.Analyzers": "5.9.0-1.26328.17"
+        }
+      },
+      "Microsoft.CodeAnalysis.CSharp": {
+        "type": "Transitive",
+        "resolved": "5.9.0",
+        "contentHash": "7JGDA0UT1+h7k9ZcA3rF4eFC8+QPq1xyYaXxag4p8r/zzPurEJxvdi7aM+MRL/SfP7XADXpWF/pl/eUYXOq/ww==",
+        "dependencies": {
+          "Microsoft.CodeAnalysis.Analyzers": "5.9.0-1.26328.17",
+          "Microsoft.CodeAnalysis.Common": "[5.9.0]"
+        }
+      },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
         "resolved": "18.11.0",
@@ -280,6 +302,11 @@
         "resolved": "10.0.0",
         "contentHash": "qy6C3gQRTrfhFfuiIYU1jNwWfFdJpBVo1BARW7jgMm1zTEm3LRzLLyOLJGaAuKE+nZCGkEP71y4rj9NWjqLGdQ=="
       },
+      "UTF.Unknown": {
+        "type": "Transitive",
+        "resolved": "2.7.0",
+        "contentHash": "QpiN8FVvfEMB6QF3T8IhXCbA0atOu1opLHRlbVxPOW9Cv3VksGVPQVXAjCdWFc00sA7FL6z7pOFCYWtO89PbgQ=="
+      },
       "Websocket.Client": {
         "type": "Transitive",
         "resolved": "5.3.0",
@@ -336,15 +363,17 @@
       "localrag.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "LocalRag.Core": "[1.0.0, )",
+          "LocalRag.Core": "[0.0.0-rc.3, )",
+          "Microsoft.CodeAnalysis.CSharp": "[5.9.0, )",
           "SurrealDb.Net": "[1.0.0, )",
-          "System.Security.Cryptography.ProtectedData": "[10.0.0, )"
+          "System.Security.Cryptography.ProtectedData": "[10.0.0, )",
+          "UTF.Unknown": "[2.7.0, )"
         }
       },
       "localrag.mcp": {
         "type": "Project",
         "dependencies": {
-          "LocalRag.Infrastructure": "[1.0.0, )",
+          "LocalRag.Infrastructure": "[0.0.0-rc.3, )",
           "ModelContextProtocol.AspNetCore": "[2.3.0, )"
         }
       }

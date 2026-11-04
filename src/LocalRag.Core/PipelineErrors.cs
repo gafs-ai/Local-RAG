@@ -26,21 +26,34 @@ public static class PipelineErrors
 
     public static string Notice(string code) => code switch
     {
+        _ when code.StartsWith("encoding_auto_", StringComparison.Ordinal) => EncodingNotice(code[14..], true),
+        _ when code.StartsWith("encoding_manual_", StringComparison.Ordinal) => EncodingNotice(code[16..], false),
         "format_preserved_long" => "長い段落は整形を省略して原文を保持",
         "format_preserved_invalid" => "整形応答が再試行後も不正のため原文を保持",
         "chunk_code_fallback" => "分割応答が再試行後も不正のためコードで分割",
         _ => "代替処理あり"
     };
 
+    private static string EncodingNotice(string mode, bool automatic) =>
+        "文字コード：" + (TextEncodings.All.FirstOrDefault(e => e.Mode.ToString() == mode)?.Name ?? "不明") +
+        (automatic ? "（自動判別）" : "（指定）");
+
     private static string Stage(string? stage) => stage switch
     {
         "read" => "ファイル読み取り", "prepare" => "処理準備", "classify" => "分類",
-        "format" => "整形", "chunk" => "チャンク分割", "embedding" => "埋め込み",
+        "format" => "整形", "chunk" => "チャンクの結合・まとめ", "code" => "コード解析・説明作成", "embedding" => "埋め込み",
         "publish" => "索引の公開", _ => "取り込み"
     };
 
     private static string Detail(string? code) => code switch
     {
+        "encoding_uncertain" => "文字コードを判別できません。適用する設定で文字コードを指定してください",
+        "encoding_invalid" => "指定の文字コードで読み取れないか、バイナリが含まれています。文字コードと元ファイルを確認してください",
+        "encoding_bom_conflict" => "ファイルのBOMと指定した文字コードが一致しません。適用する設定を確認してください",
+        "code_language" => "適用する設定で対応する言語を選択してください",
+        "code_parser" => "構文解析ライブラリを実行できません。解析環境の取得・検証と設定した言語を確認してください",
+        "code_syntax" => "ソースコードの構文を解析できません。修正またはテキスト処理への切り替えが必要です",
+        "code_units" => "関数・クラスの数が上限を超えています",
         "chunk_order" => "段落範囲に欠落・重複・順序の誤りがあります",
         "chunk_end" => "存在しない、または開始位置より前の終端段落が指定されました",
         "chunk_size" => "チャンクが文字数上限を超えています",

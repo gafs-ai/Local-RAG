@@ -8,12 +8,19 @@ public sealed record StructuredText(List<TextParentChunk> Parents, List<TextPara
 /// <summary>Deterministic Markdown section boundaries; parent text always comes from the original source.</summary>
 public static class TextStructure
 {
-    public static StructuredText Build(string text, string path, int headingLevel)
+    public static StructuredText Build(string text, string path, TextRagSettings settings) =>
+        Build(text, path, settings.ParentHeadingLevel,
+            settings.EffectiveParentMode == ParentChunkMode.Structure ? settings.MarkdownParentMinCharacters : 0,
+            settings.EffectiveParentMode == ParentChunkMode.Structure ? settings.MarkdownParentMaxCharacters : 262144);
+
+    public static StructuredText Build(string text, string path, int headingLevel, int minimum = 0, int maximum = 262144)
     {
         if (headingLevel is < 1 or > 6) throw new ArgumentOutOfRangeException(nameof(headingLevel));
+        if (!TextRagSettings.ValidMarkdownParentBounds(minimum, maximum)) throw new ArgumentOutOfRangeException(nameof(minimum));
         var boundaries = new List<(int Offset, string? Title)> { (0, null) };
-        if (Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase) ||
-            Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase))
+        var markdown = Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase) ||
+            Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase);
+        if (markdown)
         {
             var headings = new List<(int Level, string Title)>();
             char fence = '\0';
@@ -64,20 +71,80 @@ public static class TextStructure
                 else boundaries.Add((offset, headingPath));
             }
         }
-        var parents = new List<TextParentChunk>();
-        var paragraphs = new List<TextParagraph>();
+        var sections = new List<(string Text, string? Title)>();
         for (var i = 0; i < boundaries.Count; i++)
         {
             var end = i + 1 < boundaries.Count ? boundaries[i + 1].Offset : text.Length;
             var source = text[boundaries[i].Offset..end];
+            sections.Add((source, boundaries[i].Title));
+        }
+        if (markdown) sections = BoundSections(sections, minimum, maximum);
+        var parents = new List<TextParentChunk>();
+        var paragraphs = new List<TextParagraph>();
+        foreach (var (source, title) in sections)
+        {
             if (string.IsNullOrWhiteSpace(source)) continue;
             var start = paragraphs.Count + 1;
             foreach (var paragraph in TextFiles.Paragraphs(source, int.MaxValue))
                 paragraphs.Add(new(paragraphs.Count + 1, paragraph.Text));
-            parents.Add(new("p" + (parents.Count + 1), start, paragraphs.Count, source, boundaries[i].Title));
+            parents.Add(new("p" + (parents.Count + 1), start, paragraphs.Count, source, title));
         }
         if (parents.Count == 0) throw new InvalidDataException("親チャンクを作成できる本文がありません。");
         return new(parents, paragraphs);
+    }
+
+    private static List<(string Text, string? Title)> BoundSections(List<(string Text, string? Title)> sections, int minimum, int maximum)
+    {
+        var pieces = sections.SelectMany(section => SplitSection(section.Text, maximum).Select(part => (Text: part, section.Title)));
+        var result = new List<(string Text, string? Title)>();
+        string pending = "";
+        string? firstTitle = null, lastTitle = null;
+        void Flush()
+        {
+            if (pending.Length == 0) return;
+            result.Add((pending, firstTitle == lastTitle || lastTitle is null ? firstTitle :
+                firstTitle is null ? lastTitle : firstTitle + " ～ " + lastTitle));
+            pending = ""; firstTitle = lastTitle = null;
+        }
+        foreach (var piece in pieces)
+        {
+            // A rejected merge leaves the current group as-is, even if below the minimum.
+            if (pending.Length > 0 && (pending.Length >= minimum || pending.Length + piece.Text.Length > maximum)) Flush();
+            if (pending.Length == 0) firstTitle = piece.Title;
+            pending += piece.Text;
+            lastTitle = piece.Title;
+        }
+        Flush(); // A short final group is allowed; never exceed the maximum to meet the minimum.
+        return result;
+    }
+
+    private static IEnumerable<string> SplitSection(string source, int maximum)
+    {
+        // Preserve original separators. Prefer paragraph boundaries, then lines, then scalar-safe cuts.
+        var paragraphs = Regex.Matches(source, @"\r?\n[ \t]*\r?\n").Select(m => m.Index + m.Length).ToArray();
+        var lines = Regex.Matches(source, @"\n").Select(m => m.Index + 1).ToArray();
+        var start = 0;
+        while (start < source.Length)
+        {
+            var end = Math.Min(source.Length, start + maximum);
+            if (end < source.Length)
+            {
+                var paragraphEnd = BoundaryAtOrBefore(paragraphs, end);
+                var lineEnd = BoundaryAtOrBefore(lines, end);
+                if (paragraphEnd > start) end = paragraphEnd;
+                else if (lineEnd > start) end = lineEnd;
+                else if (char.IsHighSurrogate(source[end - 1]) && char.IsLowSurrogate(source[end]) || source[end - 1] == '\r' && source[end] == '\n') end--;
+            }
+            yield return source[start..end];
+            start = end;
+        }
+    }
+
+    private static int BoundaryAtOrBefore(int[] boundaries, int offset)
+    {
+        var index = Array.BinarySearch(boundaries, offset);
+        if (index < 0) index = ~index - 1;
+        return index < 0 ? 0 : boundaries[index];
     }
 
     public static async Task<List<TextChunk>> ChildrenAsync(TextAiPipeline pipeline, TextRagSettings settings,

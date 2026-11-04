@@ -119,7 +119,7 @@ public class StructuredResponseTests
         Assert.Equal(DisclosureDecision.Pending, result.Decision);
         Assert.Null(result.Content);
         Assert.Equal(2, ai.Prompts.Count);
-        Assert.Contains("allow, withhold, or pending", ai.Prompts[1]);
+        Assert.Contains("allowed, withhold, or pending", ai.Prompts[1]);
     }
 
     [Fact]

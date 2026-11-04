@@ -15,25 +15,33 @@ public partial class ManagementWindow : Window
     private List<RouteCategoryDraft> _routeRows = [];
     private RouteDraft? _selectedRoute;
     private bool _refreshing = true;
-    private readonly RetrievalPipelineSettings _retrieval;
+    private RetrievalPipelineSettings _retrieval;
     public ManagementSettings? Result { get; private set; }
     public TextRagSettings Limits { get; private set; }
 
     public ManagementWindow(AppSettings settings, int tab)
     {
         InitializeComponent();
-        var source = settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality);
+        var source = (settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality)).ToOrderedSettings();
         Limits = settings.TextPipeline;
         _retrieval = source.Retrieval;
         _prompts = new(source.Prompts.Select(p => new PromptDraft(p, p.Id.StartsWith("system.", StringComparison.Ordinal))));
         _categories = new(source.Categories.Select(c => new CategoryDraft(c)));
-        _routes = new(new[] { source.DefaultTextRoute }.Concat(source.ExtensionRoutes).Select(r => new RouteDraft(r)));
+        _routes = new(source.OrderedRoutes().Select(r => new RouteDraft(r)));
         PromptPurposeBox.ItemsSource = new[] { new PurposeChoice(PromptPurpose.Classification, "分類用"), new(PromptPurpose.Format, "フォーマット用"),
-            new(PromptPurpose.Chunk, "チャンク用"), new(PromptPurpose.Search, "検索用"), new(PromptPurpose.Confidentiality, "秘匿判定用") };
+            new(PromptPurpose.Chunk, "チャンクの結合用"), new(PromptPurpose.ParentChunk, "チャンクをまとめる用"),
+            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用") };
+        ChildModeBox.ItemsSource = new Choice[] { new("Inherit", "共通動作（Markdownは機械的に結合）"), new("Paragraphs", "結合しない：段落単位"),
+            new("Mechanical", "機械的に結合：文字数とモデル上限"), new("Llm", "LLMで結合を判断") };
+        ParentModeBox.ItemsSource = new Choice[] { new("Inherit", "共通の親チャンク設定"), new("None", "親を作らない"),
+            new("Structure", "機械的：Markdownは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
+        Choice[] inputChoices = [new("Text", "通常のテキスト"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
+        SourceModeBox.ItemsSource = inputChoices;
+        EncodingModeBox.ItemsSource = TextEncodings.All;
+        AddSourceModeBox.ItemsSource = inputChoices; AddSourceModeBox.SelectedValue = "Text";
         PromptList.ItemsSource = _prompts;
         CategoryGrid.ItemsSource = _categories;
         RouteList.ItemsSource = _routes;
-        ExtensionsBox.Text = string.Join(" ", source.TextExtensions);
         DocumentLimitBox.Text = Limits.MaxDocumentCharacters.ToString();
         ChunkLimitBox.Text = Limits.MaxChunkCharacters.ToString();
         OutputLimitBox.Text = Limits.MaxOutputTokens.ToString();
@@ -45,12 +53,7 @@ public partial class ManagementWindow : Window
         PatternsBox.IsChecked = _retrieval.PatternsEnabled;
         LlmBox.IsChecked = _retrieval.LlmEnabled;
         PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
-        RefreshRetrieval(_retrieval.SearchPromptId, _retrieval.ConfidentialityPromptId);
-        var nomic = EmbeddingInput.IsNomicV2(settings.Ai.EmbeddingModel);
-        SearchPromptPanel.Visibility = nomic ? Visibility.Collapsed : Visibility.Visible;
-        SearchPromptNotice.Text = nomic
-            ? "nomicはモデル専用の検索形式を使うため、検索プロンプトの設定は不要です。ここでは秘匿機能を設定します。"
-            : "検索指示文に対応するEmbeddingモデルでは、選択した検索用プロンプトを使用します。";
+        RefreshRetrieval(_retrieval.ConfidentialityPromptId);
         _refreshing = false;
         PromptList.SelectedIndex = 0;
         RouteList.SelectedIndex = 0;
@@ -78,10 +81,12 @@ public partial class ManagementWindow : Window
         public bool Excluded { get; set; } = category.Excluded;
         public ManagedCategory Build() => new(Id, Name, Description, Excluded);
     }
-    private sealed class RouteDraft(TextRoute value)
+    private sealed class RouteDraft(TextRoute value) : INotifyPropertyChanged
     {
-        public TextRoute Value { get; set; } = value;
-        public string Label => Value.Extension == "*" ? "共通設定（個別指定なし）" : Value.Extension;
+        private TextRoute _value = value;
+        public TextRoute Value { get => _value; set { _value = value; PropertyChanged?.Invoke(this, new(nameof(Label))); } }
+        public string Label => $"{Value.Name}（{string.Join(" ", Value.Extensions ?? [])}）";
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
     public sealed class RouteCategoryDraft
     {
@@ -90,6 +95,7 @@ public partial class ManagementWindow : Window
         public bool Enabled { get; set; }
         public string FormatKey { get; set; } = Inherit;
         public string ChunkKey { get; set; } = Inherit;
+        public string ParentKey { get; set; } = Inherit;
     }
     private List<Choice> Choices(PromptPurpose purpose, bool skip = false, bool inherit = false)
     {
@@ -125,9 +131,10 @@ public partial class ManagementWindow : Window
         if (PromptList.SelectedItem is not PromptDraft row) return;
         CaptureRoute();
         if (row.IsSystem) { ManagerStatus.Text = "配布プロンプトは削除できません。"; return; }
-        if (Selection(SearchPromptBox) == row.Id || Selection(ConfidentialityPromptBox) == row.Id || _routes.Any(r =>
+        if (Selection(ConfidentialityPromptBox) == row.Id || _routes.Any(r =>
             r.Value.ClassifyPromptId == row.Id || r.Value.FormatPromptId == row.Id || r.Value.ChunkPromptId == row.Id ||
-            r.Value.CategoryOverrides.Any(s => s.FormatPromptId == row.Id || s.ChunkPromptId == row.Id)))
+            r.Value.ParentPromptId == row.Id || r.Value.CodePromptId == row.Id ||
+            r.Value.CategoryOverrides.Any(s => s.FormatPromptId == row.Id || s.ChunkPromptId == row.Id || s.ParentPromptId == row.Id)))
         { ManagerStatus.Text = "使用中のプロンプトです。パイプラインの選択を変更してから削除してください。"; return; }
         _prompts.Remove(row); PromptList.SelectedIndex = 0; ManagerStatus.Text = "";
     }
@@ -151,12 +158,20 @@ public partial class ManagementWindow : Window
         CommitGrids();
         _selectedRoute.Value = _selectedRoute.Value with
         {
+            Name = RouteNameBox.Text.Trim(), Extensions = RouteExtensionsBox.Text.Split([' ', ',', ';', '\r', '\n', '\t', '、'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).ToList(),
             ClassifyEnabled = ClassifyBox.IsChecked == true, ClassifyPromptId = Selection(ClassifyPromptBox),
+            ChildMode = Enum.Parse<ChildChunkMode>(Selection(ChildModeBox)), ParentMode = Enum.Parse<ParentChunkMode>(Selection(ParentModeBox)),
+            SourceMode = Enum.Parse<SourceCodeMode>(Selection(SourceModeBox)),
+            EncodingMode = (TextEncodingMode)EncodingModeBox.SelectedValue,
+            MarkdownParentMinCharacters = int.TryParse(MarkdownParentMinBox.Text, out var minimum) ? minimum : -1,
+            MarkdownParentMaxCharacters = int.TryParse(MarkdownParentMaxBox.Text, out var maximum) ? maximum : -1,
+            ParentPromptId = Selection(DefaultParentBox), CodePromptId = Selection(CodePromptBox),
             DefaultCategoryId = DefaultCategoryBox.SelectedValue as string ?? "",
             FormatPromptId = PromptId(Selection(DefaultFormatBox))!, ChunkPromptId = PromptId(Selection(DefaultChunkBox))!,
             EnabledCategoryIds = _routeRows.Where(r => r.Enabled).Select(r => r.Id).ToList(),
-            CategoryOverrides = _routeRows.Where(r => r.FormatKey != Inherit || r.ChunkKey != Inherit)
-                .Select(r => new CategorySteps(r.Id, PromptId(r.FormatKey), PromptId(r.ChunkKey))).ToList()
+            CategoryOverrides = _routeRows.Where(r => r.FormatKey != Inherit || r.ChunkKey != Inherit || r.ParentKey != Inherit)
+                .Select(r => new CategorySteps(r.Id, PromptId(r.FormatKey), PromptId(r.ChunkKey), PromptId(r.ParentKey))).ToList()
         };
     }
     private void PopulateRoute(RouteDraft route)
@@ -165,16 +180,25 @@ public partial class ManagementWindow : Window
         try
         {
             var value = route.Value;
+            RouteNameBox.Text = value.Name; RouteExtensionsBox.Text = string.Join(" ", value.Extensions ?? []);
+            ChildModeBox.SelectedValue = value.ChildMode.ToString(); ParentModeBox.SelectedValue = value.ParentMode.ToString();
+            SourceModeBox.SelectedValue = value.SourceMode.ToString();
+            EncodingModeBox.SelectedValue = value.EncodingMode;
+            MarkdownParentMinBox.Text = value.MarkdownParentMinCharacters.ToString();
+            MarkdownParentMaxBox.Text = value.MarkdownParentMaxCharacters.ToString();
+            DefaultParentBox.ItemsSource = Choices(PromptPurpose.ParentChunk); DefaultParentBox.SelectedValue = value.ParentPromptId;
+            CodePromptBox.ItemsSource = Choices(PromptPurpose.CodeDescription); CodePromptBox.SelectedValue = value.CodePromptId;
             ClassifyBox.IsChecked = value.ClassifyEnabled;
             ClassifyPromptBox.ItemsSource = Choices(PromptPurpose.Classification); ClassifyPromptBox.SelectedValue = value.ClassifyPromptId;
             DefaultFormatBox.ItemsSource = Choices(PromptPurpose.Format, true); DefaultFormatBox.SelectedValue = Key(value.FormatPromptId);
             DefaultChunkBox.ItemsSource = Choices(PromptPurpose.Chunk, true); DefaultChunkBox.SelectedValue = Key(value.ChunkPromptId);
             DefaultCategoryBox.ItemsSource = _categories.ToArray(); DefaultCategoryBox.SelectedValue = value.DefaultCategoryId;
             FormatColumn.ItemsSource = Choices(PromptPurpose.Format, true, true); ChunkColumn.ItemsSource = Choices(PromptPurpose.Chunk, true, true);
+            ParentColumn.ItemsSource = Choices(PromptPurpose.ParentChunk, inherit: true);
             _routeRows = _categories.Select(c =>
             {
                 var steps = value.CategoryOverrides.SingleOrDefault(s => s.CategoryId == c.Id);
-                return new RouteCategoryDraft { Id = c.Id, Name = c.Name, Enabled = value.EnabledCategoryIds.Contains(c.Id), FormatKey = Key(steps?.FormatPromptId), ChunkKey = Key(steps?.ChunkPromptId) };
+                return new RouteCategoryDraft { Id = c.Id, Name = c.Name, Enabled = value.EnabledCategoryIds.Contains(c.Id), FormatKey = Key(steps?.FormatPromptId), ChunkKey = Key(steps?.ChunkPromptId), ParentKey = Key(steps?.ParentPromptId) };
             }).ToList();
             RouteCategoryGrid.ItemsSource = _routeRows;
         }
@@ -189,32 +213,94 @@ public partial class ManagementWindow : Window
     private void AddRoute(object sender, RoutedEventArgs e)
     {
         CaptureRoute();
-        var ext = NewExtensionBox.Text.Trim().ToLowerInvariant();
-        if (!ManagementSettings.ValidExtension(ext) || _routes.Any(r => r.Value.Extension == ext))
-        { ManagerStatus.Text = "拡張子を .cs のように入力してください。同じ拡張子の設定は追加できません。"; return; }
-        var entry = new RouteDraft(_routes[0].Value with { Extension = ext });
-        _routes.Add(entry); RouteList.SelectedItem = entry;
-        if (!Extensions().Contains(ext)) ExtensionsBox.Text += " " + ext;
-        NewExtensionBox.Clear(); ManagerStatus.Text = "共通設定をコピーしました。この拡張子の処理を変更できます。";
+        if (_routes.Count >= 64) { ManagerStatus.Text = "設定は64件以内で指定してください。"; return; }
+        var kind = AddSourceModeBox.SelectedValue as string ?? "Text";
+        var mode = Enum.Parse<SourceCodeMode>(kind);
+        var language = SourceLanguages.Find(mode);
+        var entry = new RouteDraft(_routes[^1].Value with { Name = (language?.Name ?? "テキスト") + "用",
+            Extensions = language is null ? [".txt"] : [.. language.Extensions], SourceMode = mode });
+        _routes.Insert(0, entry); RouteList.SelectedItem = entry;
+        ManagerStatus.Text = "最優先の位置へ追加しました。名前・拡張子・処理方法を編集し、上下ボタンで順序を調整できます。";
     }
     private void RemoveRoute(object sender, RoutedEventArgs e)
     {
-        if (_selectedRoute is null || _selectedRoute.Value.Extension == "*") { ManagerStatus.Text = "共通設定は削除できません。"; return; }
-        var row = _selectedRoute; _routes.Remove(row); RouteList.SelectedIndex = 0;
-        ManagerStatus.Text = "対象拡張子は維持し、共通設定を使うようにしました。";
+        if (_selectedRoute is null) return;
+        if (_routes.Count == 1) { ManagerStatus.Text = "適用する設定を少なくとも1件残してください。"; return; }
+        var row = _selectedRoute;
+        _refreshing = true;
+        try { _routes.Remove(row); RouteList.SelectedIndex = 0; _selectedRoute = _routes[0]; }
+        finally { _refreshing = false; }
+        PopulateRoute(_selectedRoute);
+        ManagerStatus.Text = "削除しました。残りの設定に一致しない拡張子は処理対象外になります。";
     }
-    private List<string> Extensions() => ExtensionsBox.Text.Split([' ', ',', ';', '\r', '\n', '\t', '、'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).ToList();
-    private void RefreshRetrieval(string search, string secret)
+    private void MoveRoute(object sender, RoutedEventArgs e)
     {
-        SearchPromptBox.ItemsSource = Choices(PromptPurpose.Search); SearchPromptBox.SelectedValue = search;
+        CaptureRoute();
+        if (_selectedRoute is null) return;
+        var index = _routes.IndexOf(_selectedRoute);
+        var next = index + ((sender as Button)?.Tag as string == "up" ? -1 : 1);
+        if (next < 0 || next >= _routes.Count) return;
+        _refreshing = true;
+        try { _routes.Move(index, next); RouteList.SelectedItem = _selectedRoute; }
+        finally { _refreshing = false; }
+        ManagerStatus.Text = "上の設定が優先されます。拡張子が一致した最初の設定だけを使用します。";
+    }
+    private void RefreshRetrieval(string secret)
+    {
         ConfidentialityPromptBox.ItemsSource = Choices(PromptPurpose.Confidentiality); ConfidentialityPromptBox.SelectedValue = secret;
+    }
+    private void ResetDefaults(object sender, RoutedEventArgs e)
+    {
+        var answer = MessageBox.Show(this,
+            "ユーザー作成のプロンプトとカテゴリ、すべての取り込み・取得パイプライン設定、秘匿パターン、文字数などの上限を初期状態に戻します。\n\n" +
+            "現在の編集内容は破棄され、「保存して適用」を押すと保存済みの設定も置き換わります。秘匿機能はパターン検査ON・AI判定OFFに戻ります。\n\n" +
+            "元の文書やフォルダ・AI・DB・MCPの接続設定は削除しません。適用後は再取り込みが必要です。\n\n" +
+            "デフォルトに戻しますか？",
+            "パイプライン設定の初期化", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes) return;
+
+        // Reset only the editor draft. The existing Save/Cancel path remains the persistence boundary.
+        var defaults = ManagementSettings.CreateDefault();
+        _refreshing = true;
+        try
+        {
+            CategoryGrid.CancelEdit(DataGridEditingUnit.Cell); CategoryGrid.CancelEdit(DataGridEditingUnit.Row);
+            RouteCategoryGrid.CancelEdit(DataGridEditingUnit.Cell); RouteCategoryGrid.CancelEdit(DataGridEditingUnit.Row);
+            _selectedRoute = null;
+            _routeRows = [];
+            RouteCategoryGrid.ItemsSource = null;
+            PromptEditor.DataContext = null;
+            _prompts.Clear(); _categories.Clear(); _routes.Clear();
+            foreach (var prompt in defaults.Prompts) _prompts.Add(new(prompt, true));
+            foreach (var category in defaults.Categories) _categories.Add(new(category));
+            foreach (var route in defaults.OrderedRoutes()) _routes.Add(new(route));
+            Limits = new();
+            _retrieval = defaults.Retrieval;
+            DocumentLimitBox.Text = Limits.MaxDocumentCharacters.ToString();
+            ChunkLimitBox.Text = Limits.MaxChunkCharacters.ToString();
+            OutputLimitBox.Text = Limits.MaxOutputTokens.ToString();
+            ParentChunksBox.IsChecked = Limits.ParentChunksEnabled;
+            ParagraphChildrenBox.IsChecked = Limits.ParagraphChildren;
+            ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
+            ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
+            PatternsBox.IsChecked = _retrieval.PatternsEnabled;
+            LlmBox.IsChecked = _retrieval.LlmEnabled;
+            PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
+            RefreshRetrieval(_retrieval.ConfidentialityPromptId);
+            PromptList.SelectedIndex = 0;
+            RouteList.SelectedIndex = 0;
+            _selectedRoute = _routes[0];
+        }
+        finally { _refreshing = false; }
+        PopulateRoute(_selectedRoute);
+        ManagerStatus.Text = "編集内容をデフォルトに戻しました。「保存して適用」で確定します。画面の「キャンセル」で保存済みの設定を維持できます。";
     }
     private void TabChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_refreshing || !ReferenceEquals(e.Source, ManagerTabs)) return;
         CommitGrids(); CaptureRoute();
         if (_selectedRoute is not null) PopulateRoute(_selectedRoute);
-        RefreshRetrieval(Selection(SearchPromptBox), Selection(ConfidentialityPromptBox));
+        RefreshRetrieval(Selection(ConfidentialityPromptBox));
     }
     private void Apply(object sender, RoutedEventArgs e)
     {
@@ -224,8 +310,8 @@ public partial class ManagementWindow : Window
         var management = new ManagementSettings
         {
             UserPrompts = _prompts.Where(p => !p.IsSystem).Select(p => p.Build()).ToList(), Categories = _categories.Select(c => c.Build()).ToList(),
-            TextExtensions = Extensions(), DefaultTextRoute = _routes[0].Value, ExtensionRoutes = _routes.Skip(1).Select(r => r.Value).ToList(),
-            Retrieval = _retrieval with { SearchPromptId = Selection(SearchPromptBox), ConfidentialityPromptId = Selection(ConfidentialityPromptBox),
+            Version = 2, Routes = _routes.Select(r => r.Value).ToList(),
+            Retrieval = _retrieval with { ConfidentialityPromptId = Selection(ConfidentialityPromptBox),
                 ConfidentialityEnabled = ConfidentialityBox.IsChecked == true, PatternsEnabled = PatternsBox.IsChecked == true, LlmEnabled = LlmBox.IsChecked == true,
                 Patterns = PatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() }
         };
