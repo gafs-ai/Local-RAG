@@ -25,6 +25,25 @@ public sealed class SettingsStore(string dataDirectory)
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     public string FilePath { get; } = Path.Combine(Path.GetFullPath(dataDirectory), "settings.json");
 
+    // The bridge does not interpret ingestion settings. Future pipeline/schema revisions
+    // must not prevent an already running desktop server from being reached.
+    public async Task<McpSettings> LoadMcpAsync(CancellationToken cancellationToken = default)
+    {
+        await using var stream = File.OpenRead(FilePath);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("MCP接続設定が不正です。");
+        var entries = document.RootElement.EnumerateObject().Where(p => p.Name == "Mcp").ToArray();
+        if (entries.Length != 1 || entries[0].Value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("MCP接続設定がありません、または重複しています。");
+        var fields = entries[0].Value.EnumerateObject().ToArray();
+        if (fields.GroupBy(p => p.Name, StringComparer.Ordinal).Any(g => g.Count() != 1))
+            throw new InvalidDataException("MCP接続設定が重複しています。");
+        var settings = entries[0].Value.Deserialize<McpSettings>()!;
+        if (settings.Validate().Count != 0) throw new InvalidDataException("MCP接続設定が不正です。");
+        return settings;
+    }
+
     public async Task<AppSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
         if (!File.Exists(FilePath)) return Migrate(new AppSettings { Management = ManagementSettings.CreateDefault() });

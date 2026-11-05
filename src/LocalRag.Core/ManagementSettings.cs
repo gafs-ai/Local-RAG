@@ -105,11 +105,12 @@ public sealed record ManagementSettings
     {
         var defaults = FromLegacy(new(), new());
         return defaults with { Version = 2, Routes = [
-            .. SourceLanguages.All.Select(l => new TextRoute { Name = l.Name + "用", Extensions = [.. l.Extensions], SourceMode = l.Mode }),
+            .. SourceLanguages.All.Select(l => new TextRoute { Name = l.Name + "用", Extensions = [.. l.Extensions], SourceMode = l.Mode,
+                ClassifyEnabled = false, DefaultCategoryId = "specification" }),
             new() { Name = "Markdown用", Extensions = [".md", ".markdown"], SourceMode = SourceCodeMode.Text,
-                ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure,
+                ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure, FormatPromptId = "",
                 MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000 },
-            new() { Name = "共通設定", Extensions = [".txt"], SourceMode = SourceCodeMode.Text, ChildMode = ChildChunkMode.Llm }] };
+            new() { Name = "共通設定", Extensions = [".txt"], SourceMode = SourceCodeMode.Text, ChildMode = ChildChunkMode.Llm, FormatPromptId = "" }] };
     }
 
     public TextRagSettings Resolve(TextRagSettings limits, string path)

@@ -91,7 +91,11 @@ public class SourceCodePipelineTests
         using var blocked = new TextRagService(repository, second, blockedSettings, Path.Combine(fixture.Root, "data"));
         using var blockedCalls = new LocalRetrievalCalls(blocked);
         var hidden = McpTests.Body(await blockedCalls.CallAsync("search", "足し算", 10, null, default));
-        Assert.All(hidden.GetProperty("results").EnumerateArray(), h => Assert.Equal(new[] { "decision", "id" }, h.EnumerateObject().Select(p => p.Name).Order().ToArray()));
+        Assert.All(hidden.GetProperty("results").EnumerateArray(), h =>
+        {
+            Assert.Equal(new[] { "decision", "id", "source" }, h.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            Assert.Equal(path, h.GetProperty("source").GetString());
+        });
         await File.AppendAllTextAsync(path, "\n// changed");
         Assert.Null(await resumed.FetchAsync(ready.DocumentId));
         Assert.Empty(await resumed.SearchAsync("足し算"));

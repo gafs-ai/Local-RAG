@@ -46,8 +46,10 @@ public partial class MainWindow
             _ragCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _ragAi = new LemonadeTextAi(_loadedSettings);
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);
+            AttachIngestionActivity(_rag);
             _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));
-            ShowDocuments(await _repository.DocumentsAsync(_lifetime.Token));
+            ShowDocuments(await _repository.DocumentStatusesAsync(_lifetime.Token));
+            await RefreshHistoryAsync(_rag);
             var policy = _loadedSettings.DisclosurePolicy();
             PolicyStatus.Text = policy.Enabled
                 ? $"機密検査：パターン {(policy.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM（試験的）{(policy.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
@@ -88,11 +90,11 @@ public partial class MainWindow
             var progress = new Progress<string>(message => Dispatcher.Invoke(() => RagStatus.Text = message));
             await _rag!.RunMonitoringAsync(_persistentMonitor!, progress, async result =>
             {
-                var documents = await _repository!.DocumentsAsync(token).ConfigureAwait(false);
+                var documents = await _repository!.DocumentStatusesAsync(token).ConfigureAwait(false);
                 await Dispatcher.InvokeAsync(() =>
                 {
                     ShowDocuments(documents);
-                    RagStatus.Text = $"直近の処理：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、更新除外 {result.Deferred}。定期チェックと待ち行列の処理を継続します。";
+                    RagStatus.Text = $"直近の処理：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、索引対象外 {result.Deleted}、更新除外 {result.Deferred}。定期チェックと待ち行列の処理を継続します。";
                 });
             }, ex => Dispatcher.InvokeAsync(() =>
             {
@@ -111,7 +113,7 @@ public partial class MainWindow
     {
         var progress = new Progress<string>(message => Dispatcher.Invoke(() => RagStatus.Text = message));
         var result = await _rag!.ScanAsync(progress, token).ConfigureAwait(false);
-        var documents = await _repository!.DocumentsAsync(token).ConfigureAwait(false);
+        var documents = await _repository!.DocumentStatusesAsync(token).ConfigureAwait(false);
         await Dispatcher.InvokeAsync(() =>
         {
             RagStatus.Text = $"完了：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、更新除外 {result.Deferred}、未探索フォルダ {result.InaccessibleRoots}。";
@@ -119,10 +121,14 @@ public partial class MainWindow
         });
     }
 
-    private void ShowDocuments(IReadOnlyList<TextDocumentState> documents) =>
-        DocumentStatusList.ItemsSource = documents.Select(d => $"{d.Path} — {d.Status}" +
+    private void ShowDocuments(IReadOnlyList<TextDocumentState> documents)
+    {
+        var configuration = _loadedSettings.PipelineConfigurationId();
+        DocumentStatusList.ItemsSource = documents.OrderBy(d => d.Path, StringComparer.OrdinalIgnoreCase).Select(d => $"{d.Path} — {PipelineErrors.Status(d.Status, d.WithdrawalReason)}" +
+            (d.ConfigurationId == configuration || d.Status == "deleted" ? "" : "（旧設定の記録・再処理待ち）") +
             (d.ErrorCode is null ? "" : $"（{PipelineErrors.Describe(d.ErrorStage, d.ErrorDetailCode)}）") +
             (d.ProcessingNotices.Count == 0 ? "" : " / " + string.Join("、", d.ProcessingNotices.Select(PipelineErrors.Notice)))).ToArray();
+    }
 
     private async void PauseMonitoring(object sender, RoutedEventArgs e)
     {
@@ -148,7 +154,8 @@ public partial class MainWindow
         {
             SearchStatus.Text = "検索と機密検査を実行しています。取り込み中はその完了を待ちます…";
             var results = await _rag.SearchAsync(query, 5, _ragCancellation!.Token);
-            SearchList.ItemsSource = results.Select(r => new SearchRow(r.DocumentId, r.SourcePath ?? $"存在のみ：{r.DocumentId}（{r.Decision}）")).ToArray();
+            SearchList.ItemsSource = results.Select(r => new SearchRow(r.DocumentId,
+                r.Content is null ? $"{r.SourcePath ?? r.DocumentId.ToString()}（本文非開示：{r.Decision}）" : r.SourcePath!)).ToArray();
             SearchOutput.Text = string.Join("\n\n---\n\n", results.Select(Describe));
             SearchStatus.Text = results.Count == 0 ? "現在の設定と元ファイルに一致する検索結果はありません。" : $"{results.Count}件の結果です。";
         }));
@@ -166,7 +173,8 @@ public partial class MainWindow
     }
 
     private static string Describe(TextSearchResult result) => result.Content is null
-        ? $"文書ID: {result.DocumentId}\n存在のみ通知（{result.Decision}）。本文・出典は表示しません。"
+        ? $"文書ID: {result.DocumentId}\n本文は非開示です（{result.Decision}）。" +
+            (result.SourcePath is null ? "\n原本のパスは取得できません。" : $"\n原本のパス: {result.SourcePath}\n内容を確認する場合は、このパスをコピーしてエクスプローラーから開いてください。")
         : $"{result.SourcePath}\n文書ID: {result.DocumentId} ／ {result.Decision}" +
             (result.StartParagraph is null ? "\n" : $" ／ 段落 {result.StartParagraph}～{result.EndParagraph}\n") +
             (result.ParentChunkId is null ? "" : $"親チャンク: {result.SectionTitle ?? "文書全体"}\n") + result.Content;

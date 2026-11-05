@@ -17,6 +17,10 @@ public class MarkdownParentBoundsTests
         Assert.Equal(new[] { ".md", ".markdown" }, routes[^2].Extensions);
         Assert.Equal(new[] { ".txt" }, routes[^1].Extensions);
         Assert.Equal(ChildChunkMode.Llm, settings.PipelineFor("a.txt").EffectiveChildMode);
+        Assert.False(settings.PipelineFor("a.txt").FormatEnabled);
+        Assert.False(settings.PipelineFor("a.md").FormatEnabled);
+        Assert.False(settings.PipelineFor("a.cs").ClassifyEnabled);
+        Assert.Equal("specification", settings.PipelineFor("a.cs").DefaultCategory);
         Assert.Equal(routes.SelectMany(r => r.Extensions!).Count(), routes.SelectMany(r => r.Extensions!).Distinct().Count());
         Assert.Equal(500, settings.PipelineFor("a.md").MarkdownParentMinCharacters);
         Assert.Equal(4000, settings.PipelineFor("a.md").MarkdownParentMaxCharacters);

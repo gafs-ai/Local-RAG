@@ -22,7 +22,18 @@ public sealed class IgnorePolicy(IReadOnlyList<WatchedFolder> folders, IReadOnly
         // The outermost configured root supplies the scope even when a nested root is also selected.
         var boundary = folders.Select(f => Path.TrimEndingDirectorySeparator(Path.GetFullPath(f.Path)))
             .Where(root => TextFiles.Within(path, root)).OrderBy(root => root.Length).FirstOrDefault();
-        var ignored = excludeDotHiddenEntries && TextFiles.IsDotHidden(path);
+        // A selected root explicitly opts in to its own name and ancestors. For
+        // overlapping roots, use the most specific one that actually covers this entry;
+        // a non-recursive child root must not expose its deeper descendants.
+        var dotBoundary = folders.Where(f => TextFiles.InFolder(path, f) ||
+                string.Equals(Path.TrimEndingDirectorySeparator(path),
+                    Path.TrimEndingDirectorySeparator(Path.GetFullPath(f.Path)), StringComparison.OrdinalIgnoreCase))
+            .Select(f => Path.TrimEndingDirectorySeparator(Path.GetFullPath(f.Path)))
+            .OrderByDescending(root => root.Length).FirstOrDefault();
+        var ignored = excludeDotHiddenEntries && (dotBoundary is null ? TextFiles.IsDotHidden(path) :
+            Path.GetRelativePath(dotBoundary, path)
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)
+                .Any(part => part != "." && part.StartsWith('.')));
         if (boundary is null) return ignored;
         var relative = Path.GetRelativePath(boundary, path).Replace('\\', '/');
         if (relative == ".") { _ = Load(boundary); return directory && traversal ? false : ignored; }

@@ -121,11 +121,11 @@ public class TextRagTests
         Assert.Equal(1, scan.FailedRoots);
         var read = await TextFiles.ReadAsync(scan.Files[0], 100, default);
         Assert.Equal("日本語", read.Text);
-        await Assert.ThrowsAsync<InvalidDataException>(() => TextFiles.ReadAsync(scan.Files[0], 2, default));
+        await Assert.ThrowsAsync<PipelineValidationException>(() => TextFiles.ReadAsync(scan.Files[0], 2, default));
     }
 
     [ServerFact]
-    public async Task RealRepositoryIndexesFiltersChangesAndWithholdsSourceMetadata()
+    public async Task RealRepositoryIndexesFiltersChangesAndReturnsPathWithoutWithheldContent()
     {
         await using var fixture = await ServerFixture.StartAsync();
         var input = fixture.Root + "-inputs";
@@ -152,9 +152,11 @@ public class TextRagTests
         var blocked = Assert.Single(hits, h => h.DocumentId == secret.DocumentId);
         Assert.Equal(DisclosureDecision.Withheld, blocked.Decision);
         Assert.Null(blocked.Content);
-        Assert.Null(blocked.SourcePath);
+        Assert.Equal(secretFile, blocked.SourcePath);
         Assert.Null(blocked.StartParagraph);
-        Assert.Null((await service.FetchAsync(secret.DocumentId))!.Content);
+        var secretFetch = (await service.FetchAsync(secret.DocumentId))!;
+        Assert.Null(secretFetch.Content);
+        Assert.Equal(secretFile, secretFetch.SourcePath);
         Assert.DoesNotContain(hits, h => documents.Single(d => d.DocumentId == h.DocumentId).Status == "excluded");
 
         // Changed prompts share the same embedding table, but old configuration rows cannot occupy result slots.
@@ -213,7 +215,11 @@ public class TextRagTests
         var hit = Assert.Single(await resumed.SearchAsync("moon", 1));
         Assert.Equal(DisclosureDecision.Pending, hit.Decision);
         Assert.Null(hit.Content);
-        Assert.Null(hit.SourcePath);
+        Assert.Equal(Path.Combine(input, "guide.txt"), hit.SourcePath);
+        var pendingFetch = (await resumed.FetchAsync(hit.DocumentId))!;
+        Assert.Equal(DisclosureDecision.Pending, pendingFetch.Decision);
+        Assert.Null(pendingFetch.Content);
+        Assert.Equal(hit.SourcePath, pendingFetch.SourcePath);
     }
 
     [ServerFact]

@@ -16,7 +16,10 @@ public sealed partial class TextRagService
             await repository.SaveAsync(state, token).ConfigureAwait(false);
         }
         var units = state.CodeUnits.ToList();
-        var budget = await pipeline.InputBudgetAsync(options.CodePrompt, token).ConfigureAwait(false);
+        // Prose descriptions require more output than category IDs or paragraph ranges.
+        // Reserve the same output budget during subdivision and both completion attempts.
+        var outputTokens = Math.Min(options.MaxOutputTokens, 512);
+        var budget = await pipeline.InputBudgetAsync(options.CodePrompt, token, outputTokens).ConfigureAwait(false);
         for (var i = 0; i < units.Count; i++)
         {
             var unit = units[i];
@@ -27,13 +30,28 @@ public sealed partial class TextRagService
             {
                 token.ThrowIfCancellationRequested();
                 progress?.Report($"コード説明を作成中：{i + 1}/{units.Count}（{unit.Kind}）");
-                var description = await pipeline.JsonAsync(options.CodePrompt, Input(part), root =>
+                string description;
+                try
                 {
-                    var value = TextAiPipeline.StringProperty(root, "description");
-                    if (string.IsNullOrWhiteSpace(value) || value.Length > 4000)
-                        throw new PipelineValidationException("response_schema", "コード説明の本文が不正です。");
-                    return value;
-                }, token).ConfigureAwait(false);
+                    description = await pipeline.JsonAsync(options.CodePrompt, Input(part), root =>
+                    {
+                        var value = TextAiPipeline.StringProperty(root, "description");
+                        if (string.IsNullOrWhiteSpace(value) || value.Length > 4000)
+                            throw new PipelineValidationException("response_schema", "コード説明の本文が不正です。");
+                        return value;
+                    }, token, outputTokens).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is System.Text.Json.JsonException ||
+                    ex is PipelineValidationException { Code: "response_schema" or "output_incomplete" })
+                {
+                    token.ThrowIfCancellationRequested();
+                    // Invalid model output is discarded after the correction attempt. Index only
+                    // known structural facts, never a guessed behavior or the raw source as prose.
+                    description = $"構造情報：{unit.Kind} {unit.Name}（{unit.StartLine}–{unit.EndLine}行）。" +
+                        "この断片の動作説明はAI応答が不正のため未作成です。";
+                    unit = unit with { DescriptionFallbackUsed = true };
+                    state = state with { ProcessingNotices = state.ProcessingNotices.Append("code_description_structural").Distinct().ToList() };
+                }
                 unit = unit with { DescribedCharacters = unit.DescribedCharacters + part.Length, Descriptions = [.. unit.Descriptions, description] };
                 units[i] = unit;
                 state = state with { CodeUnits = units.ToList() };
@@ -49,7 +67,8 @@ public sealed partial class TextRagService
             var description = string.Join("\n\n", unit.Descriptions);
             if (description.Length == 0) throw new InvalidDataException("コード説明がありません。");
             var title = $"{unit.Kind}: {unit.Name}（{unit.StartLine}–{unit.EndLine}行）";
-            var text = $"説明（AI生成・長文は断片ごとの説明）：\n{description}\n\nソースコード：\n{unit.Code}";
+            var label = unit.DescriptionFallbackUsed ? "説明（AI生成・一部は構造情報のみ。動作説明が未作成の断片あり）" : "説明（AI生成・長文は断片ごとの説明）";
+            var text = $"{label}：\n{description}\n\nソースコード：\n{unit.Code}";
             parents.Add(new(unit.Id, i + 1, i + 1, text, title, unit.Kind, unit.StartLine, unit.EndLine, unit.ContainerId));
             foreach (var part in TextWindows.Split(description, options.MaxChunkCharacters, embeddingBudget))
                 chunks.Add(new(i + 1, i + 1, part, unit.Id));

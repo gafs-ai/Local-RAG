@@ -177,9 +177,11 @@ public class ParentChunkTests
             var hits = McpTests.Body(await calls.CallAsync("search", "needle", 5, null, default)).GetProperty("results");
             var hit = Assert.Single(hits.EnumerateArray());
             Assert.Equal("withheld", hit.GetProperty("decision").GetString());
-            Assert.Equal(2, hit.EnumerateObject().Count());
+            Assert.Equal(["decision", "id", "source"], hit.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            Assert.Equal(document.Path, hit.GetProperty("source").GetString());
             var fetch = McpTests.Body(await calls.CallAsync("fetch", null, 0, document.DocumentId.ToString("D"), default));
-            Assert.Equal(2, fetch.EnumerateObject().Count());
+            Assert.Equal(["decision", "id", "source"], fetch.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            Assert.Equal(document.Path, fetch.GetProperty("source").GetString());
         }
         var llm = new InspectAi();
         using (var checkedService = new TextRagService(repo, llm, settings with { Confidentiality = new() { PatternsEnabled = false, LlmEnabled = true } }, fixture.Root))

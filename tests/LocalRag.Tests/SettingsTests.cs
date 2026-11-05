@@ -6,6 +6,36 @@ namespace LocalRag.Tests;
 public class SettingsTests
 {
     [Fact]
+    public async Task BridgeReadsOnlyConnectionSettingsWithoutMigratingFuturePipelineSchema()
+    {
+        var store = NewStore();
+        Directory.CreateDirectory(Path.GetDirectoryName(store.FilePath)!);
+        const string content = """{"SchemaVersion":99,"Management":{"Version":99},"TextPipeline":null,"Mcp":{"Enabled":false,"Port":18769}}""";
+        await File.WriteAllTextAsync(store.FilePath, content);
+        var connection = await store.LoadMcpAsync();
+        Assert.False(connection.Enabled);
+        Assert.Equal(18769, connection.Port);
+        Assert.Equal(content, await File.ReadAllTextAsync(store.FilePath));
+        await Assert.ThrowsAnyAsync<Exception>(() => store.LoadAsync());
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"Mcp\":null}")]
+    [InlineData("{\"Mcp\":{\"Port\":0}}")]
+    [InlineData("{\"Mcp\":{\"Port\":65536}}")]
+    [InlineData("{\"Mcp\":{\"Enabled\":true,\"Enabled\":false}}")]
+    [InlineData("{\"Mcp\":{},\"Mcp\":{}}")]
+    public async Task BridgeRejectsMissingInvalidOrAmbiguousConnectionSettings(string content)
+    {
+        var store = NewStore();
+        Directory.CreateDirectory(Path.GetDirectoryName(store.FilePath)!);
+        await File.WriteAllTextAsync(store.FilePath, content);
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.LoadMcpAsync());
+        Assert.Equal(content, await File.ReadAllTextAsync(store.FilePath));
+    }
+
+    [Fact]
     public async Task NewSettingsEnablePatternsAndDisableExperimentalLlmInspection()
     {
         var store = NewStore();

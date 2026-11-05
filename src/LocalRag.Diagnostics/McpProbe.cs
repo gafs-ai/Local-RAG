@@ -28,7 +28,8 @@ internal static class McpProbe
             var decision = full.RootElement.GetProperty("decision").GetString();
             var hasText = full.RootElement.TryGetProperty("text", out var text);
             Console.WriteLine($"Fetch: decision={decision}, characters={(hasText ? text.GetString()!.Length : 0)}");
-            if (decision is "withheld" or "pending" && (hasText || full.RootElement.EnumerateObject().Count() != 2)) return 2;
+            if (decision is "withheld" or "pending" && (hasText ||
+                full.RootElement.EnumerateObject().Any(p => p.Name is not ("id" or "decision" or "source")))) return 2;
         }
         return results.Length > 0 ? 0 : 2;
     }

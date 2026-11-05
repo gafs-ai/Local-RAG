@@ -8,6 +8,26 @@ namespace LocalRag.Tests;
 
 public class StructuredResponseTests
 {
+    [Theory]
+    [InlineData("`{\"remove\":[]}`")]
+    [InlineData("```json\n{\n▁▁\"remove\":[]\n}\n```")]
+    public void ObservedModelWrappersAndIndentationAreRepairedWithoutChangingValues(string response)
+    {
+        using var parsed = TextAiPipeline.ParseResponse(response);
+        Assert.Empty(parsed.RootElement.GetProperty("remove").EnumerateArray());
+    }
+
+    [Fact]
+    public void IndentationRepairPreservesStringContentsAndRejectsConflictingOrInvalidValues()
+    {
+        using var parsed = TextAiPipeline.ParseResponse("{▁\"description\":\"a▁b \\\"quoted▁text\\\"\"}");
+        Assert.Equal("a▁b \"quoted▁text\"", parsed.RootElement.GetProperty("description").GetString());
+        Assert.ThrowsAny<Exception>(() => TextAiPipeline.ParseResponse("{\"remove\":[1▁2]}"));
+        Assert.ThrowsAny<Exception>(() => TextAiPipeline.ParseResponse("`{\"decision\":\"allow\"}` trailing"));
+        Assert.ThrowsAny<Exception>(() => TextAiPipeline.ParseResponse("{\"decision\":\"allow\",▁\"decision\":\"withhold\"}"));
+        Assert.ThrowsAny<Exception>(() => TextAiPipeline.ParseResponse("`{\"decision\":\"allow\"},{\"decision\":\"withhold\"}`"));
+    }
+
     [Fact]
     public async Task InvalidFormattingAfterRetryKeepsSourceAndRecordsFallback()
     {

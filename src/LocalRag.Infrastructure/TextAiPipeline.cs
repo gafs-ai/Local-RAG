@@ -33,8 +33,8 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
     public IReadOnlyCollection<string> Notices => _notices;
     private int OutputTokens => Math.Min(settings.MaxOutputTokens, 128);
     internal static int InputBytes(object input) => System.Text.Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(input, InputJson));
-    internal async Task<int> InputBudgetAsync(string prompt, CancellationToken token) =>
-        Math.Max(0, await ai.ChatInputBudgetAsync(prompt, OutputTokens, token).ConfigureAwait(false) - RetryReserveBytes);
+    internal async Task<int> InputBudgetAsync(string prompt, CancellationToken token, int? outputTokens = null) =>
+        Math.Max(0, await ai.ChatInputBudgetAsync(prompt, outputTokens ?? OutputTokens, token).ConfigureAwait(false) - RetryReserveBytes);
 
     public static JsonDocument ParseResponse(string output)
     {
@@ -45,6 +45,26 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             if (!text.EndsWith("```", StringComparison.Ordinal)) throw new PipelineValidationException("response_schema", "JSON応答が完結していません。");
             text = text[(text.IndexOf('\n') + 1)..^3].Trim();
         }
+        else if (text.Length >= 2 && text[0] == '`' && text[^1] == '`' && !text.StartsWith("``", StringComparison.Ordinal))
+            text = text[1..^1].Trim();
+        // Observed Gemma NPU output sometimes uses the SentencePiece space marker for JSON
+        // indentation. Only normalize outside strings; never alter keys or string values.
+        var characters = text.ToCharArray();
+        var quoted = false;
+        var escaped = false;
+        for (var i = 0; i < characters.Length; i++)
+        {
+            var c = characters[i];
+            if (quoted)
+            {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') quoted = false;
+            }
+            else if (c == '"') quoted = true;
+            else if (c == '\u2581') characters[i] = ' ';
+        }
+        text = new string(characters);
         var bytes = System.Text.Encoding.UTF8.GetBytes(text);
         var reader = new Utf8JsonReader(bytes);
         var parsed = JsonDocument.ParseValue(ref reader);
@@ -100,8 +120,9 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
         throw new PipelineValidationException("response_schema", "段落IDは整数で指定してください。");
     }
 
-    public async Task<T> JsonAsync<T>(string prompt, object input, Func<JsonElement, T> validate, CancellationToken token)
+    public async Task<T> JsonAsync<T>(string prompt, object input, Func<JsonElement, T> validate, CancellationToken token, int? outputTokens = null)
     {
+        var reservedOutput = Math.Min(settings.MaxOutputTokens, outputTokens ?? OutputTokens);
         // One correction request, with a trusted, specific reason. Never echo provider text as instructions.
         string? feedback = null;
         string? feedbackCode = null;
@@ -113,15 +134,15 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             {
                 var instruction = feedback is null ? prompt : prompt + "\nVALIDATION ERROR: " + feedback +
                     "\nGenerate a corrected complete JSON object from the original input. Do not change source text. No prose or Markdown.";
-                var budget = await ai.ChatInputBudgetAsync(instruction, OutputTokens, token).ConfigureAwait(false);
+                var budget = await ai.ChatInputBudgetAsync(instruction, reservedOutput, token).ConfigureAwait(false);
                 if (feedback is not null && System.Text.Encoding.UTF8.GetByteCount(serialized) > budget)
                 {
                     instruction = prompt + "\nVALIDATION ERROR: " + feedbackCode + ". Correct the JSON schema, actual IDs, coverage and limits. Use the original data.";
-                    budget = await ai.ChatInputBudgetAsync(instruction, OutputTokens, token).ConfigureAwait(false);
+                    budget = await ai.ChatInputBudgetAsync(instruction, reservedOutput, token).ConfigureAwait(false);
                 }
                 if (System.Text.Encoding.UTF8.GetByteCount(serialized) > budget)
                     throw new PipelineValidationException("chat_context", "モデルの入力上限を超えるため保留しました。");
-                var output = await ai.CompleteBoundedAsync(instruction, serialized, OutputTokens, token).ConfigureAwait(false);
+                var output = await ai.CompleteBoundedAsync(instruction, serialized, reservedOutput, token).ConfigureAwait(false);
                 using var json = ParseResponse(output);
                 try { return validate(json.RootElement); }
                 catch (Exception ex) when (ex is KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
@@ -144,7 +165,7 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
         JsonException => "The response was not valid JSON. Return exactly one syntactically complete JSON object.",
         PipelineValidationException validation => validation.Code switch
         {
-            "response_schema" => "The response has missing keys, wrong types, or duplicate keys. Use the requested schema: arrays for chunks/remove, integer paragraph IDs for start/end/remove entries, and strings for category/decision. Each property must occur exactly once.",
+            "response_schema" => "The response has missing keys, wrong types, or duplicate keys. Use only the requested schema: arrays for chunks/remove, integer paragraph IDs for start/end/remove entries, strings for category/decision/description. Each requested property must occur exactly once.",
             "category_unknown" => "The category is not one of the supplied category IDs. Select exactly one ID from categories; do not invent or rename it.",
             "format_ids" => "The remove list contains an ID absent from the supplied paragraphs. Use only existing paragraph IDs; do not renumber paragraphs.",
             "format_destructive" => "The removal would discard all paragraphs or more than half the text. Remove only standalone noise and preserve meaningful text. If unsure, return an empty remove list.",
@@ -185,6 +206,14 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
         var winner = votes.OrderByDescending(v => v.Value).FirstOrDefault();
         if (winner.Key is not null && winner.Value * 2 > votes.Values.Sum() && !settings.Categories.Single(c => c.Id == winner.Key).Excluded)
             return winner.Key;
+        // Mixed document types need not make the entire document unsearchable. Do not
+        // override an exclusion vote or turn an ambiguous classification into exclusion.
+        if (votes.Keys.All(id => !settings.Categories.Single(c => c.Id == id).Excluded) &&
+            settings.Categories.Any(c => c.Id == settings.DefaultCategory && !c.Excluded))
+        {
+            _notices.Add("category_default_conflict");
+            return settings.DefaultCategory;
+        }
         throw new PipelineValidationException("category_conflict", "区間ごとの分類結果が一致せず、安全に分類を確定できません。");
     }
 

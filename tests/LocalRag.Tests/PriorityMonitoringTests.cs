@@ -6,6 +6,25 @@ namespace LocalRag.Tests;
 public class PriorityMonitoringTests
 {
     [Fact]
+    public void CompletedUnchangedFilesDoNotReturnAheadOfWaitingWorkButChangesAndFailuresDo()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var done = new FileWorkItem("done", 1, now.UtcDateTime, 1, now);
+        var waiting = new FileWorkItem("waiting", 0, now.UtcDateTime, 1, now);
+        FileDiscovery Scan(params FileWorkItem[] items) => new(new(items.Select(x => x.Path).ToArray(), [], 0), items, 0);
+        var queue = new FileWorkQueue(); queue.Replace(Scan(done, waiting));
+        Assert.Equal(done, queue.Take()); queue.Complete(remember: true);
+        queue.Replace(Scan(done, waiting));
+        Assert.Equal(new[] { waiting }, queue.Snapshot());
+        Assert.Equal(waiting, queue.Take()); queue.Complete(); // failure is retried
+        queue.Replace(Scan(done, waiting)); Assert.Single(queue.Snapshot());
+        var changed = done with { LastWriteUtc = now.UtcDateTime.AddSeconds(1) };
+        queue.Replace(Scan(changed, waiting)); Assert.Equal(changed, queue.Snapshot()[0]);
+        queue.Replace(Scan()); queue.Replace(Scan(done)); // restored after exclusion
+        Assert.Equal(done, Assert.Single(queue.Snapshot()));
+    }
+
+    [Fact]
     public async Task DefaultsAndSavedPriorityProtectionAndExplicitIntervalRoundTrip()
     {
         Assert.Equal(5, new AppSettings().MonitoringIntervalMinutes);

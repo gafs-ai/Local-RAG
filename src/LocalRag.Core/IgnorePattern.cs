@@ -50,7 +50,10 @@ public sealed record IgnorePattern(bool Negated, bool DirectoryOnly, Regex Expre
                     line = string.Join('/', parts);
                     if (line.Length == 0) continue;
                 }
-                if (line.Length == 0 || line.Split('/').Any(p => p is "." or "..")) throw new FormatException();
+                // Git-style patterns containing literal ./ or ../ components simply do not
+                // match our normalized relative paths. They must not invalidate every other
+                // rule in the file. Docker's path cleaning is handled separately above.
+                if (line.Length == 0) throw new FormatException();
                 anchored |= line.Contains('/');
                 var regex = (anchored ? "^" : "^(?:[^/]+/)*") + Glob(line) + "$";
                 result.Add(new(negated, directoryOnly, new Regex(regex,

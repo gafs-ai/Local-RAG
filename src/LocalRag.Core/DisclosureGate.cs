@@ -18,7 +18,8 @@ public interface IConfidentialityClassifier
     Task<DisclosureDecision> InspectAsync(string original, string candidate, CancellationToken cancellationToken);
 }
 
-// No path, title, snippet, score, or classifier reasoning can be included in a denied result.
+// Denied content contains no title, snippet, score, or classifier reasoning.
+// Retrieval separately supplies the original-file path for the user to open manually.
 public sealed record DisclosureResult(Guid DocumentId, bool Exists, DisclosureDecision Decision, string? Content);
 
 public sealed class DisclosureGate(IConfidentialityClassifier classifier)

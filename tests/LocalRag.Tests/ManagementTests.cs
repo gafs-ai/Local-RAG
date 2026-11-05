@@ -186,7 +186,7 @@ public class ManagementTests
             Assert.NotNull(withheld);
             Assert.Equal(DisclosureDecision.Withheld, withheld.Decision);
             Assert.Null(withheld.Content);
-            Assert.Null(withheld.SourcePath);
+            Assert.Equal(document.Path, withheld.SourcePath);
         }
         var secretHits = await blocked.SearchAsync("release");
         Assert.NotEmpty(secretHits);

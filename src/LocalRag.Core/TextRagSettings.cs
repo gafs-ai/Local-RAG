@@ -42,7 +42,7 @@ public sealed record TextRagSettings
     [System.Text.Json.Serialization.JsonIgnore]
     public ParentChunkMode EffectiveParentMode => ParentMode == ParentChunkMode.Inherit ? (ParentChunksEnabled ? ParentChunkMode.Structure : ParentChunkMode.None) : ParentMode;
     public string DefaultCategory { get; init; } = "general";
-    public int MaxDocumentCharacters { get; init; } = 64000;
+    public int MaxDocumentCharacters { get; init; } = 262144;
     public int MaxChunkCharacters { get; init; } = 1200;
     public int MaxOutputTokens { get; init; } = 512;
     public string EmbeddingRevision { get; init; } = "1";
@@ -58,15 +58,8 @@ public sealed record TextRagSettings
         - 出力は、提供されたレスポンス例の形式に従ったJSONのみとし、実際の段落IDを使用してください。
         - 段落のテキストを新たに生成したり、変更したりしてはなりません。
 
-        出力例:
-        ```json
-        {
-          "chunks": [
-            { "start": 1, "end": 3 },
-            { "start": 4, "end": 6 }
-          ]
-        }
-        ```
+        入力末尾に、その回の実際の段落IDを使ったJSONの例を提示します。その形式を使い、今回渡されていないIDを出力しないでください。
+        出力は空行やインデント、コードフェンスを付けない1行のJSONとしてください。
         """;
     public string ChunkPrompt { get; init; } = DefaultChunkPrompt;
     public string ConfidentialityPrompt { get; init; } = """
@@ -91,7 +84,7 @@ public sealed record TextRagSettings
         if (ParentHeadingLevel is < 1 or > 6) errors.Add("親チャンクの見出しレベルは1～6で指定してください。");
         if (!ValidMarkdownParentBounds(MarkdownParentMinCharacters, MarkdownParentMaxCharacters))
             errors.Add("Markdownの親チャンクは最小0文字以上、最大50～262144文字、最小≦最大で指定してください。");
-        if (MaxDocumentCharacters is < 100 or > 262144) errors.Add("テキスト上限は100～262144文字で指定してください（ファイルは256KiB以内）。");
+        if (MaxDocumentCharacters is < 100 or > 1048576) errors.Add("テキスト上限は100～1048576文字で指定してください。モデルには小分けにして入力します。");
         if (MaxChunkCharacters is < 50 or > 24000 || MaxChunkCharacters > MaxDocumentCharacters) errors.Add("チャンク上限は50文字以上、文書上限以下で指定してください。");
         if (MaxOutputTokens is < 128 or > 8192) errors.Add("LLM出力上限は128～8192トークンで指定してください。");
         if (!Enum.IsDefined(ChildMode) || !Enum.IsDefined(ParentMode) || !Enum.IsDefined(SourceMode)) errors.Add("チャンク処理方式が不正です。");
@@ -138,6 +131,7 @@ public sealed record SourceCodeUnit(string Id, string? ContainerId, string Kind,
 {
     public List<string> Descriptions { get; init; } = [];
     public int DescribedCharacters { get; init; }
+    public bool DescriptionFallbackUsed { get; init; }
 }
 public sealed record VectorBatch(int Dimension, IReadOnlyList<float[]> Vectors);
 public interface ITextRagAi
@@ -164,6 +158,7 @@ public sealed record TextDocumentState
     public string? ErrorCode { get; init; }
     public string? ErrorStage { get; init; }
     public string? ErrorDetailCode { get; init; }
+    public string? WithdrawalReason { get; init; }
     public List<string> ProcessingNotices { get; init; } = [];
     public string? CategoryId { get; init; }
     public List<TextParagraph>? Paragraphs { get; init; }

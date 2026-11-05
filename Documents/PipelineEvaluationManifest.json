@@ -1,0 +1,89 @@
+{
+  "Corpus": "corpus",
+  "Queries": [
+    {
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "File": "http404-ja.md",
+      "Text": "404と410の違いは何ですか"
+    },
+    {
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "File": "idempotent.txt",
+      "Text": "HTTPリクエストを繰り返しても同じ効果になる性質は何ですか"
+    },
+    {
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "File": "idempotent.txt",
+      "Text": "Which HTTP methods are not guaranteed to be idempotent?"
+    },
+    {
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "File": "release.md",
+      "Text": "Local RAGを起動するために必要な.NET Runtimeは何ですか"
+    },
+    {
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "File": "TextWindows.cs",
+      "Text": "文字列をサロゲートペアを壊さずモデルの上限内に分割する処理"
+    },
+    {
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "File": "TextWindows.cs",
+      "Text": "文字列の末尾をUTF-8バイト数の上限内で取得する処理"
+    }
+  ],
+  "Sources": [
+    {
+      "File": "release.md",
+      "Revision": "c245491",
+      "Sha256": "06F7E1F1CE2C674F650409C8A4EDD724859F94B2C5131AA56CEBF386E368BE78",
+      "License": "GPL-3.0-or-later",
+      "Source": "Documents/Release-0.0.0.md"
+    },
+    {
+      "File": "TextWindows.cs",
+      "Revision": "c245491",
+      "Sha256": "E7992961AD21EA4A062C54F8EAC2585551E28253E9B4FE2BF833E51B14EAD2E8",
+      "License": "GPL-3.0-or-later",
+      "Source": "src/LocalRag.Infrastructure/TextWindows.cs"
+    },
+    {
+      "File": "http404-ja.md",
+      "Sha256": "7BF210FCA26324264691791CFEF66FCF5C20E2B5FFCF0BAC9E0D8ED0CC674427",
+      "License": "CC-BY-SA-2.5-or-later (Mozilla Contributors)",
+      "Page": "https://developer.mozilla.org/ja/docs/Web/HTTP/Reference/Status/404",
+      "Source": "https://raw.githubusercontent.com/mdn/translated-content/main/files/ja/web/http/reference/status/404/index.md"
+    },
+    {
+      "File": "idempotent.txt",
+      "Sha256": "18676069423EB9248D57FE2E076E2AE0C38356019C958400B52ADE608CAA8D5A",
+      "License": "CC-BY-SA-2.5-or-later (Mozilla Contributors)",
+      "Page": "https://developer.mozilla.org/en-US/docs/Glossary/Idempotent",
+      "Source": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/glossary/idempotent/index.md"
+    },
+    {
+      "File": "privacy-canary.txt",
+      "License": "GPL-3.0-or-later",
+      "Sha256": "5301A949B0BDE42D1A8E0D414EBC112FE5FF8359536B4318C9D74E5AEE01492C",
+      "Source": "Synthetic label only; no personal information or credentials"
+    }
+  ]
+}

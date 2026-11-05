@@ -47,16 +47,57 @@ public class McpTests
     [Theory]
     [InlineData(DisclosureDecision.Withheld)]
     [InlineData(DisclosureDecision.Pending)]
-    public async Task ClosedResponsesCannotLeakEvenIfAdapterSuppliesContent(DisclosureDecision decision)
+    public async Task ClosedResponsesExposeOnlyOriginalPathEvenIfAdapterSuppliesContent(DisclosureDecision decision)
     {
         var stub = new Stub { Decision = decision };
         using var calls = new LocalRetrievalCalls(stub);
         var fetch = Body(await calls.CallAsync("fetch", null, 0, stub.Id.ToString("D"), default));
-        Assert.Equal(["decision", "id"], fetch.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        Assert.Equal(["decision", "id", "source"], fetch.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        Assert.Equal(stub.SourcePath, fetch.GetProperty("source").GetString());
         var hits = Body(await calls.CallAsync("search", "text", 5, null, default)).GetProperty("results");
-        Assert.Equal(["decision", "id"], Assert.Single(hits.EnumerateArray()).EnumerateObject().Select(p => p.Name).Order().ToArray());
-        Assert.DoesNotContain("private", hits.ToString());
+        var hit = Assert.Single(hits.EnumerateArray());
+        Assert.Equal(["decision", "id", "source"], hit.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        Assert.Equal(stub.SourcePath, hit.GetProperty("source").GetString());
         Assert.DoesNotContain("original", hits.ToString());
+        Assert.DoesNotContain("Chapter", hits.ToString());
+    }
+
+    [Theory]
+    [InlineData(DisclosureDecision.Withheld)]
+    [InlineData(DisclosureDecision.Pending)]
+    public async Task HttpAndStdioForwardWithheldPathsWithoutContent(DisclosureDecision decision)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "LocalRag.Tests", Guid.NewGuid().ToString("N"));
+        var port = FreePort();
+        await new SettingsStore(root).SaveAsync(new AppSettings { Mcp = new() { Port = port } });
+        var secret = await new McpTokenStore(root).GetOrCreateAsync();
+        var stub = new Stub { Decision = decision, SourcePath = @"C:\資料\機密 #1\設計 [最新版].txt" };
+        await using var host = await LocalMcpHost.StartAsync(stub, port, secret);
+        await using var http = await ConnectAsync(port, secret);
+        await using var bridge = await McpClient.CreateAsync(new StdioClientTransport(new()
+        {
+            Command = "dotnet", Arguments = [Path.Combine(AppContext.BaseDirectory, "LocalRag.Mcp.dll"), "--data-dir", root]
+        }));
+        foreach (var client in new[] { http, bridge })
+        {
+            var fetch = Body(await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = stub.Id.ToString("D") }));
+            var hits = Body(await client.CallToolAsync("search", new Dictionary<string, object?> { ["query"] = "test" })).GetProperty("results");
+            foreach (var response in new[] { fetch, Assert.Single(hits.EnumerateArray()) })
+            {
+                Assert.Equal(["decision", "id", "source"], response.EnumerateObject().Select(p => p.Name).Order().ToArray());
+                Assert.Equal(stub.SourcePath, response.GetProperty("source").GetString());
+                Assert.Equal(decision.ToString().ToLowerInvariant(), response.GetProperty("decision").GetString());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ClosedResponseWithoutSourceDoesNotInventAPath()
+    {
+        var stub = new Stub { Decision = DisclosureDecision.Pending, SourcePath = null };
+        using var calls = new LocalRetrievalCalls(stub);
+        var result = Body(await calls.CallAsync("fetch", null, 0, stub.Id.ToString("D"), default));
+        Assert.Equal(["decision", "id"], result.EnumerateObject().Select(p => p.Name).Order().ToArray());
     }
 
     [Fact]
@@ -76,6 +117,14 @@ public class McpTests
         Assert.Equal(2, (await client.ListToolsAsync()).Count);
         var result = Body(await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = stub.Id.ToString("D") }));
         Assert.Equal("full original text", result.GetProperty("text").GetString());
+        // The desktop can evolve its pipeline schema while an older bridge stays installed.
+        var settingsPath = new SettingsStore(root).FilePath;
+        var settingsJson = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(settingsPath))!;
+        settingsJson["SchemaVersion"] = 99;
+        settingsJson["Management"] = new System.Text.Json.Nodes.JsonObject { ["Version"] = 99 };
+        await File.WriteAllTextAsync(settingsPath, settingsJson.ToJsonString());
+        var afterSchemaChange = Body(await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = stub.Id.ToString("D") }));
+        Assert.Equal("full original text", afterSchemaChange.GetProperty("text").GetString());
     }
 
     [Theory]
@@ -179,7 +228,8 @@ public class McpTests
         var input = fixture.Root + "-input"; Directory.CreateDirectory(input);
         var file = Path.Combine(input, "public.txt");
         await File.WriteAllTextAsync(file, "moon guide\n\npublic launch");
-        await File.WriteAllTextAsync(Path.Combine(input, "secret.md"), "社外秘\n\nmoon private design");
+        var secretFile = Path.Combine(input, "secret.md");
+        await File.WriteAllTextAsync(secretFile, "社外秘\n\nmoon private design");
         var settings = new AppSettings { UpdateExclusionMinutes = 0, Folders = [new(input)], Ai = new() { ChatModel = "test", EmbeddingModel = "test" } };
         await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         using var service = new TextRagService(repo, new FakeTextAi(), settings, fixture.Root);
@@ -193,7 +243,16 @@ public class McpTests
         var hits = Body(await client.CallToolAsync("search", new Dictionary<string, object?> { ["query"] = "moon", ["limit"] = 10 })).GetProperty("results");
         Assert.Contains(hits.EnumerateArray(), h => h.GetProperty("id").GetString() == publicId && h.TryGetProperty("text", out _));
         var denied = Body(await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = secretId }));
-        Assert.Equal("withheld", denied.GetProperty("decision").GetString()); Assert.Equal(2, denied.EnumerateObject().Count());
+        Assert.Equal("withheld", denied.GetProperty("decision").GetString());
+        Assert.Equal(["decision", "id", "source"], denied.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        Assert.Equal(secretFile, denied.GetProperty("source").GetString());
+        var secretHit = Assert.Single(hits.EnumerateArray(), h => h.GetProperty("id").GetString() == secretId);
+        Assert.Equal(secretFile, secretHit.GetProperty("source").GetString());
+        Assert.False(secretHit.TryGetProperty("text", out _));
+        await File.WriteAllTextAsync(secretFile, "社外秘\n\nupdated private design");
+        Assert.True((await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = secretId })).IsError);
+        File.Delete(secretFile);
+        Assert.True((await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = secretId })).IsError);
         await File.WriteAllTextAsync(file, "new text");
         Assert.True((await client.CallToolAsync("fetch", new Dictionary<string, object?> { ["id"] = publicId })).IsError);
         Assert.Equal(1, (await service.ScanAsync()).Indexed);
@@ -208,8 +267,9 @@ public class McpTests
         public Guid Id { get; } = Guid.NewGuid();
         public DisclosureDecision Decision { get; init; } = DisclosureDecision.Allowed;
         public bool Fails { get; init; }
+        public string? SourcePath { get; init; } = @"C:\private\public.md";
         public int Calls { get; private set; }
-        private TextSearchResult Result() => new(Id, Decision, "full original text", "C:\\private\\public.md", null, null, "revision:p1", "Chapter");
+        private TextSearchResult Result() => new(Id, Decision, "full original text", SourcePath, null, null, "revision:p1", "Chapter");
         public Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default)
         { Calls++; if (Fails) throw new IOException("PRIVATE SECRET PATH"); return Task.FromResult<IReadOnlyList<TextSearchResult>>([Result()]); }
         public Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default) { Calls++; return Task.FromResult<TextSearchResult?>(Result()); }

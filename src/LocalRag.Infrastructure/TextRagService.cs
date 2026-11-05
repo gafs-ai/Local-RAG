@@ -11,7 +11,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
     private readonly TextRagSettings _retrievalPrompts = settings.RetrievalPrompts();
     private readonly DisclosureGate _gate = new(new TextConfidentialityClassifier(ai, settings.RetrievalPrompts()));
 
-    private async Task<TextCycleResult> ProcessFileAsync(FileWorkItem file, IProgress<string>? progress, CancellationToken token, bool laneHeld = false)
+    private async Task<TextCycleResult> ProcessFileCoreAsync(FileWorkItem file, IProgress<string>? progress, CancellationToken token, bool laneHeld = false)
     {
         if (!laneHeld) await _operations.WaitAsync(token).ConfigureAwait(false);
         try
@@ -32,14 +32,14 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             {
                 if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries))
                     return await WithdrawAsync(previous, token).ConfigureAwait(false);
-                var snapshot = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode).ConfigureAwait(false);
+                var snapshot = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode, allowEmpty: true).ConfigureAwait(false);
                 if (!FileDiscoveryPolicy.StillEligible(file, settings.UpdateExclusionMinutes)) return new(0, 0, 0, 0, 0, 0, 1);
-                if (previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status is "ready" or "excluded")
+                if (previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status is "ready" or "excluded" or "skipped")
                 { return new(0, 0, 1, 0, 0, 0); }
                 stage = "prepare";
                 if (previous is not null) await repository.DeactivateAsync(previous, token).ConfigureAwait(false);
                 state = previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status != "deleted"
-                    ? previous with { Status = "processing", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null }
+                    ? previous with { Status = "processing", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, WithdrawalReason = null }
                     : new TextDocumentState
                     {
                         Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash,
@@ -47,11 +47,19 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                         ProcessingNotices = [$"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}"]
                     };
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(snapshot.Text))
+                {
+                    await repository.SaveAsync(state with { Status = "skipped", ProcessingNotices =
+                        state.ProcessingNotices.Append("empty_text").Distinct().ToList() }, token).ConfigureAwait(false);
+                    return new(0, 1, 0, 0, 0, 0);
+                }
                 progress?.Report($"処理中：{System.IO.Path.GetFileName(path)}（実行中のファイルは優先度変更でも中断しません）");
                 if (state.CategoryId is null)
                 {
                     stage = "classify";
-                    state = state with { CategoryId = await pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false) };
+                    var categoryId = await pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false);
+                    state = state with { CategoryId = categoryId,
+                        ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
                     await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
                 var category = pipelineSettings.Categories.Single(c => c.Id == state.CategoryId);
@@ -176,7 +184,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
                 if (!allowed) closedDocuments.Add(document.DocumentId);
                 results.Add(new(document.DocumentId, disclosure.Decision, allowed ? content : null,
-                    allowed ? document.Path : null, allowed && parent?.SourceKind is null ? parent?.Start ?? chunk.Start : null,
+                    document.Path, allowed && parent?.SourceKind is null ? parent?.Start ?? chunk.Start : null,
                     allowed && parent?.SourceKind is null ? parent?.End ?? chunk.End : null,
                     allowed && parent is not null ? document.RevisionId + ":" + parent.Id : null, allowed ? parent?.Title : null,
                     allowed ? parent?.SourceKind : null, allowed ? parent?.StartLine : null, allowed ? parent?.EndLine : null,
@@ -198,7 +206,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             var disclosure = await DiscloseAsync(document, document.Original, token).ConfigureAwait(false);
             if (!await CurrentAsync(document, token).ConfigureAwait(false)) return null;
             var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
-            return new(document.DocumentId, disclosure.Decision, allowed ? document.Original : null, allowed ? document.Path : null, null, null);
+            return new(document.DocumentId, disclosure.Decision, allowed ? document.Original : null, document.Path, null, null);
         }
         finally { _operations.Release(); }
     }
@@ -224,7 +232,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
     {
         if (state is null) return new(0, 0, 0, 0, 0, 0);
         await repository.DeactivateAsync(state, token).ConfigureAwait(false);
-        await repository.SaveAsync(state with { Status = "deleted" }, token).ConfigureAwait(false);
+        await repository.SaveAsync(state with { Status = "deleted", WithdrawalReason = "ignored", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null }, token).ConfigureAwait(false);
         return new(0, 0, 0, 0, 1, 0);
     }
 

@@ -74,7 +74,7 @@ internal static class TextSmoke
                 var validDisclosure = singleFetch?.DocumentId == single.DocumentId && (singleFetch.Decision switch
                 {
                     DisclosureDecision.Allowed => singleFetch.Content == single.Original && singleFetch.SourcePath == single.Path,
-                    DisclosureDecision.Withheld or DisclosureDecision.Pending => singleFetch.Content is null && singleFetch.SourcePath is null,
+                    DisclosureDecision.Withheld or DisclosureDecision.Pending => singleFetch.Content is null && singleFetch.SourcePath == single.Path,
                     _ => false
                 });
                 Console.WriteLine($"Single paragraph fetch: decision={singleFetch?.Decision}, exact-source={singleFetch?.Content == single.Original}, valid-disclosure={validDisclosure}");
@@ -88,13 +88,14 @@ internal static class TextSmoke
             Console.WriteLine($"Public fetch: decision={fetched?.Decision}, length={fetched?.Content?.Length ?? 0}");
             var secretId = documents.Single(d => Path.GetFileName(d.Path) == "restricted.txt").DocumentId;
             var denied = await retrieval.FetchAsync(secretId, token);
-            Console.WriteLine($"Restricted fetch: decision={denied?.Decision}, content-null={denied?.Content is null}, source-null={denied?.SourcePath is null}");
+            Console.WriteLine($"Restricted fetch: decision={denied?.Decision}, content-null={denied?.Content is null}, source-provided={denied?.SourcePath is not null}");
             await File.WriteAllTextAsync(guide, "公開資料：更新された内容です。", token);
             var stale = await retrieval.FetchAsync(documentId, token);
             Console.WriteLine($"Modified-before-scan: omitted={stale is null}");
             Console.WriteLine($"Diagnostic data: {run}");
             return nearest?.DocumentId == documentId && nearest.Decision == DisclosureDecision.Allowed &&
-                fetched?.Content is not null && denied?.Decision == DisclosureDecision.Withheld && denied.Content is null && denied.SourcePath is null && stale is null ? 0 : 2;
+                fetched?.Content is not null && denied?.Decision == DisclosureDecision.Withheld && denied.Content is null &&
+                denied.SourcePath == documents.Single(d => d.DocumentId == secretId).Path && stale is null ? 0 : 2;
         }
         finally { await manager.ShutdownAsync(true); }
     }

@@ -6,7 +6,7 @@ namespace LocalRag.Infrastructure;
 
 public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text, string? ParentId = null);
 
-public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointStore
+public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointStore
 {
     private readonly SurrealDbClient _db;
     private TextRagRepository(SurrealDbClient db) => _db = db;
@@ -16,7 +16,7 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
         var db = await SurrealConnection.OpenAsync(connection, "application", token).ConfigureAwait(false);
         try
         {
-            (await db.RawQuery("DEFINE TABLE IF NOT EXISTS text_document SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_revision SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_space SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_monitor SCHEMALESS;", cancellationToken: token).ConfigureAwait(false)).EnsureAllOks();
+            (await db.RawQuery("DEFINE TABLE IF NOT EXISTS text_document SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_revision SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_space SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_monitor SCHEMALESS; DEFINE TABLE IF NOT EXISTS text_ingestion_history SCHEMALESS;", cancellationToken: token).ConfigureAwait(false)).EnsureAllOks();
             return new(db);
         }
         catch { await db.DisposeAsync().ConfigureAwait(false); throw; }
@@ -27,6 +27,16 @@ public sealed class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointS
         var result = await _db.RawQuery("SELECT VALUE payload FROM text_document;", cancellationToken: token).ConfigureAwait(false);
         result.EnsureAllOks();
         return (result.GetValue<string[]>(0) ?? []).Select(x => JsonSerializer.Deserialize<TextDocumentState>(x) ?? throw new InvalidDataException("文書状態が不正です。")).ToArray();
+    }
+
+    // The management list must not download every original, parent and code unit after
+    // each completed file. Fetch only the fields displayed by the list.
+    public async Task<IReadOnlyList<TextDocumentState>> DocumentStatusesAsync(CancellationToken token)
+    {
+        var result = await _db.RawQuery("SELECT VALUE { Path: Path, Status: Status, ConfigurationId: ConfigurationId, ErrorCode: ErrorCode, ErrorStage: ErrorStage, ErrorDetailCode: ErrorDetailCode, WithdrawalReason: WithdrawalReason, ProcessingNotices: ProcessingNotices } FROM (SELECT VALUE encoding::json::decode(payload) FROM text_document);",
+            cancellationToken: token).ConfigureAwait(false);
+        result.EnsureAllOks();
+        return result.GetValue<TextDocumentState[]>(0) ?? [];
     }
 
     public async Task<TextDocumentState?> GetAsync(string key, CancellationToken token)

@@ -34,14 +34,14 @@ internal sealed class ForwardCalls(string data) : IRetrievalCalls
             bounded.CancelAfter(TimeSpan.FromSeconds(110));
             // Reload on each call so app restarts, port changes and disabling MCP take effect
             // without restarting the ChatGPT plugin. Never create credentials or start the DB here.
-            var settings = await new SettingsStore(data).LoadAsync(bounded.Token).ConfigureAwait(false);
-            if (!settings.Mcp.Enabled) return LocalRetrievalCalls.Error("retrieval_unavailable");
+            var settings = await new SettingsStore(data).LoadMcpAsync(bounded.Token).ConfigureAwait(false);
+            if (!settings.Enabled) return LocalRetrievalCalls.Error("retrieval_unavailable");
             var secret = await new McpTokenStore(data).LoadAsync(bounded.Token).ConfigureAwait(false);
             using var handler = new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false };
             using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(110) };
             var transport = new HttpClientTransport(new HttpClientTransportOptions
             {
-                Endpoint = new Uri($"http://127.0.0.1:{settings.Mcp.Port}/mcp"),
+                Endpoint = new Uri($"http://127.0.0.1:{settings.Port}/mcp"),
                 AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
             }, http);
             await using var client = await McpClient.CreateAsync(transport, cancellationToken: bounded.Token).ConfigureAwait(false);

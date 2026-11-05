@@ -48,9 +48,39 @@
                             <Button x:Name="ScanButton" Content="今すぐ1回実行" Click="ScanNow" Margin="0,0,10,0" />
                             <Button x:Name="PauseButton" Content="監視を一時停止" Click="PauseMonitoring" />
                         </WrapPanel>
-                        <ListBox x:Name="DocumentStatusList" Height="110" Margin="0,12" />
+                        <TextBlock Text="現在処理中のファイル" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <TextBox x:Name="CurrentFileText" Text="待機中" IsReadOnly="True" TextWrapping="Wrap" AutomationProperties.Name="現在処理中のファイル" />
+                        <TextBlock x:Name="CurrentStageText" Text="待機中" TextWrapping="Wrap" Margin="0,4" />
+                        <TextBlock x:Name="QueueStatusText" Text="取り込み待ち：0件" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <DataGrid x:Name="IngestionQueueGrid" Height="160" AutoGenerateColumns="False" IsReadOnly="True"
+                                  CanUserAddRows="False" CanUserSortColumns="False" EnableRowVirtualization="True" AutomationProperties.Name="取り込み予定キュー">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="順番" Binding="{Binding Position}" Width="55" />
+                                <DataGridTextColumn Header="優先度" Binding="{Binding Priority}" Width="65" />
+                                <DataGridTextColumn Header="ファイル更新日時" Binding="{Binding Modified}" Width="155" />
+                                <DataGridTextColumn Header="ファイル" Binding="{Binding FileName}" Width="*" MinWidth="240">
+                                    <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="ToolTip" Value="{Binding Path}" /></Style></DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock x:Name="HistoryStatusText" Text="処理履歴（完了時刻の新しい順・直近1000件）" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <DataGrid x:Name="IngestionHistoryGrid" Height="200" AutoGenerateColumns="False" IsReadOnly="True"
+                                  CanUserAddRows="False" CanUserSortColumns="False" EnableRowVirtualization="True" AutomationProperties.Name="取り込み処理履歴">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="処理完了日時" Binding="{Binding CompletedDisplay}" Width="180" />
+                                <DataGridTextColumn Header="ファイル" Binding="{Binding FileName}" Width="180">
+                                    <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="ToolTip" Value="{Binding Path}" /></Style></DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="結果" Binding="{Binding ResultDisplay}" Width="180" />
+                                <DataGridTextColumn Header="詳細" Binding="{Binding DetailDisplay}" Width="300" />
+                                <DataGridTextColumn Header="フルパス" Binding="{Binding Path}" Width="420" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Expander Header="索引の現在の状態（旧バージョンの完了時刻は未記録）" Margin="0,12">
+                            <ListBox x:Name="DocumentStatusList" Height="110" />
+                        </Expander>
                         <TextBlock Text="ローカル検索" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" />
-                        <TextBlock Text="本文と出典は返却前に機密検査します。拒否・判定できない場合は文書IDのみ表示します。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6" />
+                        <TextBlock Text="返却前に機密検査します。拒否・判定できない場合も原本のパスを表示しますが、本文は表示しません。原本はご自身で開いて確認できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6" />
                         <TextBlock x:Name="PolicyStatus" TextWrapping="Wrap" Foreground="#755620" />
                         <TextBox x:Name="QueryBox" AutomationProperties.Name="検索語" />
                         <WrapPanel>

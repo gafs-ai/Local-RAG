@@ -48,7 +48,8 @@ internal static class ConfiguredScan
                     var hasText = fetched.TryGetProperty("text", out var content);
                     if (hasText && content.GetString() != document.Original)
                         throw new InvalidDataException("Fetched content did not match the original.");
-                    if (!hasText && fetched.EnumerateObject().Count() != 2) throw new InvalidDataException("Closed response exposed metadata.");
+                    if (!hasText && (fetched.EnumerateObject().Any(p => p.Name is not ("id" or "decision" or "source")) ||
+                        fetched.GetProperty("source").GetString() != document.Path)) throw new InvalidDataException("Closed response exceeded the path-only contract.");
                     retrieval.Add(new { document.DocumentId, Decision = fetched.GetProperty("decision").GetString(), OriginalMatches = hasText });
                 }
                 Console.WriteLine("MCP検索と親チャンクの一致を確認中…");
@@ -59,7 +60,10 @@ internal static class ConfiguredScan
                 {
                     if (!hit.TryGetProperty("text", out var content))
                     {
-                        if (hit.EnumerateObject().Count() != 2) throw new InvalidDataException("Closed response exposed metadata.");
+                        var hiddenDocument = documents.Single(d => d.DocumentId.ToString("D") == hit.GetProperty("id").GetString());
+                        if (hit.EnumerateObject().Any(p => p.Name is not ("id" or "decision" or "source")) ||
+                            hit.GetProperty("source").GetString() != hiddenDocument.Path)
+                            throw new InvalidDataException("Closed response exceeded the path-only contract.");
                         continue;
                     }
                     if (!settings.TextPipeline.ParentChunksEnabled) continue;
