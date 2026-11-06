@@ -21,7 +21,8 @@ public sealed partial class TextRagService
     {
         const int seedLimit = 64, nodeLimit = 1024, vectorLimit = 4096, depthLimit = 2;
         var options = settings.Management?.Retrieval ?? new RetrievalPipelineSettings();
-        var seeds = await repository.SearchVectorSeedsAsync(space, _configuration, query, seedLimit, token).ConfigureAwait(false);
+        var revisions = await CompatibleRevisionsAsync(token).ConfigureAwait(false);
+        var seeds = await repository.SearchVectorSeedsAsync(space, _configuration, query, seedLimit, token, revisions).ConfigureAwait(false);
         var nodes = new Dictionary<string, SearchNode>(StringComparer.Ordinal);
         var owners = new Dictionary<string, SearchNode>(StringComparer.Ordinal);
         static string ParentId(TextDocumentState document, string id) => document.RevisionId + ":parent:" + id;
@@ -114,7 +115,7 @@ public sealed partial class TextRagService
             }
             if (limited && requests.Count + loaded.Count == vectorLimit) break;
         }
-        foreach (var vector in await repository.RelatedVectorsAsync(space, _configuration, requests, token).ConfigureAwait(false)) Accept(vector);
+        foreach (var vector in await repository.RelatedVectorsAsync(space, _configuration, requests, token, revisions).ConfigureAwait(false)) Accept(vector);
         if (requests.Any(key => !loaded.Contains(key))) limited = true;
         var scores = StructuralRanking.Calculate(selected.Values.Select(n => new StructuralNodeScore(n.Id, n.ParentId, n.Similarity)).ToArray(), options, limited);
         var candidates = new Dictionary<string, SearchNode>(StringComparer.Ordinal);

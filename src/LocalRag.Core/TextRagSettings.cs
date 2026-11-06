@@ -145,6 +145,8 @@ public sealed record SourceCodeUnit(string Id, string? ContainerId, string Kind,
 public sealed record VectorBatch(int Dimension, IReadOnlyList<float[]> Vectors);
 public sealed record ParentEmbeddingProgress(string ParentId)
 {
+    public string? InputHash { get; init; }
+    public string? RecipeId { get; init; }
     public int ChildIndex { get; init; }
     public int Offset { get; init; }
     public List<string> Descriptions { get; init; } = [];
@@ -169,6 +171,10 @@ public interface ITextRagAi
 
 public sealed record TextDocumentState
 {
+    public ProcessingProvenance? Processing { get; init; }
+    // Saved before parent grouping and before embedding-model-specific repacking.
+    public List<TextChunk>? PreparedChildren { get; init; }
+    public List<TextChunk>? HierarchyChildren { get; init; }
     public string Key { get; init; } = "";
     public Guid DocumentId { get; init; }
     public string Path { get; init; } = "";

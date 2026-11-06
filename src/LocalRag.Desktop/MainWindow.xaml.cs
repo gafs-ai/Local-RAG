@@ -249,7 +249,7 @@ public partial class MainWindow : Window, IDisposable
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
             await ReconfigureRagAsync();
-            SettingsStatus.Text = "処理設定を保存して適用しました。取り込み設定を変更した文書は次回探索で再処理します。";
+            SettingsStatus.Text = "処理設定を保存しました。次回探索で変更の影響がある工程だけを再処理し、利用できる既存の結果は再利用します。";
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }

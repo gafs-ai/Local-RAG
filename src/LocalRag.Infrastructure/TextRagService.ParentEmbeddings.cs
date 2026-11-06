@@ -21,17 +21,20 @@ public sealed partial class TextRagService
             var position = checkpoints.FindIndex(p => p.ParentId == parent.Id);
             if (position < 0) { position = checkpoints.Count; checkpoints.Add(new(parent.Id)); }
             var checkpoint = checkpoints[position];
-            if (checkpoint.Completed) continue;
+            var fits = Encoding.UTF8.GetByteCount(parent.Text) <= embeddingBudget;
+            if (checkpoint.Completed && !fits && options.ParentEmbedding == ParentEmbeddingMode.TextOrSummary && checkpoint.Kind == "parent_summary") continue;
+            if (checkpoint.Completed && !fits && options.ParentEmbedding == ParentEmbeddingMode.TextOrSummary)
+                checkpoint = new(parent.Id) { InputHash = checkpoint.InputHash, RecipeId = checkpoint.RecipeId };
             async Task Save()
             {
                 checkpoints[position] = checkpoint;
                 state = state with { ParentEmbeddings = checkpoints.ToList() };
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
             }
-            if (Encoding.UTF8.GetByteCount(parent.Text) <= embeddingBudget)
-                checkpoint = checkpoint with { EmbeddingText = parent.Text, Kind = "parent_text" };
+            if (fits)
+                checkpoint = checkpoint with { EmbeddingText = parent.Text, Kind = "parent_text", Skipped = false };
             else if (options.ParentEmbedding == ParentEmbeddingMode.TextWhenFits)
-                checkpoint = checkpoint with { Skipped = true };
+                checkpoint = checkpoint with { Skipped = true, EmbeddingText = null };
             else
             {
                 try

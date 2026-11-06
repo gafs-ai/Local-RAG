@@ -11,11 +11,17 @@ public static class TextChunking
     public static async Task<ChunkHierarchy> BuildAsync(ITextRagAi ai, TextAiPipeline pipeline, TextRagSettings settings,
         TextCategory category, string path, StructuredText source, List<TextParagraph> formatted, CancellationToken token)
     {
+        var children = await BuildChildrenAsync(ai, pipeline, settings, category, path, source, formatted, token).ConfigureAwait(false);
+        return await BuildParentsAsync(pipeline, settings, category, source, children, token).ConfigureAwait(false);
+    }
+
+    public static async Task<List<TextChunk>> BuildChildrenAsync(ITextRagAi ai, TextAiPipeline pipeline, TextRagSettings settings,
+        TextCategory category, string path, StructuredText source, List<TextParagraph> formatted, CancellationToken token)
+    {
         var childMode = settings.EffectiveChildMode;
         if (settings.ChildMode == ChildChunkMode.Inherit && settings.MechanicalMarkdown &&
             Path.GetExtension(path).ToLowerInvariant() is ".md" or ".markdown") childMode = ChildChunkMode.Mechanical;
         var children = new List<TextChunk>();
-        var parents = new List<TextParentChunk>();
         var embeddingBudget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         foreach (var section in source.Parents)
         {
@@ -28,6 +34,20 @@ public static class TextChunking
                 members = MechanicalChildren(paragraphs, settings.MaxChunkCharacters, embeddingBudget,
                     childMode == ChildChunkMode.Mechanical && (category.ChunkEnabled ?? settings.ChunkEnabled), token);
 
+            children.AddRange(members.Select(c => c with { ParentId = section.Id }));
+        }
+        return children;
+    }
+
+    public static async Task<ChunkHierarchy> BuildParentsAsync(TextAiPipeline pipeline, TextRagSettings settings,
+        TextCategory category, StructuredText source, List<TextChunk> prepared, CancellationToken token)
+    {
+        var children = new List<TextChunk>();
+        var parents = new List<TextParentChunk>();
+        foreach (var section in source.Parents)
+        {
+            var members = prepared.Where(c => c.ParentId == section.Id).Select(c => c with { ParentId = (string?)null }).ToList();
+            if (members.Count == 0) continue;
             if (settings.EffectiveParentMode == ParentChunkMode.None) children.AddRange(members);
             else if (settings.EffectiveParentMode == ParentChunkMode.Structure)
             {

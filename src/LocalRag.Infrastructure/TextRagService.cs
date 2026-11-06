@@ -34,18 +34,38 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     return await WithdrawAsync(previous, token).ConfigureAwait(false);
                 var snapshot = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode, allowEmpty: true).ConfigureAwait(false);
                 if (!FileDiscoveryPolicy.StillEligible(file, settings.UpdateExclusionMinutes)) return new(0, 0, 0, 0, 0, 0, 1);
-                if (previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status is "ready" or "excluded" or "skipped")
-                { return new(0, 0, 1, 0, 0, 0); }
+                var plan = ProcessingPlan.Create(settings, path, previous?.CategoryId);
+                var sameSource = previous is not null && previous.SourceHash == snapshot.Hash && previous.Original == snapshot.Text;
+                if (sameSource && previous!.Processing is null && previous.ConfigurationId == _configuration)
+                {
+                    previous = AdoptLegacy(previous, pipelineSettings, plan);
+                    previous = Stamp(previous, "read", plan.Read, snapshot.Hash, new { snapshot.Text, snapshot.EncodingMode, snapshot.EncodingAutomatic });
+                    await repository.BackfillVectorHashesAsync(previous, token).ConfigureAwait(false);
+                    await repository.SaveAsync(previous, token).ConfigureAwait(false);
+                }
+                var compatible = sameSource && ProcessingPlan.Current(settings, previous!);
+                if (compatible && previous!.Status is "ready" or "excluded" or "skipped") return new(0, 0, 1, 0, 0, 0);
                 stage = "prepare";
                 if (previous is not null) await repository.DeactivateAsync(previous, token).ConfigureAwait(false);
-                state = previous is not null && previous.SourceHash == snapshot.Hash && previous.ConfigurationId == _configuration && previous.Status != "deleted"
+                var resume = compatible && previous!.Status != "deleted";
+                state = sameSource && previous!.Processing is { Version: 1 }
                     ? previous with { Status = "processing", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, WithdrawalReason = null }
                     : new TextDocumentState
                     {
                         Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash,
-                        ConfigurationId = _configuration, RevisionId = TextRagSettings.Hash(key + snapshot.Hash + _configuration), Original = snapshot.Text,
+                        ConfigurationId = _configuration, Original = snapshot.Text,
                         ProcessingNotices = [$"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}"]
                     };
+                state = state with { ConfigurationId = _configuration,
+                    RevisionId = resume ? state.RevisionId : Guid.NewGuid().ToString("N"), EmbeddedChunks = resume ? state.EmbeddedChunks : 0,
+                    Processing = (state.Processing ?? new()) with { ProfileId = plan.Id } };
+                // A vector space is reusable only under the identical embedding model/profile/revision.
+                if (previous?.SpaceId is null || previous.SpaceId != _retrievalPrompts.SpaceId(settings.Ai, previous.Dimension))
+                    state = state with { SpaceId = null, Dimension = 0, EmbeddedChunks = 0 };
+                else state = state with { SpaceId = previous.SpaceId, Dimension = previous.Dimension };
+                state = state with { ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal))
+                    .Append($"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}").ToList() };
+                state = Stamp(state, "read", plan.Read, snapshot.Hash, new { snapshot.Text, snapshot.EncodingMode, snapshot.EncodingAutomatic });
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(snapshot.Text))
                 {
@@ -54,25 +74,29 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     return new(0, 1, 0, 0, 0, 0);
                 }
                 progress?.Report($"処理中：{System.IO.Path.GetFileName(path)}（実行中のファイルは優先度変更でも中断しません）");
-                if (state.CategoryId is null)
+                if (!Reusable(state, "classify", plan.Classify, state.Original, state.CategoryId))
                 {
                     stage = "classify";
+                    state = WithoutNotices(state, "category_");
                     var categoryId = await pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false);
                     state = state with { CategoryId = categoryId,
                         ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
+                    state = Stamp(state, "classify", plan.Classify, state.Original, state.CategoryId);
                     await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
+                plan = ProcessingPlan.Create(settings, path, state.CategoryId);
+                state = state with { Processing = state.Processing! with { ProfileId = plan.Id } };
                 var category = pipelineSettings.Categories.Single(c => c.Id == state.CategoryId);
                 if (category.Excluded)
                 {
                     await repository.SaveAsync(state with { Status = "excluded" }, token).ConfigureAwait(false);
                     return new(0, 1, 0, 0, 0, 0);
                 }
-                var isCode = SourceCodeParser.Applies(pipelineSettings, path);
+                var isCode = plan.IsCode;
                 if (isCode)
                 {
                     stage = "code";
-                    state = await PrepareCodeAsync(state, pipeline, pipelineSettings, progress, token).ConfigureAwait(false);
+                    state = await PrepareCodeStagesAsync(state, pipeline, pipelineSettings, plan, progress, token).ConfigureAwait(false);
                     if (state.Chunks is { Count: 0 })
                     {
                         await repository.SaveAsync(state with { Status = "skipped", ProcessingNotices =
@@ -80,35 +104,20 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                         return new(0, 1, 0, 0, 0, 0);
                     }
                 }
-                if (!isCode && state.Paragraphs is null)
-                {
-                    stage = "format";
-                    var structure = TextStructure.Build(state.Original, state.Path, pipelineSettings);
-                    var paragraphs = structure.Paragraphs;
-                    var formatted = await pipeline.FormatAsync(paragraphs, category, token).ConfigureAwait(false);
-                    state = state with { Paragraphs = formatted, ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
-                    await repository.SaveAsync(state, token).ConfigureAwait(false);
-                }
-                if (state.Chunks is null)
-                {
-                    stage = "chunk";
-                    var hierarchy = await TextChunking.BuildAsync(ai, pipeline, pipelineSettings, category, state.Path,
-                        TextStructure.Build(state.Original, state.Path, pipelineSettings),
-                        state.Paragraphs ?? throw new InvalidDataException("段落がありません。"), token).ConfigureAwait(false);
-                    state = state with { Chunks = hierarchy.Children, Parents = hierarchy.Parents,
-                        ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
-                    await repository.SaveAsync(state, token).ConfigureAwait(false);
-                }
-                if (!isCode && !state.ParentEmbeddingsCompleted)
-                {
-                    stage = "parent_embedding";
-                    state = await PrepareParentEmbeddingsAsync(state, pipeline, pipelineSettings, progress, token).ConfigureAwait(false);
-                }
+                if (!isCode) state = await PrepareTextStagesAsync(state, pipeline, pipelineSettings, category, plan, progress, s => stage = s, token).ConfigureAwait(false);
                 var preparedChunks = state.Chunks ?? throw new InvalidDataException("埋め込み用チャンクがありません。");
+                if (!Reusable(state, "embedding", plan.Embedding, preparedChunks, preparedChunks)) state = state with { EmbeddedChunks = 0 };
+                state = Stamp(state, "embedding", plan.Embedding, preparedChunks, preparedChunks);
+                state = state with { ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
+                await repository.SaveAsync(state, token).ConfigureAwait(false);
+                stage = "embedding";
+                if (state.SpaceId is not null) await repository.EnsureSpaceAsync(state.SpaceId, state.Dimension, token).ConfigureAwait(false);
                 for (var ordinal = state.EmbeddedChunks; ordinal < preparedChunks.Count; ordinal++)
                 {
                     stage = "embedding";
-                    var batch = await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, preparedChunks[ordinal].Text)], token).ConfigureAwait(false);
+                    var reused = state.SpaceId is null ? null : await repository.ReusableVectorAsync(state.SpaceId, state.Key, preparedChunks[ordinal].Text, token).ConfigureAwait(false);
+                    var batch = reused is null ? await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, preparedChunks[ordinal].Text)], token).ConfigureAwait(false)
+                        : new VectorBatch(state.Dimension, [reused]);
                     ValidateVectors(batch, 1);
                     if (state.SpaceId is null)
                     {
@@ -172,7 +181,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 return await SearchStructureAsync(space, batch.Vectors[0], limit, token).ConfigureAwait(false);
             // Over-fetch children so multiple matching paragraphs do not fill all parent result slots.
             // A bounded candidate pool avoids unbounded query and disclosure work on large corpora.
-            var chunks = await repository.SearchAsync(space, _configuration, batch.Vectors[0], 256, token).ConfigureAwait(false);
+            var chunks = await repository.SearchAsync(space, _configuration, batch.Vectors[0], 256, token,
+                await CompatibleRevisionsAsync(token).ConfigureAwait(false)).ConfigureAwait(false);
             var results = new List<TextSearchResult>();
             var seenParents = new HashSet<string>(StringComparer.Ordinal);
             var closedDocuments = new HashSet<Guid>();
@@ -243,10 +253,11 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
 
     private async Task<bool> CurrentAsync(TextDocumentState document, CancellationToken token)
     {
-        if (document.Status != "ready" || document.ConfigurationId != _configuration || TextFiles.Within(document.Path, dataDirectory) ||
+        if (document.Status != "ready" || TextFiles.Within(document.Path, dataDirectory) ||
             !settings.Folders.Any(f => TextFiles.InFolder(document.Path, f)) ||
             !settings.AllowedTextExtensions().Contains(Path.GetExtension(document.Path), StringComparer.OrdinalIgnoreCase) ||
-            !settings.PipelineFor(document.Path).Categories.Any(c => c.Id == document.CategoryId && !c.Excluded)) return false;
+            !settings.PipelineFor(document.Path).Categories.Any(c => c.Id == document.CategoryId && !c.Excluded) ||
+            !ProcessingPlan.Current(settings, document)) return false;
         try
         {
             if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(document.Path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries)) return false;
@@ -254,6 +265,12 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.DecoderFallbackException or PipelineValidationException) { return false; }
     }
+
+    private async Task<string[]> CompatibleRevisionsAsync(CancellationToken token) =>
+        (await repository.DocumentStatusesAsync(token).ConfigureAwait(false)).Where(d => d.Status == "ready" &&
+            !TextFiles.Within(d.Path, dataDirectory) && settings.Folders.Any(f => TextFiles.InFolder(d.Path, f)) &&
+            settings.AllowedTextExtensions().Contains(Path.GetExtension(d.Path), StringComparer.OrdinalIgnoreCase) &&
+            ProcessingPlan.Current(settings, d)).Select(d => d.RevisionId).ToArray();
 
     private async Task<TextCycleResult> WithdrawAsync(TextDocumentState? state, CancellationToken token)
     {

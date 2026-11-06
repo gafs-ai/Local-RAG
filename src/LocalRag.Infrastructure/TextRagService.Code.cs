@@ -34,6 +34,8 @@ public sealed partial class TextRagService
             {
                 units[i] = unit;
                 state = state with { CodeUnits = units.ToList() };
+                if (state.Processing?.Stages.GetValueOrDefault("code-description") is { } receipt)
+                    state = Stamp(state, "code-description", receipt.Step, Syntax(state.CodeUnits), state.CodeUnits);
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
             }
             async Task<string> Describe(object input)

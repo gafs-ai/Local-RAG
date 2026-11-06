@@ -33,11 +33,14 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
     // each completed file. Fetch only the fields displayed by the list.
     public async Task<IReadOnlyList<TextDocumentState>> DocumentStatusesAsync(CancellationToken token)
     {
-        var result = await _db.RawQuery("SELECT VALUE { Path: Path, Status: Status, ConfigurationId: ConfigurationId, ErrorCode: ErrorCode, ErrorStage: ErrorStage, ErrorDetailCode: ErrorDetailCode, WithdrawalReason: WithdrawalReason, ProcessingNotices: ProcessingNotices } FROM (SELECT VALUE encoding::json::decode(payload) FROM text_document);",
+        var result = await _db.RawQuery("SELECT VALUE { State: { Path: Path, Status: Status, CategoryId: CategoryId, RevisionId: RevisionId, ConfigurationId: ConfigurationId, ErrorCode: ErrorCode, ErrorStage: ErrorStage, ErrorDetailCode: ErrorDetailCode, WithdrawalReason: WithdrawalReason, ProcessingNotices: ProcessingNotices }, ProfileId: Processing.ProfileId, Version: Processing.Version } FROM (SELECT VALUE encoding::json::decode(payload) FROM text_document);",
             cancellationToken: token).ConfigureAwait(false);
         result.EnsureAllOks();
-        return result.GetValue<TextDocumentState[]>(0) ?? [];
+        return (result.GetValue<ProcessingStatusRow[]>(0) ?? []).Select(r => r.ProfileId is null ? r.State : r.State with
+            { Processing = new() { ProfileId = r.ProfileId, Version = r.Version ?? 0 } }).ToArray();
     }
+
+    private sealed record ProcessingStatusRow(TextDocumentState State, string? ProfileId, int? Version);
 
     public async Task<TextDocumentState?> GetAsync(string key, CancellationToken token)
     {
@@ -62,7 +65,7 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
     {
         var table = Table(space);
         if (dimension is < 1 or > 8192) throw new InvalidDataException("Embedding次元数が対応範囲外です。");
-        var result = await _db.RawQuery($"DEFINE TABLE IF NOT EXISTS {table} SCHEMALESS; DEFINE INDEX IF NOT EXISTS embedding_idx ON {table} FIELDS embedding DISKANN DIMENSION {dimension} DIST COSINE TYPE F32; UPSERT type::record('text_space', $space) SET dimension = $dimension;",
+        var result = await _db.RawQuery($"DEFINE TABLE IF NOT EXISTS {table} SCHEMALESS; DEFINE INDEX IF NOT EXISTS embedding_idx ON {table} FIELDS embedding DISKANN DIMENSION {dimension} DIST COSINE TYPE F32; DEFINE INDEX IF NOT EXISTS reusable_input_idx ON {table} FIELDS document_key, input_hash; UPSERT type::record('text_space', $space) SET dimension = $dimension;",
             new Dictionary<string, object?> { ["space"] = space, ["dimension"] = dimension }, token).ConfigureAwait(false);
         result.EnsureAllOks();
     }
@@ -71,11 +74,11 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
     {
         var chunk = state.Chunks![ordinal];
         var payload = JsonSerializer.Serialize(new StoredTextChunk(state.Key, state.RevisionId, ordinal, chunk.Start, chunk.End, chunk.Text, chunk.ParentId, chunk.EmbeddingKind));
-        var result = await _db.RawQuery($"UPSERT type::record('{Table(state.SpaceId!)}', $key) SET document_key=$document, revision=$revision, configuration=$configuration, active=false, payload=$payload, embedding=$embedding;",
+        var result = await _db.RawQuery($"UPSERT type::record('{Table(state.SpaceId!)}', $key) SET document_key=$document, revision=$revision, configuration=$configuration, active=false, payload=$payload, embedding=$embedding, input_hash=$input_hash;",
             new Dictionary<string, object?>
             {
                 ["key"] = state.RevisionId + "_" + ordinal, ["document"] = state.Key, ["revision"] = state.RevisionId,
-                ["configuration"] = state.ConfigurationId, ["payload"] = payload, ["embedding"] = embedding
+                ["configuration"] = state.ConfigurationId, ["payload"] = payload, ["embedding"] = embedding, ["input_hash"] = TextRagSettings.Hash(chunk.Text)
             }, token).ConfigureAwait(false);
         result.EnsureAllOks();
     }
@@ -103,12 +106,14 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
         result.EnsureAllOks();
     }
 
-    public async Task<IReadOnlyList<StoredTextChunk>> SearchAsync(string space, string configuration, float[] query, int limit, CancellationToken token)
+    public async Task<IReadOnlyList<StoredTextChunk>> SearchAsync(string space, string configuration, float[] query, int limit, CancellationToken token,
+        IReadOnlyList<string>? revisions = null)
     {
         if (limit is < 1 or > 256) throw new ArgumentOutOfRangeException(nameof(limit));
         // K and EF are bounded integers, the table is a validated digest; all user text is bound as parameters.
-        var result = await _db.RawQuery($"SELECT VALUE payload FROM (SELECT payload, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},{Math.Max(64, limit)}|> $query AND active=true AND configuration=$configuration ORDER BY distance);",
-            new Dictionary<string, object?> { ["query"] = query, ["configuration"] = configuration }, token).ConfigureAwait(false);
+        var filter = revisions is null ? "configuration=$configuration" : "revision IN $revisions";
+        var result = await _db.RawQuery($"SELECT VALUE payload FROM (SELECT payload, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},{Math.Max(64, limit)}|> $query AND active=true AND {filter} ORDER BY distance);",
+            new Dictionary<string, object?> { ["query"] = query, ["configuration"] = configuration, ["revisions"] = revisions?.ToArray() ?? [] }, token).ConfigureAwait(false);
         result.EnsureAllOks();
         return (result.GetValue<string[]>(0) ?? []).Select(x => JsonSerializer.Deserialize<StoredTextChunk>(x) ?? throw new InvalidDataException("チャンクが不正です。")).ToArray();
     }

@@ -136,9 +136,8 @@ public partial class MainWindow
 
     private void ShowDocuments(IReadOnlyList<TextDocumentState> documents)
     {
-        var configuration = _loadedSettings.PipelineConfigurationId();
         DocumentStatusList.ItemsSource = documents.OrderBy(d => d.Path, StringComparer.OrdinalIgnoreCase).Select(d => $"{d.Path} — {PipelineErrors.Status(d.Status, d.WithdrawalReason)}" +
-            (d.ConfigurationId == configuration || d.Status == "deleted" ? "" : "（旧設定の記録・再処理待ち）") +
+            (ProcessingPlan.Current(_loadedSettings, d) || d.Status == "deleted" ? "" : "（旧設定の記録・再処理待ち）") +
             (d.ErrorCode is null ? "" : $"（{PipelineErrors.Describe(d.ErrorStage, d.ErrorDetailCode)}）") +
             (d.ProcessingNotices.Count == 0 ? "" : " / " + string.Join("、", d.ProcessingNotices.Select(PipelineErrors.Notice)))).ToArray();
     }
