@@ -6,6 +6,10 @@ public sealed record StructuralNodeScore(string Id, string? ParentId, double? Si
 
 public static class StructuralRanking
 {
+    // A local summary can be less similar than the passage it describes. Retain surrounding context
+    // when their aggregate scores are close; a clearly unrelated parent must still lose.
+    public const double ParentPreferenceMargin = 0.15;
+
     public static double? Cosine(float[] query, float[] vector)
     {
         if (query.Length != vector.Length || query.Length == 0) return null;

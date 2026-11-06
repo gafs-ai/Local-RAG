@@ -10,6 +10,7 @@ Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**
 - [実装計画・進捗](Documents/ImplementationPlan.md)
 - [技術検証結果と既知の制約](Documents/TechnicalValidation.md)
 - [実文書による初期設定の評価](Documents/PipelineEvaluation-2026-11-04.md)
+- [構造検索の実モデル評価と調整](Documents/RetrievalEvaluation-2026-11-06.md)
 - [MCP・ChatGPT接続手順](Documents/MCPConnection.md)
 - [0.0.0のリリース判定・配布手順](Documents/Release-0.0.0.md)
 

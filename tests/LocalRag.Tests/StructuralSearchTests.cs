@@ -64,6 +64,20 @@ public class StructuralSearchTests
     }
 
     [ServerFact]
+    public async Task EvaluatedDefaultsReturnContextSupportedBySeveralChildren()
+    {
+        await using var fixture = await ServerFixture.StartAsync();
+        var settings = Settings(fixture.Root);
+        await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
+        var document = await AddDocument(repo, settings, "context.txt", [.50, .48, .47], .28);
+        using var tuned = new TextRagService(repo, new QueryAi(), settings, Path.Combine(fixture.Root, "data"));
+        var result = Assert.Single(await tuned.SearchAsync("topic"));
+        Assert.Equal("parent", result.ResultUnitKind);
+        Assert.Equal(document.Original, result.Content);
+        Assert.Equal((.50 + .48 + .47) / 3, result.Ranking!.Children!.Value, 6);
+    }
+
+    [ServerFact]
     public async Task ContextReranksAndChoosesParentOrChildWithNoExtraAiCalls()
     {
         await using var fixture = await ServerFixture.StartAsync();
@@ -202,7 +216,9 @@ public class StructuralSearchTests
     {
         var input = Path.Combine(root, "input"); Directory.CreateDirectory(input);
         return TextRagTests.Settings(input) with { Management = ManagementSettings.CreateDefault() with
-            { Retrieval = new() { ConfidentialityEnabled = false } } };
+            { Retrieval = new() { ConfidentialityEnabled = false,
+                // Keep fixed weights for the original algorithm boundary cases.
+                HierarchySelfWeight = .6, HierarchyParentWeight = .2, HierarchyChildWeight = .2 } } };
     }
 
     private static async Task<TextDocumentState> AddDocument(TextRagRepository repo, AppSettings settings, string name,

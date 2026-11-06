@@ -13,6 +13,8 @@ try
             return await CodeDescriptionEvaluation.RunAsync(args[1], args[2], args[3], cancellation.Token);
         case "corpus-evaluate" when args.Length is 4 or 5:
             return await CorpusEvaluation.RunAsync(args[1], args[2], args[3], args.ElementAtOrDefault(4), cancellation.Token);
+        case "corpus-compare" when args.Length is 4 or 5:
+            return await CorpusEvaluation.RunAsync(args[1], args[2], args[3], args.ElementAtOrDefault(4), cancellation.Token, compareRetrieval: true);
         case "configured-scan" when args.Length is 2 or 3:
             return await ConfiguredScan.RunAsync(args[1], args.ElementAtOrDefault(2), cancellation.Token);
         case "configured-evaluate" when args.Length is 3 or 4:
@@ -83,6 +85,7 @@ try
         default:
             Console.WriteLine("Code description comparison: code-description-evaluate <explicit-samples.json> <new-output.jsonl> <AI-settings-directory> (local model must be running; inputs/outputs are saved for human review)");
             Console.WriteLine("Explicit public corpus evaluation: corpus-evaluate <manifest.json> <dedicated-run-directory> <AI-settings-directory> [tools-directory] (writes corpus/model traces locally)");
+            Console.WriteLine("Retrieval weight comparison: corpus-compare <manifest.json> <dedicated-run-directory> <AI-settings-directory> [tools-directory] (reuses the corpus index; caches identical query vectors across variants)");
             Console.WriteLine("Configured evaluation: configured-scan <dedicated-data-directory> [tools-directory] (saved settings required; close the desktop app first)");
             Console.WriteLine("With retrieval: configured-evaluate <dedicated-data-directory> <query> [tools-directory]");
             Console.WriteLine("Usage: LocalRag.Diagnostics db [data-directory] [tools-directory] | models | chat <local-model-id> | embed <local-model-id> [data-directory] [tools-directory] | text-smoke/ chunk-smoke/ mcp-smoke <chat-model-id> <embedding-model-id> [data-directory] [tools-directory] | chunk-probe/ chunk-repair-probe <chat-model-id> [data-directory] | mcp-check <data-directory> <query> [bridge-executable] | recovery-smoke [data-directory] [tools-directory]");

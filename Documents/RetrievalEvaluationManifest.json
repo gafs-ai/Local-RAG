@@ -1,0 +1,257 @@
+{
+  "Corpus": "corpus",
+  "Queries": [
+    {
+      "Text": "404と410の違いは何ですか",
+      "File": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "HTTPリクエストを繰り返しても同じ効果になる性質は何ですか",
+      "File": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "Which HTTP methods are not guaranteed to be idempotent?",
+      "File": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "A missing web resource is known to be permanently removed. Which status should the server use?",
+      "File": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "Local RAGを起動するために必要な.NET Runtimeは何ですか",
+      "File": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "Local RAGのセットアップ時に指定するモデルと取り込みフォルダについて教えて",
+      "File": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "文字列をサロゲートペアを壊さずモデルの上限内に分割する処理",
+      "File": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "文字列の末尾をUTF-8バイト数の上限内で取得する処理",
+      "File": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "PCのスリープ中に監視時刻を過ぎた場合、元の周期を保って次の実行時刻を求めるコード",
+      "File": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "監視スケジュールの間隔がゼロや負数だった場合、どの例外を投げますか",
+      "File": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "LLMにクラスのコード全体が収まらない場合、何を材料に説明を作りますか",
+      "File": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "クラスの説明を生成できず埋め込みを省略した場合、下位の関数は検索できますか",
+      "File": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "章全体がEmbeddingモデルの入力上限を超えるとき、親の検索用説明をどう作りますか",
+      "File": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "文書の親チャンク説明の作成中に停止しました。完了した子の処理をやり直しますか",
+      "File": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "テキスト処理画面でMarkdownの親の最小・最大文字数が表示される条件は何ですか",
+      "File": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "処理方式を切り替えて設定欄が非表示になると、以前の入力値は消去されますか",
+      "File": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "ソースコード検索ではコード本文と説明文のどちらをベクトル化しますか",
+      "File": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "ソースファイル全体の説明を生成するとき、ファイルの説明コメントがない場合の入力は何ですか",
+      "File": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Split": "validation"
+    },
+    {
+      "Text": "長い親チャンクの説明を何度圧縮しても短くならない場合はどう扱いますか",
+      "File": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Split": "calibration"
+    },
+    {
+      "Text": "親の説明でヒットした文書を検索で取得すると、要約と原文のどちらが返りますか",
+      "File": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Split": "validation"
+    }
+  ],
+  "Sources": [
+    {
+      "File": "release.md",
+      "Revision": "c245491",
+      "Sha256": "06F7E1F1CE2C674F650409C8A4EDD724859F94B2C5131AA56CEBF386E368BE78",
+      "License": "GPL-3.0-or-later",
+      "Source": "Documents/Release-0.0.0.md",
+      "NormalizedSha256": "06F7E1F1CE2C674F650409C8A4EDD724859F94B2C5131AA56CEBF386E368BE78"
+    },
+    {
+      "File": "TextWindows.cs",
+      "Revision": "c245491",
+      "Sha256": "E7992961AD21EA4A062C54F8EAC2585551E28253E9B4FE2BF833E51B14EAD2E8",
+      "License": "GPL-3.0-or-later",
+      "Source": "src/LocalRag.Infrastructure/TextWindows.cs",
+      "NormalizedSha256": "E7992961AD21EA4A062C54F8EAC2585551E28253E9B4FE2BF833E51B14EAD2E8"
+    },
+    {
+      "File": "http404-ja.md",
+      "Sha256": "7BF210FCA26324264691791CFEF66FCF5C20E2B5FFCF0BAC9E0D8ED0CC674427",
+      "License": "CC-BY-SA-2.5-or-later (Mozilla Contributors)",
+      "Page": "https://developer.mozilla.org/ja/docs/Web/HTTP/Reference/Status/404",
+      "Source": "https://raw.githubusercontent.com/mdn/translated-content/main/files/ja/web/http/reference/status/404/index.md",
+      "NormalizedSha256": "7BF210FCA26324264691791CFEF66FCF5C20E2B5FFCF0BAC9E0D8ED0CC674427"
+    },
+    {
+      "File": "idempotent.txt",
+      "Sha256": "18676069423EB9248D57FE2E076E2AE0C38356019C958400B52ADE608CAA8D5A",
+      "License": "CC-BY-SA-2.5-or-later (Mozilla Contributors)",
+      "Page": "https://developer.mozilla.org/en-US/docs/Glossary/Idempotent",
+      "Source": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/glossary/idempotent/index.md",
+      "NormalizedSha256": "18676069423EB9248D57FE2E076E2AE0C38356019C958400B52ADE608CAA8D5A"
+    },
+    {
+      "File": "privacy-canary.txt",
+      "License": "GPL-3.0-or-later",
+      "Sha256": "5301A949B0BDE42D1A8E0D414EBC112FE5FF8359536B4318C9D74E5AEE01492C",
+      "Source": "Synthetic label only; no personal information or credentials",
+      "NormalizedSha256": "5301A949B0BDE42D1A8E0D414EBC112FE5FF8359536B4318C9D74E5AEE01492C"
+    },
+    {
+      "Sha256": "48771B445C654CA04A8A4D4BAEE8BC67BD35D0E6FD98837CE69614C6E5E3A783",
+      "Source": "Documents/DocumentParentEmbeddings.md",
+      "License": "GPL-3.0-or-later",
+      "Revision": "e2c1e49",
+      "File": "DocumentParentEmbeddings.md",
+      "NormalizedSha256": "48771B445C654CA04A8A4D4BAEE8BC67BD35D0E6FD98837CE69614C6E5E3A783"
+    },
+    {
+      "Sha256": "3846ADAEA8D946561E77DCFA5DDD357B7B7D804261527EE5545D45A3C82FAA50",
+      "Source": "Documents/SourceCodeHierarchy.md",
+      "License": "GPL-3.0-or-later",
+      "Revision": "e2c1e49",
+      "File": "SourceCodeHierarchy.md",
+      "NormalizedSha256": "3846ADAEA8D946561E77DCFA5DDD357B7B7D804261527EE5545D45A3C82FAA50"
+    },
+    {
+      "Sha256": "6199C8BBFAB32014BE7D8B95AA79000FAA9903794B3EE724F66761CC4F5A65BC",
+      "Source": "Documents/SettingsVisibility-2026-11-06.md",
+      "License": "GPL-3.0-or-later",
+      "Revision": "e2c1e49",
+      "File": "SettingsVisibility-2026-11-06.md",
+      "NormalizedSha256": "6199C8BBFAB32014BE7D8B95AA79000FAA9903794B3EE724F66761CC4F5A65BC"
+    },
+    {
+      "Sha256": "BCFF2A7870FA1CB28BE458C78A7328D696DF2697AB48246D4138C7FCD349DAA7",
+      "Source": "src/LocalRag.Core/IntervalSchedule.cs",
+      "License": "GPL-3.0-or-later",
+      "Revision": "e2c1e49",
+      "File": "IntervalSchedule.cs",
+      "NormalizedSha256": "BCFF2A7870FA1CB28BE458C78A7328D696DF2697AB48246D4138C7FCD349DAA7"
+    }
+  ]
+}

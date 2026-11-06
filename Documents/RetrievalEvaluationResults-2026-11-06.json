@@ -1,0 +1,3096 @@
+{
+  "Manifest": "RetrievalEvaluationManifest.json",
+  "Method": "Development evaluation; source bodies and model traces excluded",
+  "Runs": [
+    {
+      "Timestamp": "2026-11-06T13:05:08.9833563+09:00",
+      "ParentPreferenceMargin": 0.05,
+      "ChatModel": "Gemma-3-4b-it-mm-NPU",
+      "EmbeddingModel": "nomic-embed-text-v2-moe-GGUF",
+      "Configuration": "a68fb94e934cab4e5e2eb8aa577213578e9ba18bfea980c2559f30ff6eed1f7f",
+      "Variants": [
+        {
+          "Name": "legacy",
+          "Weights": [
+            0.6,
+            0.2,
+            0.2
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 10,
+              "FileAt1": 6,
+              "MrrAt5": 0.725,
+              "AverageCharacters": 4489.2,
+              "AverageUniqueFiles": 3.3
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 8,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.875,
+              "AverageCharacters": 4028.8,
+              "AverageUniqueFiles": 2.9
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6189,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4172,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3553,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3403,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3687,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3567,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 3,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3381,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3097,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3381,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3521,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 4,
+              "FileRank": 4,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3145,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3266,
+              "UniqueFiles": 3
+            }
+          ]
+        },
+        {
+          "Name": "default_60_20_20",
+          "Weights": [
+            0.6,
+            0.2,
+            0.2
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 9,
+              "FileAt1": 7,
+              "MrrAt5": 0.615,
+              "AverageCharacters": 2728.3,
+              "AverageUniqueFiles": 2.6
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 9,
+              "FileAt1": 9,
+              "MrrAt5": 0.725,
+              "AverageCharacters": 1389.2,
+              "AverageUniqueFiles": 2.2
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2218,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5336,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1886,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3532,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2254,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5689,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1560,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3465,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2803,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 4,
+              "FileRank": 2,
+              "Characters": 2149,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": null,
+              "FileRank": 3,
+              "Characters": 923,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 5,
+              "FileRank": 1,
+              "Characters": 906,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 303,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 1854,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1258,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 5,
+              "FileRank": 5,
+              "Characters": 1833,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 1160,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 951,
+              "UniqueFiles": 1
+            }
+          ]
+        },
+        {
+          "Name": "self_80_10_10",
+          "Weights": [
+            0.8,
+            0.1,
+            0.1
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 7,
+              "FileAt1": 7,
+              "MrrAt5": 0.5700000000000001,
+              "AverageCharacters": 2364.2,
+              "AverageUniqueFiles": 2.8
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 9,
+              "FileAt1": 9,
+              "MrrAt5": 0.725,
+              "AverageCharacters": 1122.6,
+              "AverageUniqueFiles": 2.2
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2218,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4831,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 753,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2281,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5689,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1338,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2531,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2803,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 2,
+              "Characters": 1287,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": null,
+              "FileRank": 3,
+              "Characters": 927,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 5,
+              "FileRank": 1,
+              "Characters": 906,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 339,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 1290,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 391,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 5,
+              "Characters": 914,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 1200,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 400,
+              "UniqueFiles": 1
+            }
+          ]
+        },
+        {
+          "Name": "self_80_parent_20",
+          "Weights": [
+            0.8,
+            0.2,
+            0
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 7,
+              "FileAt1": 7,
+              "MrrAt5": 0.5700000000000001,
+              "AverageCharacters": 2383.6,
+              "AverageUniqueFiles": 2.6
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 9,
+              "FileAt1": 9,
+              "MrrAt5": 0.725,
+              "AverageCharacters": 1168.9,
+              "AverageUniqueFiles": 2.1
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2218,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4967,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 612,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2254,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5689,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1560,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2531,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2803,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 2,
+              "Characters": 1287,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": null,
+              "FileRank": 3,
+              "Characters": 927,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 5,
+              "FileRank": 1,
+              "Characters": 906,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 303,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 1290,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 836,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": null,
+              "Characters": 972,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 1200,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 400,
+              "UniqueFiles": 1
+            }
+          ]
+        },
+        {
+          "Name": "self_only",
+          "Weights": [
+            1,
+            0,
+            0
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 4,
+              "EvidenceAt5": 7,
+              "FileAt1": 6,
+              "MrrAt5": 0.52,
+              "AverageCharacters": 2312.3,
+              "AverageUniqueFiles": 2.6
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 9,
+              "FileAt1": 8,
+              "MrrAt5": 0.6583333333333333,
+              "AverageCharacters": 953.3,
+              "AverageUniqueFiles": 2.1
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2218,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4325,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 641,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1696,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 5689,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1338,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2531,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 1864,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 2,
+              "Characters": 1287,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": null,
+              "FileRank": 3,
+              "Characters": 927,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 5,
+              "FileRank": 1,
+              "Characters": 906,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 3,
+              "FileRank": 1,
+              "Characters": 339,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 1277,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 352,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 5,
+              "Characters": 914,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 1200,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 382,
+              "UniqueFiles": 1
+            }
+          ]
+        },
+        {
+          "Name": "self_40_parent_20_child_40",
+          "Weights": [
+            0.4,
+            0.2,
+            0.4
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.7833333333333333,
+              "AverageCharacters": 3995.3,
+              "AverageUniqueFiles": 2.9
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.925,
+              "AverageCharacters": 2896.3,
+              "AverageUniqueFiles": 3
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5336,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5971,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2101,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3532,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3822,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1560,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3214,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 3,
+              "Characters": 2213,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2072,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2257,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3185,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2125,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3336,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3114,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2021,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2501,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_30_parent_10_child_60",
+          "Weights": [
+            0.3,
+            0.1,
+            0.6
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.7833333333333333,
+              "AverageCharacters": 4090.5,
+              "AverageUniqueFiles": 2.9
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.925,
+              "AverageCharacters": 3014.3,
+              "AverageUniqueFiles": 3
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5336,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2101,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3484,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3822,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1560,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3677,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 2591,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 3,
+              "Characters": 2213,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2072,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2879,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3824,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2125,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3114,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2881,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2721,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_20_parent_20_child_60",
+          "Weights": [
+            0.2,
+            0.2,
+            0.6
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.9333333333333333,
+              "AverageCharacters": 4643.8,
+              "AverageUniqueFiles": 3.1
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.95,
+              "AverageCharacters": 4196,
+              "AverageUniqueFiles": 3.2
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5776,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3607,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4062,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3677,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5402,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3383,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3824,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3266,
+              "UniqueFiles": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-11-06T13:12:45.8426588+09:00",
+      "ParentPreferenceMargin": 0.15,
+      "ChatModel": "Gemma-3-4b-it-mm-NPU",
+      "EmbeddingModel": "nomic-embed-text-v2-moe-GGUF",
+      "Configuration": "a68fb94e934cab4e5e2eb8aa577213578e9ba18bfea980c2559f30ff6eed1f7f",
+      "Variants": [
+        {
+          "Name": "legacy",
+          "Weights": [
+            0.6,
+            0.2,
+            0.2
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 5,
+              "EvidenceAt5": 10,
+              "FileAt1": 6,
+              "MrrAt5": 0.725,
+              "AverageCharacters": 4489.2,
+              "AverageUniqueFiles": 3.3
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 8,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.875,
+              "AverageCharacters": 4028.8,
+              "AverageUniqueFiles": 2.9
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6189,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4172,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3553,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3403,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3687,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3567,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 3,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3381,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3097,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3381,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3521,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 4,
+              "FileRank": 4,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3145,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3266,
+              "UniqueFiles": 3
+            }
+          ]
+        },
+        {
+          "Name": "default_60_20_20",
+          "Weights": [
+            0.6,
+            0.2,
+            0.2
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 8,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.9,
+              "AverageCharacters": 4604.7,
+              "AverageUniqueFiles": 3.6
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 8,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.9,
+              "AverageCharacters": 3564.7,
+              "AverageUniqueFiles": 3
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3906,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6153,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3189,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3162,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3443,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 7239,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3448,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3684,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3723,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3402,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2721,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_80_10_10",
+          "Weights": [
+            0.8,
+            0.1,
+            0.1
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 7,
+              "EvidenceAt5": 9,
+              "FileAt1": 8,
+              "MrrAt5": 0.7833333333333333,
+              "AverageCharacters": 3972.3,
+              "AverageUniqueFiles": 3.4
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.775,
+              "AverageCharacters": 2868.5,
+              "AverageUniqueFiles": 2.7
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2958,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2590,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3162,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3443,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 4964,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3448,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2455,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3684,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3619,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3723,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2501,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_80_parent_20",
+          "Weights": [
+            0.8,
+            0.2,
+            0
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 7,
+              "EvidenceAt5": 9,
+              "FileAt1": 8,
+              "MrrAt5": 0.7833333333333333,
+              "AverageCharacters": 3953.7,
+              "AverageUniqueFiles": 3.4
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.75,
+              "AverageCharacters": 2906.3,
+              "AverageUniqueFiles": 2.7
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2958,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2590,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3162,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3821,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 4964,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3448,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 2455,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3684,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3619,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3619,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3723,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2501,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_only",
+          "Weights": [
+            1,
+            0,
+            0
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 6,
+              "EvidenceAt5": 9,
+              "FileAt1": 8,
+              "MrrAt5": 0.7166666666666666,
+              "AverageCharacters": 3823.5,
+              "AverageUniqueFiles": 3.2
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 7,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.7783333333333333,
+              "AverageCharacters": 2364.7,
+              "AverageUniqueFiles": 2.8
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2958,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5336,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 1,
+              "Characters": 794,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2590,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3162,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2248,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 4964,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 2892,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2979,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 5,
+              "FileRank": 1,
+              "Characters": 2257,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3684,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 1697,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3196,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3723,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": null,
+              "FileRank": 1,
+              "Characters": 301,
+              "UniqueFiles": 1
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 985,
+              "UniqueFiles": 3
+            }
+          ]
+        },
+        {
+          "Name": "self_40_parent_20_child_40",
+          "Weights": [
+            0.4,
+            0.2,
+            0.4
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.95,
+              "AverageCharacters": 4657.9,
+              "AverageUniqueFiles": 3.2
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 7,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.825,
+              "AverageCharacters": 4003.7,
+              "AverageUniqueFiles": 2.9
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5971,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5776,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4063,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3822,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 4,
+              "FileRank": 4,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4022,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3299,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5402,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3383,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3824,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3619,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3099,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 1,
+              "Characters": 2721,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_30_parent_10_child_60",
+          "Weights": [
+            0.3,
+            0.1,
+            0.6
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.9333333333333333,
+              "AverageCharacters": 4700.3,
+              "AverageUniqueFiles": 3.2
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 8,
+              "EvidenceAt5": 10,
+              "FileAt1": 8,
+              "MrrAt5": 0.9,
+              "AverageCharacters": 4103.5,
+              "AverageUniqueFiles": 3.1
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5776,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4172,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3822,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3677,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5402,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3383,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3824,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3619,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2721,
+              "UniqueFiles": 2
+            }
+          ]
+        },
+        {
+          "Name": "self_20_parent_20_child_60",
+          "Weights": [
+            0.2,
+            0.2,
+            0.6
+          ],
+          "Metrics": [
+            {
+              "Split": "calibration",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.9333333333333333,
+              "AverageCharacters": 4700.3,
+              "AverageUniqueFiles": 3.2
+            },
+            {
+              "Split": "validation",
+              "Count": 10,
+              "EvidenceAt1": 9,
+              "EvidenceAt5": 10,
+              "FileAt1": 9,
+              "MrrAt5": 0.95,
+              "AverageCharacters": 4196,
+              "AverageUniqueFiles": 3.2
+            }
+          ],
+          "Queries": [
+            {
+              "Number": 1,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 6115,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 2,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5746,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 3,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5933,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 4,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5776,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 5,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4172,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 6,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 4062,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 7,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 7120,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 8,
+              "Split": "validation",
+              "EvidenceRank": 2,
+              "FileRank": 2,
+              "Characters": 5012,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 9,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3677,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 10,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3675,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 11,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 5402,
+              "UniqueFiles": 4
+            },
+            {
+              "Number": 12,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 2959,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 13,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3383,
+              "UniqueFiles": 2
+            },
+            {
+              "Number": 14,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 15,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3824,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 16,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 17,
+              "Split": "calibration",
+              "EvidenceRank": 3,
+              "FileRank": 3,
+              "Characters": 3805,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 18,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 19,
+              "Split": "calibration",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3759,
+              "UniqueFiles": 3
+            },
+            {
+              "Number": 20,
+              "Split": "validation",
+              "EvidenceRank": 1,
+              "FileRank": 1,
+              "Characters": 3266,
+              "UniqueFiles": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

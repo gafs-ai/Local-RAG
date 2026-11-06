@@ -20,7 +20,6 @@ public sealed partial class TextRagService
     private async Task<IReadOnlyList<TextSearchResult>> SearchStructureAsync(string space, float[] query, int limit, CancellationToken token)
     {
         const int seedLimit = 64, nodeLimit = 1024, vectorLimit = 4096, depthLimit = 2;
-        const double parentPreferenceMargin = 0.05;
         var options = settings.Management?.Retrieval ?? new RetrievalPipelineSettings();
         var seeds = await repository.SearchVectorSeedsAsync(space, _configuration, query, seedLimit, token).ConfigureAwait(false);
         var nodes = new Dictionary<string, SearchNode>(StringComparer.Ordinal);
@@ -136,7 +135,7 @@ public sealed partial class TextRagService
                     CodeHierarchy.Full(preferred.Code).Length > options.CodeResultMaxCharacters)) preferred = null;
             }
             // Stored embeddings are F32; do not let rounding decide the exact preference boundary.
-            if (preferred is not null && scores.TryGetValue(preferred.Id, out var parentScore) && parentScore.Combined + 1e-6 >= scores[node.Id].Combined - parentPreferenceMargin)
+            if (preferred is not null && scores.TryGetValue(preferred.Id, out var parentScore) && parentScore.Combined + 1e-6 >= scores[node.Id].Combined - StructuralRanking.ParentPreferenceMargin)
                 target = preferred;
             candidates[target.Id] = target;
         }
