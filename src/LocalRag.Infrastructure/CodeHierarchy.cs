@@ -22,10 +22,10 @@ public static class CodeHierarchy
         return string.Join("\n\n", parts);
     }
 
-    public static CodeSelection Select(SourceCodeUnit hit, IReadOnlyList<SourceCodeUnit> units, int maximum)
+    public static CodeSelection Select(SourceCodeUnit hit, IReadOnlyList<SourceCodeUnit> units, int maximum, bool preferClass = true)
     {
         if (maximum < 500) throw new ArgumentOutOfRangeException(nameof(maximum));
-        if (hit.Kind == "function")
+        if (preferClass && hit.Kind == "function")
         {
             var container = hit.ContainerId;
             while (container is not null)

@@ -269,7 +269,8 @@ public class McpTests
         public bool Fails { get; init; }
         public string? SourcePath { get; init; } = @"C:\private\public.md";
         public int Calls { get; private set; }
-        private TextSearchResult Result() => new(Id, Decision, "full original text", SourcePath, null, null, "revision:p1", "Chapter");
+        private TextSearchResult Result() => new(Id, Decision, "full original text", SourcePath, null, null, "revision:p1", "Chapter",
+            Ranking: new(.8, .9, .7, .6, false), ResultUnitId: "revision:parent:p1", ResultUnitKind: "parent");
         public Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default)
         { Calls++; if (Fails) throw new IOException("PRIVATE SECRET PATH"); return Task.FromResult<IReadOnlyList<TextSearchResult>>([Result()]); }
         public Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default) { Calls++; return Task.FromResult<TextSearchResult?>(Result()); }

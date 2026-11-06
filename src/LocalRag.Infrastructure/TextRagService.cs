@@ -168,6 +168,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             ValidateVectors(batch, 1);
             var space = _retrievalPrompts.SpaceId(settings.Ai, batch.Dimension);
             await repository.EnsureSpaceAsync(space, batch.Dimension, token).ConfigureAwait(false);
+            if (settings.Management?.Retrieval.HierarchySearchEnabled ?? true)
+                return await SearchStructureAsync(space, batch.Vectors[0], limit, token).ConfigureAwait(false);
             // Over-fetch children so multiple matching paragraphs do not fill all parent result slots.
             // A bounded candidate pool avoids unbounded query and disclosure work on large corpora.
             var chunks = await repository.SearchAsync(space, _configuration, batch.Vectors[0], 256, token).ConfigureAwait(false);

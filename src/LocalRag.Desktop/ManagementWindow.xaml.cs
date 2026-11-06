@@ -53,6 +53,7 @@ public partial class ManagementWindow : Window
         ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
         ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
         CodeResultLimitBox.Text = _retrieval.CodeResultMaxCharacters.ToString();
+        LoadHierarchySearch();
         PatternsBox.IsChecked = _retrieval.PatternsEnabled;
         LlmBox.IsChecked = _retrieval.LlmEnabled;
         PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
@@ -91,14 +92,22 @@ public partial class ManagementWindow : Window
         public string Label => $"{Value.Name}（{string.Join(" ", Value.Extensions ?? [])}）";
         public event PropertyChangedEventHandler? PropertyChanged;
     }
-    public sealed class RouteCategoryDraft
+    public sealed class RouteCategoryDraft : INotifyPropertyChanged
     {
         public required string Id { get; init; }
         public required string Name { get; init; }
-        public bool Enabled { get; set; }
-        public string FormatKey { get; set; } = Inherit;
-        public string ChunkKey { get; set; } = Inherit;
-        public string ParentKey { get; set; } = Inherit;
+        public bool Excluded { get; init; }
+        private bool _enabled, _active;
+        private string _format = Inherit, _chunk = Inherit, _parent = Inherit, _rememberedChunk = "system.chunk";
+        public bool Enabled { get => _enabled; set { _enabled = value; Changed(nameof(Enabled)); } }
+        public bool ProcessingActive { get => _active; set { if (_active == value) return; _active = value; Changed(nameof(ProcessingActive)); } }
+        public string FormatKey { get => _format; set { _format = value; Changed(nameof(FormatKey)); } }
+        public string ChunkKey { get => _chunk; set { _chunk = value; if (value != Inherit && value != Skip) _rememberedChunk = value; Changed(nameof(ChunkKey)); Changed(nameof(JoinKey)); } }
+        public string ParentKey { get => _parent; set { _parent = value; Changed(nameof(ParentKey)); } }
+        public string JoinKey { get => ChunkKey == Inherit ? Inherit : ChunkKey == Skip ? Skip : "@join";
+            set => ChunkKey = value == "@join" ? _rememberedChunk : value; }
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void Changed(string name) => PropertyChanged?.Invoke(this, new(name));
     }
     private List<Choice> Choices(PromptPurpose purpose, bool skip = false, bool inherit = false)
     {
@@ -204,11 +213,15 @@ public partial class ManagementWindow : Window
             _routeRows = _categories.Select(c =>
             {
                 var steps = value.CategoryOverrides.SingleOrDefault(s => s.CategoryId == c.Id);
-                return new RouteCategoryDraft { Id = c.Id, Name = c.Name, Enabled = value.EnabledCategoryIds.Contains(c.Id), FormatKey = Key(steps?.FormatPromptId), ChunkKey = Key(steps?.ChunkPromptId), ParentKey = Key(steps?.ParentPromptId) };
+                return new RouteCategoryDraft { Id = c.Id, Name = c.Name, Excluded = c.Excluded, Enabled = value.EnabledCategoryIds.Contains(c.Id), FormatKey = Key(steps?.FormatPromptId), ChunkKey = Key(steps?.ChunkPromptId), ParentKey = Key(steps?.ParentPromptId) };
             }).ToList();
+            foreach (var row in _routeRows) row.PropertyChanged += (_, _) => RefreshUsage();
+            _mechanicalPrompt = value.ChunkPromptId.Length == 0 ? "system.chunk" : value.ChunkPromptId;
+            MechanicalColumn.ItemsSource = new Choice[] { new(Inherit, "既定を使う"), new("@join", "結合する"), new(Skip, "結合しない") };
             RouteCategoryGrid.ItemsSource = _routeRows;
         }
         finally { _refreshing = false; }
+        RefreshUsage();
     }
     private void RouteSelected(object sender, SelectionChangedEventArgs e)
     {
@@ -255,6 +268,13 @@ public partial class ManagementWindow : Window
     {
         ConfidentialityPromptBox.ItemsSource = Choices(PromptPurpose.Confidentiality); ConfidentialityPromptBox.SelectedValue = secret;
     }
+    private void LoadHierarchySearch()
+    {
+        HierarchySearchBox.IsChecked = _retrieval.HierarchySearchEnabled;
+        HierarchySelfBox.Text = _retrieval.HierarchySelfWeight.ToString();
+        HierarchyParentBox.Text = _retrieval.HierarchyParentWeight.ToString();
+        HierarchyChildBox.Text = _retrieval.HierarchyChildWeight.ToString();
+    }
     private void ResetDefaults(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(this,
@@ -290,6 +310,7 @@ public partial class ManagementWindow : Window
             ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
             ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
             CodeResultLimitBox.Text = _retrieval.CodeResultMaxCharacters.ToString();
+            LoadHierarchySearch();
             PatternsBox.IsChecked = _retrieval.PatternsEnabled;
             LlmBox.IsChecked = _retrieval.LlmEnabled;
             PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
@@ -316,11 +337,15 @@ public partial class ManagementWindow : Window
         { ManagerStatus.Text = "文書・チャンク・AI応答の上限を整数で入力してください。"; return; }
         if (!int.TryParse(CodeResultLimitBox.Text, out var codeResultLimit))
         { ManagerStatus.Text = "ソースコード検索の返却上限を整数で入力してください。"; return; }
+        if (!double.TryParse(HierarchySelfBox.Text, out var selfWeight) || !double.TryParse(HierarchyParentBox.Text, out var parentWeight) || !double.TryParse(HierarchyChildBox.Text, out var childWeight))
+        { ManagerStatus.Text = "構造検索の重みを数値で入力してください。"; return; }
         var management = new ManagementSettings
         {
             UserPrompts = _prompts.Where(p => !p.IsSystem).Select(p => p.Build()).ToList(), Categories = _categories.Select(c => c.Build()).ToList(),
             Version = 2, Routes = _routes.Select(r => r.Value).ToList(),
             Retrieval = _retrieval with { CodeResultMaxCharacters = codeResultLimit, ConfidentialityPromptId = Selection(ConfidentialityPromptBox),
+                HierarchySearchEnabled = HierarchySearchBox.IsChecked == true, HierarchySelfWeight = selfWeight,
+                HierarchyParentWeight = parentWeight, HierarchyChildWeight = childWeight,
                 ConfidentialityEnabled = ConfidentialityBox.IsChecked == true, PatternsEnabled = PatternsBox.IsChecked == true, LlmEnabled = LlmBox.IsChecked == true,
                 Patterns = PatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() }
         };

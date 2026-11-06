@@ -45,63 +45,93 @@
       </StackPanel>
       <StackPanel Grid.Column="2">
        <TextBlock Text="設定名"/><TextBox x:Name="RouteNameBox" AutomationProperties.Name="設定名"/>
-       <TextBlock Text="この設定を適用する拡張子（例：.txt .md）"/><TextBox x:Name="RouteExtensionsBox" AutomationProperties.Name="設定の拡張子"/>
-       <TextBlock Text="入力の扱い"/><ComboBox x:Name="SourceModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="入力の扱い"/>
+       <TextBlock Text="この設定を適用する拡張子（例：.txt .md）"/><TextBox x:Name="RouteExtensionsBox" TextChanged="UsageChanged" AutomationProperties.Name="設定の拡張子"/>
+       <TextBlock Text="入力の扱い"/><ComboBox x:Name="SourceModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="入力の扱い"/>
        <TextBlock Text="文字コード"/><ComboBox x:Name="EncodingModeBox" DisplayMemberPath="Name" SelectedValuePath="Mode" AutomationProperties.Name="文字コード"/>
        <TextBlock Text="通常は自動判別を使用します。短文などで判別できない場合や文字化けする場合は、この設定の文字コードを指定してください。" TextWrapping="Wrap" Foreground="#526477"/>
+       <StackPanel x:Name="CodeOptions">
        <TextBlock Text="コード説明プロンプト"/><ComboBox x:Name="CodePromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="コード説明プロンプト"/>
        <TextBlock Text="選んだ言語の構文で解析し、関数／クラス／ファイルの説明を埋め込みます。コード用の設定には通常の整形・結合を適用しません。Word・PDFなどのバイナリは変換しません。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,10"/>
-       <CheckBox x:Name="ClassifyBox" Content="分類を行う" Margin="0,0,0,10"/>
+       </StackPanel>
+       <CheckBox x:Name="ClassifyBox" Content="分類を行う" Checked="UsageChanged" Unchecked="UsageChanged" Margin="0,0,0,10"/>
+       <StackPanel x:Name="ClassifyOptions">
        <TextBlock Text="分類プロンプト"/><ComboBox x:Name="ClassifyPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="分類プロンプト"/>
-       <TextBlock Text="分類を省略した場合のカテゴリ（下の有効カテゴリから選択）" TextWrapping="Wrap"/><ComboBox x:Name="DefaultCategoryBox" DisplayMemberPath="Name" SelectedValuePath="Id" AutomationProperties.Name="既定カテゴリ"/>
-       <TextBlock Text="整形の既定処理"/><ComboBox x:Name="DefaultFormatBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の整形"/>
+       </StackPanel>
+       <TextBlock Text="既定カテゴリ（分類を省略した場合・分類結果が割れた場合に使用）" TextWrapping="Wrap"/><ComboBox x:Name="DefaultCategoryBox" SelectionChanged="UsageChanged" DisplayMemberPath="Name" SelectedValuePath="Id" AutomationProperties.Name="既定カテゴリ"/>
+       <StackPanel x:Name="TextOptions">
+       <StackPanel x:Name="DefaultFormatOptions">
+       <TextBlock Text="整形の既定処理"/><ComboBox x:Name="DefaultFormatBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の整形"/>
+       </StackPanel>
        <TextBlock Text="1. チャンクの結合（子チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
-       <ComboBox x:Name="ChildModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="子チャンクの結合方式"/>
-       <TextBlock Text="LLMで結合する場合のプロンプト"/><ComboBox x:Name="DefaultChunkBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の結合"/>
+       <ComboBox x:Name="ChildModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="子チャンクの結合方式"/>
+       <StackPanel x:Name="ChildPromptOptions">
+       <TextBlock Text="LLMで結合する場合のプロンプト"/><ComboBox x:Name="DefaultChunkBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の結合"/>
+       </StackPanel>
+       <CheckBox x:Name="MechanicalJoinBox" Content="既定で機械的な結合を行う" Checked="MechanicalJoinChanged" Unchecked="MechanicalJoinChanged" Margin="0,6"/>
        <TextBlock Text="2. チャンクをまとめる（親チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
-       <ComboBox x:Name="ParentModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクのまとめ方式"/>
+       <ComboBox x:Name="ParentModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクのまとめ方式"/>
+       <StackPanel x:Name="MarkdownBoundsOptions">
        <TextBlock Text="Markdownの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
        <UniformGrid Columns="2">
         <StackPanel Margin="0,0,12,0"><TextBlock Text="最小文字数（0なら短い章を結合しない）" TextWrapping="Wrap"/><TextBox x:Name="MarkdownParentMinBox" AutomationProperties.Name="Markdown親チャンクの最小文字数"/></StackPanel>
         <StackPanel><TextBlock Text="最大文字数"/><TextBox x:Name="MarkdownParentMaxBox" AutomationProperties.Name="Markdown親チャンクの最大文字数"/></StackPanel>
        </UniformGrid>
        <TextBlock Text="短い章は後続の章と結合します。最大を超える結合はせず、長い章は分割します。末尾などでは最小未満を許容します。新規Markdown設定の初期値：最小500・最大4,000文字。" TextWrapping="Wrap" Foreground="#526477"/>
+       </StackPanel>
+       <StackPanel x:Name="ParentPromptOptions">
        <TextBlock Text="LLMでまとめる場合のプロンプト"/><ComboBox x:Name="DefaultParentBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクプロンプト"/>
+       </StackPanel>
+       <StackPanel x:Name="ParentEmbeddingOptions">
        <TextBlock Text="3. 文書の親チャンクも検索対象にする" FontWeight="SemiBold" Margin="0,12,0,0"/>
-       <ComboBox x:Name="ParentEmbeddingBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクの埋め込み方式"/>
+       <ComboBox x:Name="ParentEmbeddingBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクの埋め込み方式"/>
+       <StackPanel x:Name="ParentDescriptionOptions">
        <TextBlock Text="親の説明を作るプロンプト"/><ComboBox x:Name="ParentDescriptionBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクの説明プロンプト"/>
+       </StackPanel>
        <TextBlock Text="Markdown・テキスト向け。子の本文も検索対象に残します。長い親の説明は子の説明から作り、検索結果には原文を返します。ソースコードには適用しません。" TextWrapping="Wrap" Foreground="#526477"/>
+       </StackPanel>
+       </StackPanel>
       </StackPanel>
      </Grid>
-     <TextBlock Text="有効カテゴリとカテゴリ別の処理" FontWeight="SemiBold" Margin="0,16,0,8"/>
+     <TextBlock x:Name="CategoryOptionsTitle" Text="有効カテゴリとカテゴリ別の処理" FontWeight="SemiBold" Margin="0,16,0,8"/>
      <DataGrid x:Name="RouteCategoryGrid" Height="230" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" AutomationProperties.Name="カテゴリ別処理">
-      <DataGrid.Columns><DataGridCheckBoxColumn Header="有効" Binding="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+      <DataGrid.Resources>
+       <Style x:Key="ActiveStep" TargetType="ComboBox"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding ProcessingActive}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style>
+      </DataGrid.Resources>
+      <DataGrid.Columns><DataGridCheckBoxColumn x:Name="EnabledColumn" Header="有効" Binding="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Name}" IsReadOnly="True" Width="180"/>
-       <DataGridComboBoxColumn x:Name="FormatColumn" Header="整形" SelectedValueBinding="{Binding FormatKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
-       <DataGridComboBoxColumn x:Name="ChunkColumn" Header="チャンクの結合" SelectedValueBinding="{Binding ChunkKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
-       <DataGridComboBoxColumn x:Name="ParentColumn" Header="チャンクをまとめる" SelectedValueBinding="{Binding ParentKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+       <DataGridComboBoxColumn x:Name="FormatColumn" Header="整形" ElementStyle="{StaticResource ActiveStep}" EditingElementStyle="{StaticResource ActiveStep}" SelectedValueBinding="{Binding FormatKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+       <DataGridComboBoxColumn x:Name="ChunkColumn" Header="チャンクの結合" ElementStyle="{StaticResource ActiveStep}" EditingElementStyle="{StaticResource ActiveStep}" SelectedValueBinding="{Binding ChunkKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+       <DataGridComboBoxColumn x:Name="MechanicalColumn" Header="機械的な結合" ElementStyle="{StaticResource ActiveStep}" EditingElementStyle="{StaticResource ActiveStep}" SelectedValueBinding="{Binding JoinKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
+       <DataGridComboBoxColumn x:Name="ParentColumn" Header="チャンクをまとめる" ElementStyle="{StaticResource ActiveStep}" EditingElementStyle="{StaticResource ActiveStep}" SelectedValueBinding="{Binding ParentKey, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Key" DisplayMemberPath="Label" Width="*"/>
       </DataGrid.Columns>
      </DataGrid>
-     <TextBlock Text="共通動作と文書構造" FontWeight="SemiBold" Margin="0,16,0,8"/>
-     <CheckBox x:Name="ParentChunksBox" Content="共通動作で親チャンクを作り、検索時に親を返す" Margin="0,4"/>
-     <StackPanel Orientation="Horizontal" Margin="0,4">
+     <StackPanel x:Name="CommonOptions">
+     <TextBlock Text="共通動作と文書構造（該当するほかの設定にも適用）" FontWeight="SemiBold" Margin="0,16,0,8"/>
+     <CheckBox x:Name="ParentChunksBox" Checked="UsageChanged" Unchecked="UsageChanged" Content="共通動作で親チャンクを作る" Margin="0,4"/>
+     <StackPanel x:Name="HeadingOptions" Orientation="Horizontal" Margin="0,4">
       <TextBlock Text="Markdownの章区切り：見出しレベル" VerticalAlignment="Center"/>
       <ComboBox x:Name="ParentLevelBox" Width="70" Margin="8,0" AutomationProperties.Name="親チャンクの見出しレベル"/>
       <TextBlock Text="までを区切りにする（既定：2）" VerticalAlignment="Center"/>
      </StackPanel>
-     <CheckBox x:Name="ParagraphChildrenBox" Content="共通動作：Markdown以外の子チャンクを段落単位にする" Margin="0,4"/>
-     <TextBlock Text="結合方式が共通動作なら、Markdownは章をまたがず機械的に結合します。それ以外は段落単位（OFFならLLM結合）です。長い段落はモデル上限内に分割します。親をLLMでまとめる場合も一度に読める子の範囲で判断し、返却本文は原文から取り出します。設定変更後は再取り込みが必要です。"
-                TextWrapping="Wrap" Margin="0,4" Foreground="#555555"/>
-     <Expander Header="入力と出力の上限" Margin="0,16,0,0"><UniformGrid Columns="3" Margin="0,8">
+     <CheckBox x:Name="ParagraphChildrenBox" Checked="UsageChanged" Unchecked="UsageChanged" Content="共通動作：子チャンクを段落単位にする（OFFならLLM結合。Markdownの機械的結合を除く）" Margin="0,4"/>
+     </StackPanel>
+     <Expander Header="入力と出力の共通上限（ほかの設定にも適用）" Margin="0,16,0,0"><UniformGrid Columns="3" Margin="0,8">
       <StackPanel Margin="0,0,14,0"><TextBlock Text="文書上限（文字）"/><TextBox x:Name="DocumentLimitBox" AutomationProperties.Name="文書上限"/></StackPanel>
-      <StackPanel Margin="0,0,14,0"><TextBlock Text="チャンク上限（文字）"/><TextBox x:Name="ChunkLimitBox" AutomationProperties.Name="チャンク上限"/></StackPanel>
-      <StackPanel><TextBlock Text="AI応答上限（トークン）"/><TextBox x:Name="OutputLimitBox" AutomationProperties.Name="応答上限"/></StackPanel>
+      <StackPanel x:Name="ChunkLimitOptions" Margin="0,0,14,0"><TextBlock Text="チャンク上限（文字）"/><TextBox x:Name="ChunkLimitBox" AutomationProperties.Name="チャンク上限"/></StackPanel>
+      <StackPanel x:Name="OutputLimitOptions"><TextBlock Text="AI応答上限（トークン）"/><TextBox x:Name="OutputLimitBox" AutomationProperties.Name="応答上限"/></StackPanel>
      </UniformGrid></Expander>
     </StackPanel></ScrollViewer>
    </TabItem>
    <TabItem Header="取得処理">
     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,8">
      <TextBlock Text="検索と全文取得に共通する設定" FontSize="20" FontWeight="SemiBold"/>
+     <CheckBox x:Name="HierarchySearchBox" Content="親・子の類似度も評価して、返却単位と検索順位を決める" Margin="0,12,0,8"/>
+     <UniformGrid Columns="3">
+      <StackPanel Margin="0,0,8,0"><TextBlock Text="自身の重み"/><TextBox x:Name="HierarchySelfBox" AutomationProperties.Name="構造検索 自身の重み"/></StackPanel>
+      <StackPanel Margin="0,0,8,0"><TextBlock Text="親の重み"/><TextBox x:Name="HierarchyParentBox" AutomationProperties.Name="構造検索 親の重み"/></StackPanel>
+      <StackPanel><TextBlock Text="子の重み"/><TextBox x:Name="HierarchyChildBox" AutomationProperties.Name="構造検索 子の重み"/></StackPanel>
+     </UniformGrid>
+     <TextBlock Text="標準：自身0.6・親0.2・子0.2。埋め込みのない階層を除いて重みを調整します。子は関連度の高い最大3単位を評価します。無効にすると従来の類似度順で検索します。再取り込みは不要です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,10"/>
      <TextBlock Text="メディアやカテゴリで分岐せず、管理画面とMCPの取得に同じ秘匿設定を適用します。" TextWrapping="Wrap" Margin="0,8,0,18"/>
      <CheckBox x:Name="ConfidentialityBox" Content="秘匿機能を使用する" Margin="0,8,0,12"/>
      <TextBlock Text="無効にすると、未検査の本文と出典が取得先へ返ります。有効で検査手段を両方OFFにした場合は、判定保留として本文を返しません。" TextWrapping="Wrap" Foreground="#755620" Margin="0,0,0,16"/>

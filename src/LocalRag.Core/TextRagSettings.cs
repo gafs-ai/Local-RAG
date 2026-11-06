@@ -195,8 +195,10 @@ public sealed record TextDocumentState
 }
 
 // Source metadata is omitted along with content unless disclosure was explicitly permitted.
+public sealed record StructuralSearchScore(double Combined, double? Self, double? Parent, double? Children, bool ExpansionLimited);
 public sealed record TextSearchResult(Guid DocumentId, DisclosureDecision Decision, string? Content,
     string? SourcePath, int? StartParagraph, int? EndParagraph, string? ParentChunkId = null, string? SectionTitle = null,
     string? SourceKind = null, int? StartLine = null, int? EndLine = null, string? ContainerId = null,
-    string? ContentMode = null, string? MatchedUnitId = null, string? MatchedSourceKind = null, string? MatchedEmbeddingKind = null);
+    string? ContentMode = null, string? MatchedUnitId = null, string? MatchedSourceKind = null, string? MatchedEmbeddingKind = null,
+    StructuralSearchScore? Ranking = null, string? ResultUnitId = null, string? ResultUnitKind = null);
 public sealed record TextCycleResult(int Indexed, int Excluded, int Unchanged, int Failed, int Deleted, int InaccessibleRoots, int Deferred = 0);

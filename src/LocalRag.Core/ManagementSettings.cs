@@ -40,6 +40,10 @@ public sealed record TextRoute
 // Retrieval has no extension/category branches and is shared by future media pipelines.
 public sealed record RetrievalPipelineSettings
 {
+    public bool HierarchySearchEnabled { get; init; } = true;
+    public double HierarchySelfWeight { get; init; } = 0.6;
+    public double HierarchyParentWeight { get; init; } = 0.2;
+    public double HierarchyChildWeight { get; init; } = 0.2;
     public int CodeResultMaxCharacters { get; init; } = 8000;
     public string ConfidentialityPromptId { get; init; } = "system.confidentiality";
     public bool ConfidentialityEnabled { get; init; } = true;
@@ -227,6 +231,9 @@ public sealed record ManagementSettings
         }
         if (Retrieval.CodeResultMaxCharacters is < 500 or > 262144)
             errors.Add("ソースコード検索の返却上限は500～262144文字で指定してください。");
+        if (!double.IsFinite(Retrieval.HierarchySelfWeight) || !double.IsFinite(Retrieval.HierarchyParentWeight) || !double.IsFinite(Retrieval.HierarchyChildWeight) ||
+            Retrieval.HierarchySelfWeight is <= 0 or > 1 || Retrieval.HierarchyParentWeight is < 0 or > 1 || Retrieval.HierarchyChildWeight is < 0 or > 1)
+            errors.Add("構造検索の重みは自身を0より大きく1以下、親・子を0～1で指定してください。");
         if (!HasPrompt(Retrieval.ConfidentialityPromptId, PromptPurpose.Confidentiality))
             errors.Add("取得パイプラインのプロンプトが見つからないか用途が違います。");
         if (Retrieval.Patterns is null || Retrieval.Patterns.Count > 100 || Retrieval.Patterns.Any(p => string.IsNullOrWhiteSpace(p) || p.Length > 2000))

@@ -106,7 +106,7 @@ public class ParentChunkTests
     }
 
     [ServerFact]
-    public async Task DiskAnnChildRankingReturnsDistinctOriginalParentsAndMcpFetchReturnsEntireDocument()
+    public async Task StructuralRankingSelectsOriginalParentOrChildAndMcpFetchReturnsEntireDocument()
     {
         await using var fixture = await ServerFixture.StartAsync();
         var input = fixture.Root + "-inputs"; Directory.CreateDirectory(input);
@@ -128,7 +128,10 @@ public class ParentChunkTests
         var hits = await service.SearchAsync("needle", 2);
         Assert.Equal(2, hits.Count);
         Assert.Equal(first, hits[0].Content);
-        Assert.Equal(second, hits[1].Content);
+        // Section B has one relevant paragraph and unrelated surrounding text: return only the child.
+        Assert.Equal("orchid second section", hits[1].Content);
+        Assert.Equal("child", hits[1].ResultUnitKind);
+        Assert.True(hits[0].Ranking!.Combined >= hits[1].Ranking!.Combined);
         Assert.NotEqual(hits[0].ParentChunkId, hits[1].ParentChunkId);
         Assert.Equal(document.DocumentId, hits[0].DocumentId);
 

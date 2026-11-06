@@ -230,7 +230,9 @@ public partial class MainWindow
             (result.SourcePath is null ? "\n原本のパスは取得できません。" : $"\n原本のパス: {result.SourcePath}\n内容を確認する場合は、このパスをコピーしてエクスプローラーから開いてください。")
         : $"{result.SourcePath}\n文書ID: {result.DocumentId} ／ {result.Decision}" +
             (result.StartParagraph is null ? "\n" : $" ／ 段落 {result.StartParagraph}～{result.EndParagraph}\n") +
-            (result.ParentChunkId is null ? "" : $"親チャンク: {result.SectionTitle ?? "文書全体"}\n") + result.Content;
+            (result.ParentChunkId is null ? "" : $"親チャンク: {result.SectionTitle ?? "文書全体"}\n") +
+            (result.Ranking is null ? "" : $"構造検索スコア: {result.Ranking.Combined:F3} ／ 返却単位: {result.ResultUnitKind}" +
+                (result.Ranking.ExpansionLimited ? "（近傍の一部のみ評価）" : "") + "\n") + result.Content;
 
     private async Task RunUserActionAsync(Func<Task> action)
     {
