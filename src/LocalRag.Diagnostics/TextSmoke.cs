@@ -35,7 +35,7 @@ internal static class TextSmoke
         try
         {
             await manager.EnsureRunningAsync(settings.Database, new Progress<string>(Console.WriteLine), token);
-            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token);
+            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token, settings.DataSourceName);
             using var ai = new LemonadeTextAi(settings);
             var traced = new TracingAi(ai, Path.Combine(run, "synthetic-model-responses.jsonl"));
             using var service = new TextRagService(repository, traced, settings, data);

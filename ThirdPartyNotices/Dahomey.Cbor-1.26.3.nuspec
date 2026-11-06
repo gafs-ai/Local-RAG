@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Dahomey.Cbor</id>
+    <version>1.26.3</version>
+    <authors>Michaël Catanzariti</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/dahomey-technologies/Dahomey.Cbor</projectUrl>
+    <iconUrl>https://avatars3.githubusercontent.com/u/29336625?s=200&amp;v=4</iconUrl>
+    <description>High-performance CBOR serialization framework for .Net</description>
+    <releaseNotes>cf. https://github.com/dahomey-technologies/Dahomey.Cbor/releases/tag/1.26.3</releaseNotes>
+    <copyright>Copyright © Dahomey Technologies 2020</copyright>
+    <tags>cbor serialization json</tags>
+    <repository type="Git" url="https://github.com/dahomey-technologies/Dahomey.Cbor.git" commit="f490829b2ae7e857302e96ff9e18b7505a7d63ae" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="System.IO.Pipelines" version="10.0.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="System.IO.Pipelines" version="10.0.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0" />
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Collections.Immutable" version="10.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="10.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

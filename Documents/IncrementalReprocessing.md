@@ -55,6 +55,6 @@ ANN候補の件数を制限する前に、適合した文書版IDでフィルタ
 - 移行後の実モデル検索20問は、正解文書が第1位16問・上位5件以内20問。標準設定の移行前結果と各問の順位がすべて一致。公開文書8件の全文一致、合成機密文書1件の非開示も維持。
 - 通常Releaseフォルダへのソリューション全体ビルド成功。警告0・エラー0。
 
-テスト記録はローカルの`tests/LocalRag.Tests/TestResults/incremental-final.trx`と`incremental-last-check.trx`、実モデルの診断結果は`.local/structural-evaluation-20261106/run/report.json`。評価条件は[構造検索の評価](RetrievalEvaluation-2026-11-06.md)を参照。これらの生データはGit管理しない。
+テスト記録はローカルの`tests/LocalRag.Tests/TestResults/incremental-final.trx`と`incremental-last-check.trx`、実モデルの診断結果は`.local/structural-evaluation-20261106/run/report.json`。評価条件は[構造検索の評価](https://github.com/gafs-ai/Local-RAG/blob/main/Documents/RetrievalEvaluation-2026-11-06.md)を参照。これらの生データはGit管理しない。
 
 モデル切り替え時の呼び出し削減・再分割・次元分離は試験用AIと実DBで検証した。別の実モデルへの切り替えを含む性能比較や、広範なユーザーデータでの時間短縮量までは測定していない。今回の実モデル試験は既存データの移行と検索結果の維持を検証したものであり、新たな検索精度の向上を示すものではない。

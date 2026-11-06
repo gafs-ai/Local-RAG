@@ -10,8 +10,8 @@ public sealed partial class TextRagRepository
     {
         if (limit is < 1 or > 256) throw new ArgumentOutOfRangeException(nameof(limit));
         var filter = revisions is null ? "configuration=$configuration" : "revision IN $revisions";
-        var result = await _db.RawQuery($"SELECT payload, embedding FROM (SELECT payload, embedding, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},{Math.Max(64, limit)}|> $query AND active=true AND {filter} ORDER BY distance);",
-            new Dictionary<string, object?> { ["query"] = query, ["configuration"] = configuration, ["revisions"] = revisions?.ToArray() ?? [] }, token).ConfigureAwait(false);
+        var result = await _db.RawQuery($"SELECT payload, embedding FROM (SELECT payload, embedding, vector::distance::knn() AS distance FROM {Table(space)} WHERE embedding <|{limit},{Math.Max(64, limit)}|> $query AND active=true AND data_source_name=$source AND {filter} ORDER BY distance);",
+            new Dictionary<string, object?> { ["source"] = DataSourceName, ["query"] = query, ["configuration"] = configuration, ["revisions"] = revisions?.ToArray() ?? [] }, token).ConfigureAwait(false);
         result.EnsureAllOks();
         return ParseSearchVectors(result.GetValue<SearchVectorRow[]>(0) ?? []);
     }
@@ -24,7 +24,7 @@ public sealed partial class TextRagRepository
         var vectors = new List<StoredSearchVector>();
         foreach (var batch in keys.Distinct(StringComparer.Ordinal).Chunk(128))
         {
-            var parameters = new Dictionary<string, object?> { ["configuration"] = configuration, ["revisions"] = revisions?.ToArray() ?? [] };
+            var parameters = new Dictionary<string, object?> { ["source"] = DataSourceName, ["configuration"] = configuration, ["revisions"] = revisions?.ToArray() ?? [] };
             var records = new List<string>();
             for (var i = 0; i < batch.Length; i++)
             {
@@ -32,7 +32,7 @@ public sealed partial class TextRagRepository
                 records.Add($"type::record('{table}', $key{i})");
             }
             var filter = revisions is null ? "configuration=$configuration" : "revision IN $revisions";
-            var result = await _db.RawQuery($"SELECT payload, embedding FROM {table} WHERE id IN [{string.Join(",", records)}] AND active=true AND {filter};",
+            var result = await _db.RawQuery($"SELECT payload, embedding FROM {table} WHERE id IN [{string.Join(",", records)}] AND active=true AND data_source_name=$source AND {filter};",
                 parameters, token).ConfigureAwait(false);
             result.EnsureAllOks();
             vectors.AddRange(ParseSearchVectors(result.GetValue<SearchVectorRow[]>(0) ?? []));

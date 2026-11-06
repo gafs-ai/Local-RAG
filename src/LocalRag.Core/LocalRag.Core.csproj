@@ -1,1 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup><EmbeddedResource Include="../../Documents/HelpTopics.json" LogicalName="LocalRag.Core.HelpTopics.json" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="../../ThirdPartyNotices/*" LogicalName="LocalRag.Licenses.%(Filename)%(Extension)" /></ItemGroup>
+</Project>

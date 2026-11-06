@@ -4,8 +4,11 @@
  FontFamily="Yu Gothic UI" FontSize="14" Background="#F5F7FA" WindowStartupLocation="CenterOwner">
  <Grid Margin="24">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <StackPanel Margin="0,0,0,16"><TextBlock Text="処理設定" FontSize="26" FontWeight="SemiBold" Foreground="#17334B"/>
-   <TextBlock Text="編集内容は「保存して適用」でまとめて反映します。取り込み設定の変更後は再索引が必要です。" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
+  <DockPanel Margin="0,0,0,16">
+   <Button DockPanel.Dock="Right" Content="設定ヘルプ (F1)" Click="OpenHelp" VerticalAlignment="Top" AutomationProperties.Name="処理設定ヘルプを開く"/>
+   <StackPanel><TextBlock Text="処理設定" FontSize="26" FontWeight="SemiBold" Foreground="#17334B"/>
+   <TextBlock Text="編集内容は「保存して適用」で反映し、必要な工程だけを再処理します。各項目でF1を押すと説明を表示します。" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
+  </DockPanel>
   <TabControl x:Name="ManagerTabs" Grid.Row="1" Padding="16" SelectionChanged="TabChanged">
    <TabItem Header="プロンプト管理">
     <Grid Margin="0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="260"/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
@@ -134,13 +137,30 @@
      <TextBlock Text="標準：自身0.6・親0.2・子0.2。埋め込みのない階層を除いて重みを調整します。子は関連度の高い最大3単位を評価します。無効にすると従来の類似度順で検索します。再取り込みは不要です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,10"/>
      <TextBlock Text="メディアやカテゴリで分岐せず、管理画面とMCPの取得に同じ秘匿設定を適用します。" TextWrapping="Wrap" Margin="0,8,0,18"/>
      <CheckBox x:Name="ConfidentialityBox" Content="秘匿機能を使用する" Margin="0,8,0,12"/>
-     <TextBlock Text="無効にすると、未検査の本文と出典が取得先へ返ります。有効で検査手段を両方OFFにした場合は、判定保留として本文を返しません。" TextWrapping="Wrap" Foreground="#755620" Margin="0,0,0,16"/>
-     <CheckBox x:Name="PatternsBox" Content="一致パターンで検査する" Margin="0,0,0,8"/>
-     <TextBlock Text="一致パターン（1行に1件・正規表現。大文字小文字を区別しません）" TextWrapping="Wrap"/>
-     <TextBox x:Name="PatternTextBox" Height="140" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="秘匿パターン"/>
+     <TextBlock Text="無効にすると、未検査の本文と出典が取得先へ返ります。有効な検査手段がない場合は、判定保留として本文を返しません。" TextWrapping="Wrap" Foreground="#755620" Margin="0,0,0,16"/>
+     <StackPanel IsEnabled="{Binding IsChecked, ElementName=ConfidentialityBox}">
+     <CheckBox x:Name="BoundaryPatternsBox" Content="先頭・末尾の指定行をパターンで検査する" Margin="0,0,0,8"/>
+     <StackPanel x:Name="BoundaryPatternOptions">
+      <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsChecked, ElementName=BoundaryPatternsBox}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+      <UniformGrid Columns="2">
+       <StackPanel Margin="0,0,8,0"><TextBlock Text="先頭の行数（m）"/><TextBox x:Name="LeadingLinesBox" AutomationProperties.Name="秘匿検査 先頭行数"/></StackPanel>
+       <StackPanel><TextBlock Text="末尾の行数（n）"/><TextBox x:Name="TrailingLinesBox" AutomationProperties.Name="秘匿検査 末尾行数"/></StackPanel>
+      </UniformGrid>
+      <TextBlock Text="初期値：先頭5行・末尾0行。0はその側を検査しません。元文書の改行で数え、空行も含めます。返却チャンクの先頭・末尾ではありません。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,8"/>
+      <TextBlock Text="先頭・末尾用パターン（1行に1件・正規表現。大文字小文字を区別しません）" TextWrapping="Wrap"/>
+      <TextBox x:Name="BoundaryPatternTextBox" Height="100" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="先頭・末尾の秘匿パターン"/>
+     </StackPanel>
+     <CheckBox x:Name="PatternsBox" Content="文書全体をパターンで検査する" Margin="0,12,0,8"/>
+     <StackPanel>
+      <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsChecked, ElementName=PatternsBox}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+      <TextBlock Text="全文用パターン（1行に1件・正規表現。大文字小文字を区別しません）" TextWrapping="Wrap"/>
+      <TextBox x:Name="PatternTextBox" Height="100" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="全文の秘匿パターン"/>
+      <TextBlock Text="元文書全体と返却候補を検査します。以前の設定のパターンはこの欄に引き継ぎます。先頭・末尾だけで検査したいパターンは、上の欄に設定してからこの欄から削除してください。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,10"/>
+     </StackPanel>
      <CheckBox x:Name="LlmBox" Content="ローカルAIで秘匿判定する（試験的 / experimental）" Margin="0,0,0,8"/>
      <TextBlock Text="既定はOFFです。モデルによっては公開してよい文書も非開示と判定するため、必要な場合に有効にしてください。一致パターン検査の設定は独立しています。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
      <TextBlock Text="秘匿判定用プロンプト"/><ComboBox x:Name="ConfidentialityPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="秘匿判定プロンプト"/>
+     </StackPanel>
      <TextBlock Text="ソースコード検索：1件の返却上限（文字数）" Margin="0,16,0,4"/>
      <TextBox x:Name="CodeResultLimitBox" AutomationProperties.Name="ソースコード検索の返却上限"/>
      <TextBlock Text="標準8,000文字。クラスが長い場合は関数、直接ヒットしたクラス・ファイルが長い場合は一覧と説明へ縮小します。全文取得には適用しません。" TextWrapping="Wrap" Foreground="#526477"/>

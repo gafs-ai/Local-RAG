@@ -2,6 +2,9 @@ namespace LocalRag.Core;
 
 public sealed record AppSettings
 {
+    public static string DefaultDataSourceName => "Local-" + Environment.UserName;
+    public string DataSourceName { get; init; } = DefaultDataSourceName;
+    public string? DataSourceOwner { get; init; }
     public int SchemaVersion { get; init; } = 2;
     public int MonitoringIntervalMinutes { get; init; } = 5;
     public int UpdateExclusionMinutes { get; init; } = 10;
@@ -25,6 +28,7 @@ public sealed record AppSettings
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
+        if (!ValidDataSourceName(DataSourceName)) errors.Add("データソース名は前後の空白・制御文字を含まない1～200文字で指定してください。");
         if (GlobalIgnorePatterns is null) errors.Add("全体のignore設定がありません。");
         else
         {
@@ -49,8 +53,8 @@ public sealed record AppSettings
         if (TextPipeline is null) errors.Add("テキスト処理設定がありません。");
         else errors.AddRange(TextPipeline.Validate());
         if (Management is not null) errors.AddRange(Management.Validate());
-        if (Confidentiality is null || Confidentiality.Patterns is null || Confidentiality.Patterns.Count > 100 ||
-            Confidentiality.Patterns.Any(p => p is null || p.Length > 2000)) errors.Add("機密検査パターンが不正です。");
+        if (Confidentiality is null) errors.Add("機密検査設定がありません。");
+        else errors.AddRange(Confidentiality.Validate());
         if (Folders is null) errors.Add("フォルダ設定がありません。");
         else
         {
@@ -76,6 +80,9 @@ public sealed record AppSettings
         }
         return errors;
     }
+
+    public static bool ValidDataSourceName(string? name) => !string.IsNullOrWhiteSpace(name) && name.Length <= 200 &&
+        name == name.Trim() && !name.Any(char.IsControl);
 }
 
 public sealed record WatchedFolder(string Path, bool Recursive = true, int Priority = 0);

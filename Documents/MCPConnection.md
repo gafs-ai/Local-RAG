@@ -1,8 +1,8 @@
-# MCP接続手順（0.0.0候補）
+# MCP接続手順（バージョン0.26.01）
 
 ## 利用条件
 
-Local RAGの管理画面でフォルダ・Gemma等のチャットモデル・Embeddingモデルを保存し、取り込みを完了させる。「概要・接続確認」のMCPが待機中であることを確認する。ウィンドウを閉じてもトレイ常駐中は利用できる。「アプリを終了」では接続も停止する。
+Local RAGの管理画面でフォルダ・Gemma等のチャットモデル・Embeddingモデルを保存し、取り込みを完了させる。「接続状態」のMCPが待機中であることを確認する。ウィンドウを閉じてもトレイ常駐中は利用できる。「アプリを完全終了」では接続も停止する。
 
 現在は設定した拡張子のテキストと9言語のソースコード説明検索（文字コードは自動判別または明示指定）を対象に、`search(query, limit=5)`と`fetch(id)`だけを公開する。limitは1～10、queryは1～1000文字。fetchは検索で返されたUUIDを指定し、現在公開中の原文全文を取得する。任意パス・SQL・書き込み・原本バイナリの取得は提供しない。履歴版・ページング・画像は後続版で扱う。
 
@@ -25,7 +25,7 @@ Local RAGの管理画面でフォルダ・Gemma等のチャットモデル・Emb
 
 保存先を変更した場合は`args`を`["--data-dir", "C:\\LocalRagData"]`のように指定する。絶対パスを使う。アプリと中継は同じWindowsユーザーで動かす。中継はDB・モデル・監視処理を起動しない。本体停止中でも中継は起動してsearch/fetchの一覧を提供する。取得要求時に本体が起動していない、MCPが無効、認証情報を読めない場合は`retrieval_unavailable`を返す。要求ごとに設定を読み直すため、本体起動・再起動・ポート変更後は同じ中継で再試行できる。
 
-開発用には`dotnet`をcommand、ビルドした`LocalRag.Mcp.dll`の絶対パスを先頭のargsに指定できる。配布版は.NET Desktop Runtime 10.0 x64とASP.NET Core Runtime 10.0 x64が必要（.NET 10 SDKを導入済みなら含まれる）。
+開発用には`dotnet`をcommand、ビルドした`LocalRag.Mcp.dll`の絶対パスを先頭のargsに指定できる。現在の配布物は.NETランタイムを同梱するため、別途.NETをインストールする必要はありません。旧rc.3のZIPはフレームワーク依存です。
 
 ## ローカルHTTPと保護
 
@@ -63,13 +63,17 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 ## ChatGPTから利用する場合
 
+呼び出し側のクエリ作成方針は[Local RAGスキル原本](https://github.com/gafs-ai/Local-RAG/blob/main/plugins/local-rag/skills/search-local-documents/SKILL.md)に定める。対象・処理・条件を含む質問または説明を基本とし、意図を保ったキーワード列も認める。日本語・英語・韓国語・中国語等の優劣は固定せず、利用者の言語から始め、根拠が足りない場合だけ言い換えや別言語を検討する。文書名だけでなく返却箇所の根拠を確認し、必要なら文書IDで全文取得する。
+
+`Package-Plugin.ps1`はこの原本をDesktop／Portable両形式へコピーする。原本の編集はインストール済みプラグインの自動更新ではない。更新を反映する場合はパッケージを再作成し、利用ホストの導入・更新手順で読み直す。キャッシュを直接編集しない。
+
 利用方針は**ChatGPT Business、Windowsデスクトップ優先、ブラウザ版も将来対応**とする。OpenAI API Platform、APIキー、Secure MCP Tunnelを必須条件にしない。ローカルMCPの試験成功、プラグインの登録成功、ChatGPTからの実取得成功は区別する。
 
 ### Windowsデスクトップ優先
 
 公式の[デスクトップ用プラグイン](https://developers.openai.com/plugins/deploy/desktop-only)で説明されるローカルstdio方式を使う。Local RAGを常駐させ、同じPC・Windowsユーザーのローカル実行可能な会話からプラグインを選択する。利用可否はBusinessワークスペースのポリシーとデスクトップ環境で確認する。公開ディレクトリへの審査付き提出と、今回の非公開プラグイン登録は別の作業である。
 
-`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。既定のDesktop形式は`.codex-plugin/plugin.json`、`.mcp.json`、検索用スキルを同梱する。現在のホストで検証した互換形式であり、`dotnet ./server/LocalRag.Mcp.dll`をプラグイン基準の`cwd: "."`で実行する。`${PLUGIN_ROOT}`が展開されない環境でも固定ユーザーパスを埋め込まずに動作する。
+`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。既定のDesktop形式は`.codex-plugin/plugin.json`、`.mcp.json`、検索用スキルを同梱する。互換マニフェストを維持し、現在の配布物は.NET同梱の`./server/LocalRag.Mcp.exe`をプラグイン基準の`cwd: "."`で実行する。以前の検証版は`dotnet ./server/LocalRag.Mcp.dll`を使用していた。`${PLUGIN_ROOT}`が展開されない環境でも固定ユーザーパスを埋め込まずに動作する。
 
 `-Format Portable`はAgent Plugins 1.0の`plugin.json`と`mcp.json`を生成するが、今回のホストではMCPが認識されなかったため、デスクトップの動作確認には用いない。設定・認証情報・文書・DBはどちらにも含めない。既定保存先を変更した場合のみ`-DataDirectory <絶対パス>`を指定し、このPC専用のパッケージとして扱う。
 
@@ -77,7 +81,7 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 2026-11-02時点: MCP宣言の認識・パス展開・本体停止時の中継終了を修正し、ホスト診断でsearch/fetch両方と起動エラーなしを確認した。`scripts/Test-PluginDiscovery.ps1 -MarketplaceFile <marketplace.json>`で再現できる。更新前から続いていた会話にはツールが現れなかったが、**新しい会話でguide.txtの本文・出典・文書IDが返ったことをユーザー提供の結果で確認**した。個々のsearch/fetch呼び出し履歴はこの会話では未確認。ChatGPT上の機密拒否・検査失敗と実文書での実用性評価は残る。
 
-導入・更新後の試験は新しいローカル実行の会話で行い、`Local RAG local packages`版を選択する。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式のため、今回の成功対象に含めない。ユーザー指定により、接続成功をもって0.0.0の正式リリースは行わない。
+導入・更新後の試験は新しいローカル実行の会話で行い、`Local RAG local packages`版を選択する。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式のため、今回の成功対象に含めない。この接続試験時点では0.0.0を公開しなかった。現在のリリースは0.26.01。
 
 ### ブラウザ版（未実装）
 

@@ -36,7 +36,7 @@ public sealed class LocalMcpHost : IAsyncDisposable
         builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(110));
         var stopping = new CancellationTokenSource();
         builder.Services.AddSingleton<IRetrievalCalls>(_ => new LocalRetrievalCalls(retrieval, stopping.Token));
-        builder.Services.AddMcpServer(o => o.ServerInfo = new() { Name = "LocalRAG", Version = "0.0.0" })
+        builder.Services.AddMcpServer(o => o.ServerInfo = new() { Name = "LocalRAG", Version = ProductInfo.Version })
             .WithHttpTransport(o => o.SessionMode = HttpServerSessionMode.Stateless).WithTools<RetrievalTools>();
         var app = builder.Build();
         var expected = Encoding.ASCII.GetBytes("Bearer " + secret);

@@ -2,24 +2,29 @@
 
 Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、Lemonade Server、別プロセスのSurrealDB、DiskANNを使用します。
 
+**初めて使う方は[クイックスタート](Documents/QuickStart.md)から始めてください。** 必要なインストール、メモリ・NPUに合わせたモデル選択、最小限の設定を説明しています。設定の詳細は、アプリ内の「ヘルプ」または各設定項目でF1を押すとオフラインで読めます。
+
+**バージョン0.26.01**。配布物は.NET同梱のWindows用MSIとZIPです。[リリースノート](Documents/Release-0.26.01.md)と[配布手順](Documents/Distribution.md)を参照してください。
+
 推奨モデルは、言語モデルが **Gemma**、Embeddingモデルが **nomic** です。Lemonade Serverに用意したモデルを、管理画面の「設定」で選択してください。
 
-Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**
+Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**。依存ソフトウェアのライセンス原文は、アプリ上部の「ライセンス」からオフラインで確認できます。
 
 - [設計書](Documents/LocalRAGDesign.md)
 - [実装計画・進捗](Documents/ImplementationPlan.md)
 - [技術検証結果と既知の制約](Documents/TechnicalValidation.md)
 - [実文書による初期設定の評価](Documents/PipelineEvaluation-2026-11-04.md)
 - [構造検索の実モデル評価と調整](Documents/RetrievalEvaluation-2026-11-06.md)
+- [検索クエリの作り方の実測評価](Documents/QueryEvaluation-2026-11-06.md)
 - [設定変更と工程単位の再処理](Documents/IncrementalReprocessing.md)
 - [MCP・ChatGPT接続手順](Documents/MCPConnection.md)
-- [0.0.0のリリース判定・配布手順](Documents/Release-0.0.0.md)
+- [依存ソフトウェアのライセンス](Documents/ThirdPartyLicenses.md)
 
 ## 現在の実装範囲
 
-**0.0.0候補版です。設定した拡張子のテキスト・ソースコードの取り込み・常駐監視・MCP検索/全文取得に対応しました。Word・PDF・音声は未実装です。**
+**バージョン0.26.01です。設定した拡張子のテキスト・ソースコードの取り込み・常駐監視・MCP検索/全文取得に対応しました。Word・PDF・音声は未実装です。**
 
-現在は**開発・評価段階（0.0.0-rc.3）、正式版未リリース**です。実モデル・実DB・実MCPクライアントによる一連処理に成功し、ユーザーからChatGPTの新しい会話で短い合成文書を取得できたとの結果報告を受けました。接続成立の到達点としてソースを公開し、最低限の実用性を評価するまで0.0.0のタグ・GitHub Releaseは作成しません。Word・PDF・音声、長文・形式対応の拡充は後続工程です。詳細は[リリース条件と実装順序](Documents/ImplementationPlan.md#1-進め方)を参照してください。
+テキスト・Markdown・ソースコードの取り込みと検索に対応しています。Word・PDF・音声は後続工程です。`main`はリリース用、`dev`は開発用とします。版番号は「メジャーバージョン.年.年内のリリース回数」です。
 
 実装済み:
 
@@ -58,13 +63,14 @@ nomic-embed-text-v2-moeは検索語と文書の専用接頭辞を自動適用し
 
 2048/4096のコンテキストを再現した送信上限・本文保持のテストを追加しました。現在のGemma/nomic実環境では、以前保留だった説明書とC#コードの取り込みが成功しました。LLM判定ON時には2件ともWithheldでしたが、パターン検査ON・LLM判定OFFでは全文一致と検索取得を確認しました。入力長への対応と、分類・検索・秘匿判定の意味的な精度は区別します。
 
-**LLMによる機密判断は試験的（experimental）で、既定はOFFです。** 秘匿機能全体と一致パターン検査は既定ONを維持します。LLM判定を使う場合は取得パイプラインで有効化してください。保存済みの明示的なON/OFFは引き継ぎます。パターン検査のみの場合、パターンに一致しない内容の意味的な機密性は検査しません。
+**LLMによる機密判断は試験的（experimental）で、既定はOFFです。** 秘匿パターンは「先頭・末尾の指定行」と「文書全体」の2系統で設定できます。新規設定では先頭5行・末尾0行の検査がON、全文検査はOFFです。保存済みのパターンは従来の全文検査として引き継ぎます。LLM判定を使う場合は取得処理で有効化してください。パターン検査のみの場合、指定範囲のパターンに一致しない内容の意味的な機密性は検査しません。詳細は[秘匿パターンの検査範囲](Documents/ConfidentialityPatternScopes.md)を参照してください。
 
 ## 開発
 
 ```powershell
 git clone https://github.com/gafs-ai/Local-RAG.git
 cd Local-RAG
+git switch dev
 ```
 
 .NET SDKは`global.json`で10.0.403を指定しています。NuGetパッケージは作業フォルダの`.packages`に復元されます。Windows x64を対象にビルドしてください。
@@ -85,6 +91,8 @@ dotnet test tests/LocalRag.Tests -c Release --no-build --logger 'trx;LogFileName
 フォルダには`surrealdb/3.3.5/surreal.exe`を配置します。後述の`db`診断を実行した場合は、その保存先の`tools`も指定できます。DBテストは一時保存先と空きポートを使います。
 
 ## 管理画面
+
+データソース名は初回に `Local-{Windowsユーザー名}-{ランダムな英数字4文字}` を生成して保存します。漢字名も利用でき、「設定」から変更できます。文書キー・検索・削除・監視・初期化をソースごとに分離するため、別ソースの同じファイルパスは別文書になります。改名は別ソースへの切り替えです。移行とDB共用の対応範囲は[データソースの設計](Documents/DataSources.md)を参照してください。
 
 あらかじめLemonade Serverを起動し、使用するローカルモデルを導入してください。現在の検証構成はチャットが`Gemma-3-4b-it-mm-NPU`、Embeddingが`nomic-embed-text-v2-moe-GGUF`、API接続先が`http://localhost:13305/api/v1/`です。
 

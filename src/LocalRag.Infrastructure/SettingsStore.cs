@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using LocalRag.Core;
 
@@ -46,13 +47,40 @@ public sealed class SettingsStore(string dataDirectory)
 
     public async Task<AppSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(FilePath)) return Migrate(new AppSettings { Management = ManagementSettings.CreateDefault() });
-        await using var stream = File.OpenRead(FilePath);
-        var settings = await JsonSerializer.DeserializeAsync<AppSettings>(stream, Options, cancellationToken)
-            ?? throw new InvalidDataException("設定ファイルが空です。元のファイルを確認してください。");
+        AppSettings settings;
+        JsonObject? stored = null;
+        var needsName = !File.Exists(FilePath);
+        if (needsName) settings = new AppSettings { Management = ManagementSettings.CreateDefault() };
+        else
+        {
+            await using var stream = File.OpenRead(FilePath);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            settings = document.RootElement.Deserialize<AppSettings>(Options)
+                ?? throw new InvalidDataException("設定ファイルが空です。元のファイルを確認してください。");
+            stored = JsonNode.Parse(document.RootElement.GetRawText())!.AsObject();
+            needsName = !document.RootElement.TryGetProperty("DataSourceName", out _);
+        }
         settings = RemoveSearchPrompts(settings);
         Validate(settings);
-        return Migrate(settings);
+        settings = Migrate(settings);
+        var owner = LocalDataSourceIdentity.Owner();
+        var newIdentity = needsName || settings.DataSourceOwner is { } previousOwner && previousOwner != owner;
+        if (newIdentity)
+            settings = settings with { DataSourceName = LocalDataSourceIdentity.NewName() };
+        settings = settings with { DataSourceOwner = owner };
+        if (newIdentity)
+        {
+            if (stored is null) await SaveAsync(settings, cancellationToken).ConfigureAwait(false);
+            else
+            {
+                // Persist just the generated identity. Do not implicitly migrate or remove
+                // unrelated user settings before an explicit save.
+                stored["DataSourceName"] = settings.DataSourceName;
+                stored["DataSourceOwner"] = owner;
+                await WriteAsync(stored, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        return settings;
     }
 
     private static AppSettings Migrate(AppSettings settings)
@@ -68,6 +96,12 @@ public sealed class SettingsStore(string dataDirectory)
         settings = RemoveSearchPrompts(settings);
         Validate(settings);
         settings = Migrate(settings);
+        settings = settings with { DataSourceOwner = LocalDataSourceIdentity.Owner() };
+        await WriteAsync(settings, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task WriteAsync<T>(T value, CancellationToken cancellationToken)
+    {
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         var temporaryPath = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
@@ -76,7 +110,7 @@ public sealed class SettingsStore(string dataDirectory)
             await using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write,
                 FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await JsonSerializer.SerializeAsync(stream, settings, Options, cancellationToken).ConfigureAwait(false);
+                await JsonSerializer.SerializeAsync(stream, value, Options, cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 stream.Flush(flushToDisk: true);
             }

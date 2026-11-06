@@ -17,6 +17,7 @@ public sealed record MonitoringCheckpoint(string Scope, bool Running, DateTimeOf
     public static string ScopeFor(AppSettings settings) => TextRagSettings.Hash(JsonSerializer.Serialize(new
     {
         discoveryPolicy = 2, // Explicit watch roots exempt their own dot-prefixed ancestors.
+        settings.DataSourceName,
         pipeline = settings.PipelineConfigurationId(),
         settings.UpdateExclusionMinutes,
         settings.ExcludeDotHiddenEntries,

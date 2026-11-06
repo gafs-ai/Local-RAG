@@ -1,0 +1,3996 @@
+{
+  "Timestamp": "2026-11-06T15:31:45.1290452+09:00",
+  "EmbeddingModel": "nomic-embed-text-v2-moe-GGUF",
+  "ChatModel": "Gemma-3-4b-it-mm-NPU",
+  "Configuration": "a68fb94e934cab4e5e2eb8aa577213578e9ba18bfea980c2559f30ff6eed1f7f",
+  "Ingestion": {
+    "Indexed": 0,
+    "Excluded": 0,
+    "Unchanged": 9,
+    "Failed": 0,
+    "Deleted": 0,
+    "InaccessibleRoots": 0,
+    "Deferred": 0
+  },
+  "IngestionChatCalls": 0,
+  "IngestionEmbeddingCalls": 0,
+  "TotalChatSeconds": 0,
+  "Metrics": [
+    {
+      "Style": "description",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 17,
+        "EvidenceAt5": 20,
+        "FileAt1": 17,
+        "MrrAt5": 0.925,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4146.2,
+        "MeanSeconds": 0.4671
+      }
+    },
+    {
+      "Style": "english",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 11,
+        "EvidenceAt5": 18,
+        "FileAt1": 14,
+        "MrrAt5": 0.6833,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4239.8,
+        "MeanSeconds": 0.4931
+      }
+    },
+    {
+      "Style": "keywords",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 13,
+        "EvidenceAt5": 20,
+        "FileAt1": 17,
+        "MrrAt5": 0.8042,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4064.9,
+        "MeanSeconds": 0.4344
+      }
+    },
+    {
+      "Style": "question",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 16,
+        "EvidenceAt5": 20,
+        "FileAt1": 17,
+        "MrrAt5": 0.9,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4177.6,
+        "MeanSeconds": 0.4497
+      }
+    },
+    {
+      "Style": "short_instruction",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 14,
+        "EvidenceAt5": 20,
+        "FileAt1": 16,
+        "MrrAt5": 0.85,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3975.3,
+        "MeanSeconds": 0.4668
+      }
+    },
+    {
+      "Style": "vague",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 6,
+        "EvidenceAt5": 14,
+        "FileAt1": 10,
+        "MrrAt5": 0.455,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4711.6,
+        "MeanSeconds": 0.4661
+      }
+    },
+    {
+      "Style": "verbose",
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 0,
+        "EvidenceAt5": 0,
+        "FileAt1": 0,
+        "MrrAt5": 0.0,
+        "Errors": 20,
+        "MeanReturnedCharacters": 0.0,
+        "MeanSeconds": 0.0029
+      }
+    }
+  ],
+  "Subsets": [
+    {
+      "Style": "description",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 4,
+        "EvidenceAt5": 4,
+        "FileAt1": 4,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4535.0,
+        "MeanSeconds": 0.5842
+      }
+    },
+    {
+      "Style": "description",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5852.0,
+        "MeanSeconds": 0.5264
+      }
+    },
+    {
+      "Style": "description",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 11,
+        "EvidenceAt5": 14,
+        "FileAt1": 11,
+        "MrrAt5": 0.8929,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3791.4,
+        "MeanSeconds": 0.4252
+      }
+    },
+    {
+      "Style": "english",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 3,
+        "EvidenceAt5": 3,
+        "FileAt1": 3,
+        "MrrAt5": 0.75,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4699.2,
+        "MeanSeconds": 0.7272
+      }
+    },
+    {
+      "Style": "english",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5949.5,
+        "MeanSeconds": 0.4649
+      }
+    },
+    {
+      "Style": "english",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 6,
+        "EvidenceAt5": 13,
+        "FileAt1": 9,
+        "MrrAt5": 0.619,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3864.3,
+        "MeanSeconds": 0.4302
+      }
+    },
+    {
+      "Style": "keywords",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 4,
+        "EvidenceAt5": 4,
+        "FileAt1": 4,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4419.8,
+        "MeanSeconds": 0.4355
+      }
+    },
+    {
+      "Style": "keywords",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5746.0,
+        "MeanSeconds": 0.5416
+      }
+    },
+    {
+      "Style": "keywords",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 7,
+        "EvidenceAt5": 14,
+        "FileAt1": 11,
+        "MrrAt5": 0.7202,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3723.4,
+        "MeanSeconds": 0.4188
+      }
+    },
+    {
+      "Style": "question",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 4,
+        "EvidenceAt5": 4,
+        "FileAt1": 4,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4471.0,
+        "MeanSeconds": 0.4624
+      }
+    },
+    {
+      "Style": "question",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5884.5,
+        "MeanSeconds": 0.5056
+      }
+    },
+    {
+      "Style": "question",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 10,
+        "EvidenceAt5": 14,
+        "FileAt1": 11,
+        "MrrAt5": 0.8571,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3849.9,
+        "MeanSeconds": 0.438
+      }
+    },
+    {
+      "Style": "short_instruction",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 3,
+        "EvidenceAt5": 4,
+        "FileAt1": 3,
+        "MrrAt5": 0.875,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4383.8,
+        "MeanSeconds": 0.5395
+      }
+    },
+    {
+      "Style": "short_instruction",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 1.0,
+        "Errors": 0,
+        "MeanReturnedCharacters": 6072.0,
+        "MeanSeconds": 0.4258
+      }
+    },
+    {
+      "Style": "short_instruction",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 9,
+        "EvidenceAt5": 14,
+        "FileAt1": 11,
+        "MrrAt5": 0.8214,
+        "Errors": 0,
+        "MeanReturnedCharacters": 3559.1,
+        "MeanSeconds": 0.4518
+      }
+    },
+    {
+      "Style": "vague",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 2,
+        "EvidenceAt5": 2,
+        "FileAt1": 2,
+        "MrrAt5": 0.5,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5589.2,
+        "MeanSeconds": 0.4444
+      }
+    },
+    {
+      "Style": "vague",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 1,
+        "EvidenceAt5": 2,
+        "FileAt1": 1,
+        "MrrAt5": 0.6,
+        "Errors": 0,
+        "MeanReturnedCharacters": 5958.5,
+        "MeanSeconds": 0.5971
+      }
+    },
+    {
+      "Style": "vague",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 3,
+        "EvidenceAt5": 10,
+        "FileAt1": 7,
+        "MrrAt5": 0.4214,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4282.7,
+        "MeanSeconds": 0.4536
+      }
+    },
+    {
+      "Style": "verbose",
+      "Subset": "code",
+      "Metrics": {
+        "Count": 4,
+        "EvidenceAt1": 0,
+        "EvidenceAt5": 0,
+        "FileAt1": 0,
+        "MrrAt5": 0.0,
+        "Errors": 4,
+        "MeanReturnedCharacters": 0.0,
+        "MeanSeconds": 0.0029
+      }
+    },
+    {
+      "Style": "verbose",
+      "Subset": "english_document",
+      "Metrics": {
+        "Count": 2,
+        "EvidenceAt1": 0,
+        "EvidenceAt5": 0,
+        "FileAt1": 0,
+        "MrrAt5": 0.0,
+        "Errors": 2,
+        "MeanReturnedCharacters": 0.0,
+        "MeanSeconds": 0.0029
+      }
+    },
+    {
+      "Style": "verbose",
+      "Subset": "japanese_document",
+      "Metrics": {
+        "Count": 14,
+        "EvidenceAt1": 0,
+        "EvidenceAt5": 0,
+        "FileAt1": 0,
+        "MrrAt5": 0.0,
+        "Errors": 14,
+        "MeanReturnedCharacters": 0.0,
+        "MeanSeconds": 0.0029
+      }
+    }
+  ],
+  "ExploratoryFusion": [
+    {
+      "Name": "question+keywords",
+      "K": 60,
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 15,
+        "EvidenceAt5": 20,
+        "FileAt1": 17,
+        "MrrAt5": 0.875,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4139.8,
+        "MeanSeconds": 0.8841
+      },
+      "Queries": [
+        {
+          "Id": "q01",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 6115,
+          "Seconds": 1.1241756999999999,
+          "Error": null
+        },
+        {
+          "Id": "q02",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 5746,
+          "Seconds": 0.8080331999999999,
+          "Error": null
+        },
+        {
+          "Id": "q03",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 5746,
+          "Seconds": 1.2864307,
+          "Error": null
+        },
+        {
+          "Id": "q04",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 5177,
+          "Seconds": 1.0324838,
+          "Error": null
+        },
+        {
+          "Id": "q05",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3627,
+          "Seconds": 0.9664253,
+          "Error": null
+        },
+        {
+          "Id": "q06",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3162,
+          "Seconds": 0.8332945,
+          "Error": null
+        },
+        {
+          "Id": "q07",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 7120,
+          "Seconds": 0.7684476,
+          "Error": null
+        },
+        {
+          "Id": "q08",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3443,
+          "Seconds": 0.9393529,
+          "Error": null
+        },
+        {
+          "Id": "q09",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3677,
+          "Seconds": 0.9470331999999999,
+          "Error": null
+        },
+        {
+          "Id": "q10",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3299,
+          "Seconds": 0.936987,
+          "Error": null
+        },
+        {
+          "Id": "q11",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 5891,
+          "Seconds": 0.7681567,
+          "Error": null
+        },
+        {
+          "Id": "q12",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 3099,
+          "Seconds": 1.0403563,
+          "Error": null
+        },
+        {
+          "Id": "q13",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3448,
+          "Seconds": 0.9015059999999999,
+          "Error": null
+        },
+        {
+          "Id": "q14",
+          "Rank": 2,
+          "FileRank": 1,
+          "Characters": 2455,
+          "Seconds": 0.7909189999999999,
+          "Error": null
+        },
+        {
+          "Id": "q15",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3684,
+          "Seconds": 0.6837041,
+          "Error": null
+        },
+        {
+          "Id": "q16",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3759,
+          "Seconds": 0.7435653,
+          "Error": null
+        },
+        {
+          "Id": "q17",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 3805,
+          "Seconds": 0.7382291,
+          "Error": null
+        },
+        {
+          "Id": "q18",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3723,
+          "Seconds": 0.6602601,
+          "Error": null
+        },
+        {
+          "Id": "q19",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3099,
+          "Seconds": 0.9693721,
+          "Error": null
+        },
+        {
+          "Id": "q20",
+          "Rank": 2,
+          "FileRank": 1,
+          "Characters": 2721,
+          "Seconds": 0.7428032,
+          "Error": null
+        }
+      ]
+    },
+    {
+      "Name": "question+description",
+      "K": 60,
+      "Metrics": {
+        "Count": 20,
+        "EvidenceAt1": 16,
+        "EvidenceAt5": 20,
+        "FileAt1": 17,
+        "MrrAt5": 0.9,
+        "Errors": 0,
+        "MeanReturnedCharacters": 4224.2,
+        "MeanSeconds": 0.9168
+      },
+      "Queries": [
+        {
+          "Id": "q01",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 6115,
+          "Seconds": 1.2185091,
+          "Error": null
+        },
+        {
+          "Id": "q02",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 5746,
+          "Seconds": 0.802489,
+          "Error": null
+        },
+        {
+          "Id": "q03",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 6023,
+          "Seconds": 1.2616352000000002,
+          "Error": null
+        },
+        {
+          "Id": "q04",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 5314,
+          "Seconds": 0.9394817,
+          "Error": null
+        },
+        {
+          "Id": "q05",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 4220,
+          "Seconds": 0.9697897,
+          "Error": null
+        },
+        {
+          "Id": "q06",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3162,
+          "Seconds": 0.7664919,
+          "Error": null
+        },
+        {
+          "Id": "q07",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 7120,
+          "Seconds": 0.7896754,
+          "Error": null
+        },
+        {
+          "Id": "q08",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3443,
+          "Seconds": 0.9706087,
+          "Error": null
+        },
+        {
+          "Id": "q09",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 4022,
+          "Seconds": 1.5212732,
+          "Error": null
+        },
+        {
+          "Id": "q10",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3299,
+          "Seconds": 0.904918,
+          "Error": null
+        },
+        {
+          "Id": "q11",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 5402,
+          "Seconds": 0.7683930999999999,
+          "Error": null
+        },
+        {
+          "Id": "q12",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 3383,
+          "Seconds": 1.0444286,
+          "Error": null
+        },
+        {
+          "Id": "q13",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3448,
+          "Seconds": 0.9137618000000001,
+          "Error": null
+        },
+        {
+          "Id": "q14",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3099,
+          "Seconds": 0.7636144,
+          "Error": null
+        },
+        {
+          "Id": "q15",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3684,
+          "Seconds": 0.7273755,
+          "Error": null
+        },
+        {
+          "Id": "q16",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3759,
+          "Seconds": 0.7883402,
+          "Error": null
+        },
+        {
+          "Id": "q17",
+          "Rank": 2,
+          "FileRank": 2,
+          "Characters": 3805,
+          "Seconds": 0.7514307,
+          "Error": null
+        },
+        {
+          "Id": "q18",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3619,
+          "Seconds": 0.7776822,
+          "Error": null
+        },
+        {
+          "Id": "q19",
+          "Rank": 1,
+          "FileRank": 1,
+          "Characters": 3099,
+          "Seconds": 0.9068149999999999,
+          "Error": null
+        },
+        {
+          "Id": "q20",
+          "Rank": 2,
+          "FileRank": 1,
+          "Characters": 2721,
+          "Seconds": 0.7492027,
+          "Error": null
+        }
+      ]
+    }
+  ],
+  "Queries": [
+    {
+      "Id": "q01",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "404と410の違いは何ですか",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3906,
+      "Seconds": 0.7141383,
+      "Error": null,
+      "Utf8Bytes": 33,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q01",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "HTTP 404 410 違い",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 6115,
+      "Seconds": 0.4100374,
+      "Error": null,
+      "Utf8Bytes": 19,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q01",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "HTTPの404と410のステータスの意味の違いについての説明",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 6115,
+      "Seconds": 0.5043708,
+      "Error": null,
+      "Utf8Bytes": 73,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q01",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "What is the difference between HTTP 404 and 410?",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 6115,
+      "Seconds": 0.4300905,
+      "Error": null,
+      "Utf8Bytes": 48,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q01",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。404と410の違いは何ですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0089318,
+      "Error": "embedding_context",
+      "Utf8Bytes": 358,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q01",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "HTTPエラー",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 6050,
+      "Seconds": 0.5140893,
+      "Error": null,
+      "Utf8Bytes": 13,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "HTTPリクエストを繰り返しても同じ効果になる性質は何ですか",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.3973673,
+      "Error": null,
+      "Utf8Bytes": 82,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "HTTP リクエスト 繰り返し 同じ効果 性質",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.4106659,
+      "Error": null,
+      "Utf8Bytes": 53,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "HTTPで同じリクエストを繰り返しても効果が変わらない性質についての説明",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.4051217,
+      "Error": null,
+      "Utf8Bytes": 100,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "What is the property that repeating an HTTP request has the same effect?",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.3986738,
+      "Error": null,
+      "Utf8Bytes": 72,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。HTTPリクエストを繰り返しても同じ効果になる性質は何ですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0027392,
+      "Error": "embedding_context",
+      "Utf8Bytes": 407,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q02",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "繰り返し",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 5,
+      "FileRank": 5,
+      "Characters": 6107,
+      "Seconds": 0.6280126,
+      "Error": null,
+      "Utf8Bytes": 12,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "idempotent.txt"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "冪等であることが保証されないHTTPメソッドはどれですか",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 6023,
+      "Seconds": 0.6138888,
+      "Error": null,
+      "Utf8Bytes": 76,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "HTTP メソッド 冪等性 保証されない",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.6725419,
+      "Error": null,
+      "Utf8Bytes": 46,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "HTTPメソッドのうち冪等であることが保証されないものについての説明",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5958,
+      "Seconds": 0.6477464,
+      "Error": null,
+      "Utf8Bytes": 94,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "SourceCodeHierarchy.md",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Which HTTP methods are not guaranteed to be idempotent?",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 6153,
+      "Seconds": 0.531157,
+      "Error": null,
+      "Utf8Bytes": 55,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md",
+        "release.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。冪等であることが保証されないHTTPメソッドはどれですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0031254,
+      "Error": "embedding_context",
+      "Utf8Bytes": 401,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q03",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "HTTPメソッド",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5810,
+      "Seconds": 0.5661248,
+      "Error": null,
+      "Utf8Bytes": 16,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md",
+        "IntervalSchedule.cs",
+        "http404-ja.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "Webリソースが永久に削除された場合、サーバーはどのHTTPステータスを返しますか",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5177,
+      "Seconds": 0.5178118,
+      "Error": null,
+      "Utf8Bytes": 109,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "HTTP リソース 永久削除 ステータス",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5251,
+      "Seconds": 0.514672,
+      "Error": null,
+      "Utf8Bytes": 46,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "idempotent.txt",
+        "http404-ja.md",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "永久に削除されたWebリソースに対して返すHTTPステータスについての説明",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5248,
+      "Seconds": 0.4216699,
+      "Error": null,
+      "Utf8Bytes": 97,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Which HTTP status should be used when a web resource has been permanently removed?",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5672,
+      "Seconds": 0.461728,
+      "Error": null,
+      "Utf8Bytes": 82,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。Webリソースが永久に削除された場合、サーバーはどのHTTPステータスを返しますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0035043,
+      "Error": "embedding_context",
+      "Utf8Bytes": 434,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q04",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "削除",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 6863,
+      "Seconds": 0.5794523,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "Local RAGを起動するために必要な.NET Runtimeは何ですか",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3675,
+      "Seconds": 0.5108622,
+      "Error": null,
+      "Utf8Bytes": 69,
+      "ReturnedFiles": [
+        "release.md",
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "Local RAG 起動 必要 .NET Runtime",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3750,
+      "Seconds": 0.4555631,
+      "Error": null,
+      "Utf8Bytes": 36,
+      "ReturnedFiles": [
+        "release.md",
+        "release.md",
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "Local RAGの起動に必要な.NETランタイムの種類についての説明",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 4220,
+      "Seconds": 0.4589275,
+      "Error": null,
+      "Utf8Bytes": 79,
+      "ReturnedFiles": [
+        "release.md",
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SettingsVisibility-2026-11-06.md"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "Which .NET runtimes are required to launch Local RAG?",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 4063,
+      "Seconds": 0.4020817,
+      "Error": null,
+      "Utf8Bytes": 53,
+      "ReturnedFiles": [
+        "release.md",
+        "release.md",
+        "IntervalSchedule.cs",
+        "SettingsVisibility-2026-11-06.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。Local RAGを起動するために必要な.NET Runtimeは何ですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0029087,
+      "Error": "embedding_context",
+      "Utf8Bytes": 394,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q05",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "起動",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3279,
+      "Seconds": 0.4216259,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "release.md",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "Local RAGのセットアップ時に指定するモデルと取り込みフォルダについて教えて",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3162,
+      "Seconds": 0.3901266,
+      "Error": null,
+      "Utf8Bytes": 105,
+      "ReturnedFiles": [
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "Local RAG セットアップ モデル 取り込みフォルダ 設定",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3162,
+      "Seconds": 0.4431679,
+      "Error": null,
+      "Utf8Bytes": 70,
+      "ReturnedFiles": [
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "Local RAGの初期設定で指定するAIモデルと取り込みフォルダについての説明",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3162,
+      "Seconds": 0.3763653,
+      "Error": null,
+      "Utf8Bytes": 98,
+      "ReturnedFiles": [
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Which models and ingestion folders should be configured when setting up Local RAG?",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3478,
+      "Seconds": 0.4174519,
+      "Error": null,
+      "Utf8Bytes": 82,
+      "ReturnedFiles": [
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。Local RAGのセットアップ時に指定するモデルと取り込みフォルダについて教えて 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0019158,
+      "Error": "embedding_context",
+      "Utf8Bytes": 430,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q06",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "設定",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 5,
+      "FileRank": 5,
+      "Characters": 3796,
+      "Seconds": 0.3519948,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "文字列をサロゲートペアを壊さずモデルの上限内に分割する処理",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7120,
+      "Seconds": 0.3849209,
+      "Error": null,
+      "Utf8Bytes": 87,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "文字列 サロゲートペア 保持 モデル上限 分割",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7120,
+      "Seconds": 0.3835267,
+      "Error": null,
+      "Utf8Bytes": 61,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "サロゲートペアを壊さずに文字列をモデルの入力上限内へ分割するコード",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7120,
+      "Seconds": 0.4047545,
+      "Error": null,
+      "Utf8Bytes": 99,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "Which code splits a string within the model input limit without breaking surrogate pairs?",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7304,
+      "Seconds": 0.3681539,
+      "Error": null,
+      "Utf8Bytes": 89,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "release.md",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。文字列をサロゲートペアを壊さずモデルの上限内に分割する処理 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0035667,
+      "Error": "embedding_context",
+      "Utf8Bytes": 412,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q07",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "文字列分割",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7542,
+      "Seconds": 0.4008742,
+      "Error": null,
+      "Utf8Bytes": 15,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "SettingsVisibility-2026-11-06.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "文字列の末尾をUTF-8バイト数の上限内で取得する処理",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3443,
+      "Seconds": 0.4864804,
+      "Error": null,
+      "Utf8Bytes": 71,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "文字列 末尾 UTF-8 バイト数 上限 取得",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3443,
+      "Seconds": 0.4528725,
+      "Error": null,
+      "Utf8Bytes": 49,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "UTF-8バイト数の上限を守って文字列の末尾を取得するコード",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3760,
+      "Seconds": 0.4841283,
+      "Error": null,
+      "Utf8Bytes": 80,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Which code gets the tail of a string within a UTF-8 byte limit?",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 4139,
+      "Seconds": 0.5612577,
+      "Error": null,
+      "Utf8Bytes": 63,
+      "ReturnedFiles": [
+        "release.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。文字列の末尾をUTF-8バイト数の上限内で取得する処理 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0021998,
+      "Error": "embedding_context",
+      "Utf8Bytes": 396,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q08",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "文字列末尾",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 7225,
+      "Seconds": 0.5134429,
+      "Error": null,
+      "Utf8Bytes": 15,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "TextWindows.cs"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "PCのスリープ中に監視時刻を過ぎた場合、元の周期を保って次の実行時刻を求めるコード",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 4022,
+      "Seconds": 0.4966401,
+      "Error": null,
+      "Utf8Bytes": 119,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "監視 スリープ 時刻超過 元の周期 次回実行 計算 コード",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3677,
+      "Seconds": 0.4503931,
+      "Error": null,
+      "Utf8Bytes": 75,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "スリープ中に監視時刻を過ぎても元の周期に沿って次回の実行時刻を計算するコード",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3961,
+      "Seconds": 1.0246331,
+      "Error": null,
+      "Utf8Bytes": 114,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "Which code calculates the next monitoring time after sleep while preserving the original interval schedule?",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3677,
+      "Seconds": 1.5438849,
+      "Error": null,
+      "Utf8Bytes": 107,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。PCのスリープ中に監視時刻を過ぎた場合、元の周期を保って次の実行時刻を求めるコード 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0032294,
+      "Error": "embedding_context",
+      "Utf8Bytes": 444,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q09",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "監視",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 3374,
+      "Seconds": 0.4147394,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "監視スケジュールの間隔がゼロや負数だった場合、どの例外を投げますか",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3299,
+      "Seconds": 0.4817242,
+      "Error": null,
+      "Utf8Bytes": 99,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "監視スケジュール 間隔 ゼロ 負数 例外",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3439,
+      "Seconds": 0.4552628,
+      "Error": null,
+      "Utf8Bytes": 52,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "監視スケジュールでゼロまたは負の間隔が指定された場合に投げる例外についての説明",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3299,
+      "Seconds": 0.4231938,
+      "Error": null,
+      "Utf8Bytes": 117,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Which exception is thrown when the monitoring interval is zero or negative?",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3677,
+      "Seconds": 0.4354513,
+      "Error": null,
+      "Utf8Bytes": 75,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。監視スケジュールの間隔がゼロや負数だった場合、どの例外を投げますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0025695,
+      "Error": "embedding_context",
+      "Utf8Bytes": 424,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q10",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "例外",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 4216,
+      "Seconds": 0.448351,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "release.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "LLMにクラスのコード全体が収まらない場合、何を材料に説明を作りますか",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 7239,
+      "Seconds": 0.3867423,
+      "Error": null,
+      "Utf8Bytes": 99,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "TextWindows.cs",
+        "TextWindows.cs"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "LLM クラス コード全体 入力上限 超過 説明生成 材料",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 3,
+      "FileRank": 3,
+      "Characters": 4141,
+      "Seconds": 0.3814144,
+      "Error": null,
+      "Utf8Bytes": 69,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "クラス全体のコードがLLMの入力上限に収まらない場合に説明生成へ渡す材料についての説明",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 4141,
+      "Seconds": 0.3816508,
+      "Error": null,
+      "Utf8Bytes": 123,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "What input is used to describe a class when its full code exceeds the LLM context window?",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 4,
+      "FileRank": 3,
+      "Characters": 4187,
+      "Seconds": 0.3927239,
+      "Error": null,
+      "Utf8Bytes": 89,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。LLMにクラスのコード全体が収まらない場合、何を材料に説明を作りますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0025697,
+      "Error": "embedding_context",
+      "Utf8Bytes": 424,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q11",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "クラス説明",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 5,
+      "FileRank": 5,
+      "Characters": 7013,
+      "Seconds": 0.5021262,
+      "Error": null,
+      "Utf8Bytes": 15,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "クラスの説明を生成できず埋め込みを省略した場合、下位の関数は検索できますか",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3099,
+      "Seconds": 0.427441,
+      "Error": null,
+      "Utf8Bytes": 111,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "クラス 説明生成失敗 埋め込み省略 下位関数 検索",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3099,
+      "Seconds": 0.6129153,
+      "Error": null,
+      "Utf8Bytes": 67,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "クラスの説明生成に失敗してクラスの埋め込みを省略した場合の下位関数の検索についての説明",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3383,
+      "Seconds": 0.6169876,
+      "Error": null,
+      "Utf8Bytes": 129,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Can child functions still be searched when class description generation fails and its embedding is skipped?",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 4,
+      "FileRank": 4,
+      "Characters": 3383,
+      "Seconds": 0.6230724,
+      "Error": null,
+      "Utf8Bytes": 107,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。クラスの説明を生成できず埋め込みを省略した場合、下位の関数は検索できますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.002406,
+      "Error": "embedding_context",
+      "Utf8Bytes": 436,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q12",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "関数検索",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3581,
+      "Seconds": 0.5230789,
+      "Error": null,
+      "Utf8Bytes": 12,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "章全体がEmbeddingモデルの入力上限を超えるとき、親の検索用説明をどう作りますか",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3448,
+      "Seconds": 0.4787285,
+      "Error": null,
+      "Utf8Bytes": 111,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "章全体 Embedding 入力上限 超過 親 検索用説明 生成",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 3448,
+      "Seconds": 0.4227775,
+      "Error": null,
+      "Utf8Bytes": 66,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "章全体がEmbeddingの入力上限を超える場合の親の検索用説明の作成方法",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3448,
+      "Seconds": 0.4350333,
+      "Error": null,
+      "Utf8Bytes": 93,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "How is a parent search description generated when a whole chapter exceeds the embedding input limit?",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 3448,
+      "Seconds": 0.4231379,
+      "Error": null,
+      "Utf8Bytes": 100,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。章全体がEmbeddingモデルの入力上限を超えるとき、親の検索用説明をどう作りますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0020086,
+      "Error": "embedding_context",
+      "Utf8Bytes": 436,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q13",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "親説明",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 2477,
+      "Seconds": 0.4193056,
+      "Error": null,
+      "Utf8Bytes": 9,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "文書の親チャンク説明の作成中に停止しました。完了した子の処理をやり直しますか",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.4351521,
+      "Error": null,
+      "Utf8Bytes": 114,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "文書 親チャンク 説明生成 中断 完了した子 再処理",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 4,
+      "FileRank": 1,
+      "Characters": 2455,
+      "Seconds": 0.3557669,
+      "Error": null,
+      "Utf8Bytes": 68,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "文書の親説明生成中に停止した後、完了済みの子の処理をやり直すかどうかの説明",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.3284623,
+      "Error": null,
+      "Utf8Bytes": 111,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "When document parent description generation is interrupted, are completed child operations repeated?",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3383,
+      "Seconds": 0.420035,
+      "Error": null,
+      "Utf8Bytes": 100,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。文書の親チャンク説明の作成中に停止しました。完了した子の処理をやり直しますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.003626,
+      "Error": "embedding_context",
+      "Utf8Bytes": 439,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q14",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "再開",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3527,
+      "Seconds": 0.4923923,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "テキスト処理画面でMarkdownの親の最小・最大文字数が表示される条件は何ですか",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.3439032,
+      "Error": null,
+      "Utf8Bytes": 107,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "テキスト処理 設定画面 Markdown 親 最小 最大文字数 表示条件",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.3398009,
+      "Error": null,
+      "Utf8Bytes": 80,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "テキスト処理画面でMarkdown親チャンクの最小・最大文字数の設定が表示される条件",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.3834723,
+      "Error": null,
+      "Utf8Bytes": 110,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "When are the minimum and maximum Markdown parent chunk lengths shown in text processing settings?",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.4135054,
+      "Error": null,
+      "Utf8Bytes": 97,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。テキスト処理画面でMarkdownの親の最小・最大文字数が表示される条件は何ですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.002636,
+      "Error": "embedding_context",
+      "Utf8Bytes": 432,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q15",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "Markdown設定",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.3958211,
+      "Error": null,
+      "Utf8Bytes": 14,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "処理方式を切り替えて設定欄が非表示になると、以前の入力値は消去されますか",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3759,
+      "Seconds": 0.3697751,
+      "Error": null,
+      "Utf8Bytes": 108,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "処理方式 切り替え 設定欄 非表示 以前の入力値 消去",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3335,
+      "Seconds": 0.3737902,
+      "Error": null,
+      "Utf8Bytes": 71,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "処理方式を切り替えて非表示になった設定項目の既存の値の扱いについての説明",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3335,
+      "Seconds": 0.4185651,
+      "Error": null,
+      "Utf8Bytes": 108,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "Are existing values erased when switching processing modes hides their settings fields?",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 3,
+      "FileRank": 3,
+      "Characters": 3274,
+      "Seconds": 0.3968162,
+      "Error": null,
+      "Utf8Bytes": 87,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。処理方式を切り替えて設定欄が非表示になると、以前の入力値は消去されますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0017463,
+      "Error": "embedding_context",
+      "Utf8Bytes": 433,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q16",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "非表示",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 6099,
+      "Seconds": 0.4202755,
+      "Error": null,
+      "Utf8Bytes": 9,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "TextWindows.cs",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "ソースコード検索ではコード本文と説明文のどちらをベクトル化しますか",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3805,
+      "Seconds": 0.3663121,
+      "Error": null,
+      "Utf8Bytes": 99,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "ソースコード 検索 コード本文 説明文 ベクトル化 対象",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3805,
+      "Seconds": 0.371917,
+      "Error": null,
+      "Utf8Bytes": 74,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "ソースコード検索でコード本文と説明文のどちらをベクトル化するかについての説明",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3805,
+      "Seconds": 0.3851186,
+      "Error": null,
+      "Utf8Bytes": 114,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "Does source code search embed the code itself or its description?",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": null,
+      "FileRank": 3,
+      "Characters": 3381,
+      "Seconds": 0.3930178,
+      "Error": null,
+      "Utf8Bytes": 65,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。ソースコード検索ではコード本文と説明文のどちらをベクトル化しますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0019378,
+      "Error": "embedding_context",
+      "Utf8Bytes": 424,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q17",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "コード検索",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": null,
+      "FileRank": 1,
+      "Characters": 3870,
+      "Seconds": 0.3994468,
+      "Error": null,
+      "Utf8Bytes": 15,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "ソースファイル全体の説明を生成するとき、ファイルの説明コメントがない場合の入力は何ですか",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3723,
+      "Seconds": 0.3376282,
+      "Error": null,
+      "Utf8Bytes": 132,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "ソースファイル 全体 説明生成 説明コメントなし 入力",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 4062,
+      "Seconds": 0.3226319,
+      "Error": null,
+      "Utf8Bytes": 73,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "ソースファイルにファイルレベルの説明コメントがない場合のファイル全体の説明生成に使う入力",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3619,
+      "Seconds": 0.440054,
+      "Error": null,
+      "Utf8Bytes": 132,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "What input is used to generate a file description when no file-level documentation comment exists?",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": 3,
+      "FileRank": 3,
+      "Characters": 4212,
+      "Seconds": 0.4407458,
+      "Error": null,
+      "Utf8Bytes": 98,
+      "ReturnedFiles": [
+        "release.md",
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。ソースファイル全体の説明を生成するとき、ファイルの説明コメントがない場合の入力は何ですか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0022568,
+      "Error": "embedding_context",
+      "Utf8Bytes": 457,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q18",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "ファイル説明",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": null,
+      "FileRank": 1,
+      "Characters": 2685,
+      "Seconds": 0.5049049,
+      "Error": null,
+      "Utf8Bytes": 18,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "question",
+      "Split": "calibration",
+      "Text": "長い親チャンクの説明を何度圧縮しても短くならない場合はどう扱いますか",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3402,
+      "Seconds": 0.500366,
+      "Error": null,
+      "Utf8Bytes": 102,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "keywords",
+      "Split": "calibration",
+      "Text": "親チャンク 説明 圧縮 繰り返し 短くならない 対処",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.4690061,
+      "Error": null,
+      "Utf8Bytes": 68,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "description",
+      "Split": "calibration",
+      "Text": "長い親チャンクの説明を繰り返し圧縮しても短くならない場合の扱いについての説明",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.406449,
+      "Error": null,
+      "Utf8Bytes": 114,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "english",
+      "Split": "calibration",
+      "Text": "What happens when repeatedly compressing a long parent chunk description does not make it shorter?",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.4404301,
+      "Error": null,
+      "Utf8Bytes": 98,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "verbose",
+      "Split": "calibration",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。長い親チャンクの説明を何度圧縮しても短くならない場合はどう扱いますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0026357,
+      "Error": "embedding_context",
+      "Utf8Bytes": 427,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q19",
+      "Style": "vague",
+      "Split": "calibration",
+      "Text": "圧縮",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": null,
+      "FileRank": 1,
+      "Characters": 3279,
+      "Seconds": 0.4639426,
+      "Error": null,
+      "Utf8Bytes": 6,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "SettingsVisibility-2026-11-06.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "question",
+      "Split": "validation",
+      "Text": "親の説明でヒットした文書を検索で取得すると、要約と原文のどちらが返りますか",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 2721,
+      "Seconds": 0.3532078,
+      "Error": null,
+      "Utf8Bytes": 111,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "keywords",
+      "Split": "validation",
+      "Text": "文書 親説明 検索ヒット 返却 要約 原文",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 2721,
+      "Seconds": 0.3895954,
+      "Error": null,
+      "Utf8Bytes": 53,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "description",
+      "Split": "validation",
+      "Text": "文書の親説明が検索にヒットした場合に要約と原文のどちらを返すかについての説明",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 2721,
+      "Seconds": 0.3959949,
+      "Error": null,
+      "Utf8Bytes": 114,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "english",
+      "Split": "validation",
+      "Text": "When a document matches through its parent description, is the summary or original text returned?",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 2721,
+      "Seconds": 0.3676446,
+      "Error": null,
+      "Utf8Bytes": 97,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "verbose",
+      "Split": "validation",
+      "Text": "私はこのシステムを利用しており、仕組みを理解したいと思っています。関連する資料を検索して、次の質問に丁寧に回答してください。親の説明でヒットした文書を検索で取得すると、要約と原文のどちらが返りますか 回答は日本語で、要点を箇条書きにし、必要に応じて具体例も添えてわかりやすく説明してください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": null,
+      "FileRank": null,
+      "Characters": 0,
+      "Seconds": 0.0017516,
+      "Error": "embedding_context",
+      "Utf8Bytes": 436,
+      "ReturnedFiles": []
+    },
+    {
+      "Id": "q20",
+      "Style": "vague",
+      "Split": "validation",
+      "Text": "検索結果",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3755,
+      "Seconds": 0.3617278,
+      "Error": null,
+      "Utf8Bytes": 12,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q01",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "404と410の違いは何ですか 要点を日本語で教えてください。",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 3906,
+      "Seconds": 0.6766832,
+      "Error": null,
+      "Utf8Bytes": 79,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "http404-ja.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q02",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "HTTPリクエストを繰り返しても同じ効果になる性質は何ですか 要点を日本語で教えてください。",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "idempotent",
+        "same"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5746,
+      "Seconds": 0.4149641,
+      "Error": null,
+      "Utf8Bytes": 128,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md",
+        "http404-ja.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q03",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "冪等であることが保証されないHTTPメソッドはどれですか 要点を日本語で教えてください。",
+      "ExpectedFile": "idempotent.txt",
+      "Evidence": [
+        "POST",
+        "PATCH"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 6398,
+      "Seconds": 0.4365785,
+      "Error": null,
+      "Utf8Bytes": 122,
+      "ReturnedFiles": [
+        "idempotent.txt",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q04",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "Webリソースが永久に削除された場合、サーバーはどのHTTPステータスを返しますか 要点を日本語で教えてください。",
+      "ExpectedFile": "http404-ja.md",
+      "Evidence": [
+        "410",
+        "永久"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 5314,
+      "Seconds": 0.3946898,
+      "Error": null,
+      "Utf8Bytes": 155,
+      "ReturnedFiles": [
+        "http404-ja.md",
+        "http404-ja.md",
+        "idempotent.txt",
+        "http404-ja.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q05",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "Local RAGを起動するために必要な.NET Runtimeは何ですか 要点を日本語で教えてください。",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "Desktop Runtime 10.0",
+        "ASP.NET"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3784,
+      "Seconds": 0.4728072,
+      "Error": null,
+      "Utf8Bytes": 115,
+      "ReturnedFiles": [
+        "release.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "release.md",
+        "IntervalSchedule.cs"
+      ]
+    },
+    {
+      "Id": "q06",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "Local RAGのセットアップ時に指定するモデルと取り込みフォルダについて教えて 要点を日本語で教えてください。",
+      "ExpectedFile": "release.md",
+      "Evidence": [
+        "フォルダ",
+        "Embedding"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3402,
+      "Seconds": 0.4564885,
+      "Error": null,
+      "Utf8Bytes": 151,
+      "ReturnedFiles": [
+        "release.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q07",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "文字列をサロゲートペアを壊さずモデルの上限内に分割する処理 要点を日本語で教えてください。",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Split",
+        "EnumerateRunes"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 7120,
+      "Seconds": 0.5569227,
+      "Error": null,
+      "Utf8Bytes": 133,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "TextWindows.cs",
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q08",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "文字列の末尾をUTF-8バイト数の上限内で取得する処理 要点を日本語で教えてください。",
+      "ExpectedFile": "TextWindows.cs",
+      "Evidence": [
+        "Tail",
+        "maxUtf8Bytes"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3443,
+      "Seconds": 0.4912154,
+      "Error": null,
+      "Utf8Bytes": 117,
+      "ReturnedFiles": [
+        "TextWindows.cs",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q09",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "PCのスリープ中に監視時刻を過ぎた場合、元の周期を保って次の実行時刻を求めるコード 要点を日本語で教えてください。",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "anchor",
+        "Ticks"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3295,
+      "Seconds": 0.6130388,
+      "Error": null,
+      "Utf8Bytes": 165,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q10",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "監視スケジュールの間隔がゼロや負数だった場合、どの例外を投げますか 要点を日本語で教えてください。",
+      "ExpectedFile": "IntervalSchedule.cs",
+      "Evidence": [
+        "ArgumentOutOfRangeException",
+        "TimeSpan.Zero"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3677,
+      "Seconds": 0.4969218,
+      "Error": null,
+      "Utf8Bytes": 145,
+      "ReturnedFiles": [
+        "IntervalSchedule.cs",
+        "IntervalSchedule.cs",
+        "SourceCodeHierarchy.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q11",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "LLMにクラスのコード全体が収まらない場合、何を材料に説明を作りますか 要点を日本語で教えてください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "変数一覧",
+        "生成済み説明"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3414,
+      "Seconds": 0.4731018,
+      "Error": null,
+      "Utf8Bytes": 145,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q12",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "クラスの説明を生成できず埋め込みを省略した場合、下位の関数は検索できますか 要点を日本語で教えてください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "省略",
+        "関数"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 2959,
+      "Seconds": 0.4329013,
+      "Error": null,
+      "Utf8Bytes": 157,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q13",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "章全体がEmbeddingモデルの入力上限を超えるとき、親の検索用説明をどう作りますか 要点を日本語で教えてください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "圧縮",
+        "子"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3383,
+      "Seconds": 0.4472086,
+      "Error": null,
+      "Utf8Bytes": 157,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q14",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "文書の親チャンク説明の作成中に停止しました。完了した子の処理をやり直しますか 要点を日本語で教えてください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "再開",
+        "保存"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3099,
+      "Seconds": 0.4619603,
+      "Error": null,
+      "Utf8Bytes": 160,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md"
+      ]
+    },
+    {
+      "Id": "q15",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "テキスト処理画面でMarkdownの親の最小・最大文字数が表示される条件は何ですか 要点を日本語で教えてください。",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "文書構造",
+        "Markdown"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3684,
+      "Seconds": 0.4305523,
+      "Error": null,
+      "Utf8Bytes": 153,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "release.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q16",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "処理方式を切り替えて設定欄が非表示になると、以前の入力値は消去されますか 要点を日本語で教えてください。",
+      "ExpectedFile": "SettingsVisibility-2026-11-06.md",
+      "Evidence": [
+        "非表示",
+        "保持"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3335,
+      "Seconds": 0.4204243,
+      "Error": null,
+      "Utf8Bytes": 154,
+      "ReturnedFiles": [
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q17",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "ソースコード検索ではコード本文と説明文のどちらをベクトル化しますか 要点を日本語で教えてください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "説明文だけ"
+      ],
+      "Rank": 2,
+      "FileRank": 2,
+      "Characters": 3805,
+      "Seconds": 0.4072425,
+      "Error": null,
+      "Utf8Bytes": 145,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q18",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "ソースファイル全体の説明を生成するとき、ファイルの説明コメントがない場合の入力は何ですか 要点を日本語で教えてください。",
+      "ExpectedFile": "SourceCodeHierarchy.md",
+      "Evidence": [
+        "ファイル",
+        "説明コメント",
+        "直下"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3619,
+      "Seconds": 0.3980433,
+      "Error": null,
+      "Utf8Bytes": 178,
+      "ReturnedFiles": [
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SettingsVisibility-2026-11-06.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md"
+      ]
+    },
+    {
+      "Id": "q19",
+      "Style": "short_instruction",
+      "Split": "calibration",
+      "Text": "長い親チャンクの説明を何度圧縮しても短くならない場合はどう扱いますか 要点を日本語で教えてください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "8回",
+        "省略"
+      ],
+      "Rank": 1,
+      "FileRank": 1,
+      "Characters": 3402,
+      "Seconds": 0.4422419,
+      "Error": null,
+      "Utf8Bytes": 148,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "release.md"
+      ]
+    },
+    {
+      "Id": "q20",
+      "Style": "short_instruction",
+      "Split": "validation",
+      "Text": "親の説明でヒットした文書を検索で取得すると、要約と原文のどちらが返りますか 要点を日本語で教えてください。",
+      "ExpectedFile": "DocumentParentEmbeddings.md",
+      "Evidence": [
+        "生成説明ではなく原文"
+      ],
+      "Rank": 2,
+      "FileRank": 1,
+      "Characters": 2721,
+      "Seconds": 0.4110972,
+      "Error": null,
+      "Utf8Bytes": 157,
+      "ReturnedFiles": [
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "DocumentParentEmbeddings.md",
+        "SourceCodeHierarchy.md",
+        "SourceCodeHierarchy.md"
+      ]
+    }
+  ]
+}

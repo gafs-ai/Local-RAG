@@ -13,11 +13,11 @@ public partial class MainWindow
         if (_shuttingDown || _resettingData || _ragChanging || !_startupTask.IsCompleted || !_saveTask.IsCompleted ||
             !_databaseTask.IsCompleted || !_aiTask.IsCompleted || _server.Connection is null) return;
         var answer = MessageBox.Show(this,
-            "取り込んだ文書、すべてのベクトル索引、処理履歴、途中までの処理結果・再開情報を削除します。元に戻せません。\n\n" +
+            "現在のデータソースの文書、ベクトル、処理履歴、途中までの処理結果・再開情報を削除します。元に戻せません。\n\n" +
             "元ファイルと設定（監視フォルダ、モデル、プロンプト、カテゴリ、パイプライン、接続情報）は残ります。\n" +
             "取り込み・検索・MCPをいったん停止して初期化し、監視は停止状態にします。再取り込みには「監視再開」または「今すぐ実行」を押してください。\n\n" +
-            $"対象DB：{_loadedSettings.Database.Endpoint}\n名前空間：localrag ／ データベース：application\n" +
-            (_loadedSettings.Database.UsesExternalEndpoint ? "外部DBを共有している場合、同じLocal RAGデータを使うほかの利用者にも影響します。\n" : "") +
+            $"対象DB：{_loadedSettings.Database.Endpoint}\n名前空間：localrag ／ データベース：application\nデータソース：{_loadedSettings.DataSourceName}\n" +
+            (_loadedSettings.Database.UsesExternalEndpoint ? "同じデータソース名を使うほかの利用者にも影響します。別の名前のデータソースは残します。\n" : "") +
             "\nデータを初期化しますか？",
             "取り込みデータの初期化", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
         if (answer != MessageBoxResult.Yes || _shuttingDown) return;
@@ -38,7 +38,7 @@ public partial class MainWindow
             await StopRagAsync();
             _lifetime.Token.ThrowIfCancellationRequested();
             DataResetStatus.Text = "取り込みデータを初期化しています…";
-            await using var repository = await TextRagRepository.OpenAsync(_server.Connection ?? throw new InvalidOperationException("DBに接続されていません。"), _lifetime.Token);
+            await using var repository = await TextRagRepository.OpenAsync(_server.Connection ?? throw new InvalidOperationException("DBに接続されていません。"), _lifetime.Token, _loadedSettings.DataSourceName);
             await repository.ResetIngestionDataAsync(_lifetime.Token);
             cleared = true;
             SearchList.ItemsSource = null;

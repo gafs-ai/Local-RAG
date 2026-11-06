@@ -8,9 +8,9 @@ namespace LocalRag.Diagnostics;
 /// <summary>Explicit evaluation corpus only; source contents and model traces stay in the chosen run directory.</summary>
 internal static class CorpusEvaluation
 {
-    private sealed record Query(string Text, string File, string[] Evidence, string Split = "calibration");
+    private sealed record Query(string Text, string File, string[] Evidence, string Split = "calibration", string? Id = null, string? Style = null);
     private sealed record Manifest(string Corpus, Query[] Queries);
-    public static async Task<int> RunAsync(string manifestPath, string runDirectory, string aiSettingsDirectory, string? tools, CancellationToken token, bool compareRetrieval = false)
+    public static async Task<int> RunAsync(string manifestPath, string runDirectory, string aiSettingsDirectory, string? tools, CancellationToken token, bool compareRetrieval = false, string? reportPath = null)
     {
         var manifest = JsonSerializer.Deserialize<Manifest>(await File.ReadAllTextAsync(manifestPath, token))!;
         var corpus = Path.GetFullPath(manifest.Corpus, Path.GetDirectoryName(Path.GetFullPath(manifestPath))!);
@@ -34,7 +34,7 @@ internal static class CorpusEvaluation
             var status = await lemonade.EnsureRunningAsync(settings.Ai, new Progress<string>(Console.WriteLine), token);
             Console.WriteLine($"Models: chat={settings.Ai.ChatModel}; embedding={settings.Ai.EmbeddingModel}");
             await server.EnsureRunningAsync(settings.Database, token: token);
-            await using var repository = await TextRagRepository.OpenAsync(server.Connection!, token);
+            await using var repository = await TextRagRepository.OpenAsync(server.Connection!, token, settings.DataSourceName);
             using var inner = new LemonadeTextAi(settings);
             var ai = new MeasuredAi(inner, Path.Combine(run, "trace.jsonl"));
             using var service = new TextRagService(repository, ai, settings, data);
@@ -46,14 +46,29 @@ internal static class CorpusEvaluation
             var ingestionEmbeddingCalls = ai.EmbeddingCalls;
             var comparison = compareRetrieval ? await CompareAsync(repository, ai, settings, data, manifest.Queries, token) : null;
             var queries = new List<object>();
+            var queryFailures = 0;
             foreach (var query in compareRetrieval ? [] : manifest.Queries)
             {
-                var hits = await service.SearchAsync(query.Text, 5, token);
-                var ranked = hits.Select((hit, i) => new { Rank = i + 1, File = hit.SourcePath is null ? null : Path.GetFileName(hit.SourcePath),
-                    hit.Decision, hit.Content, hit.ParentChunkId }).ToArray();
-                var relevant = ranked.FirstOrDefault(h => h.File == query.File && query.Evidence.All(e => h.Content?.Contains(e, StringComparison.OrdinalIgnoreCase) == true));
-                queries.Add(new { query.Text, query.File, ExpectedEvidence = query.Evidence, Rank = relevant?.Rank, Results = ranked });
-                Console.WriteLine($"Query {queries.Count}: evidence rank={relevant?.Rank.ToString() ?? "missing"}");
+                var queryTimer = Stopwatch.StartNew();
+                try
+                {
+                    var hits = await service.SearchAsync(query.Text, 5, token);
+                    var ranked = hits.Select((hit, i) => new { Rank = i + 1, File = hit.SourcePath is null ? null : Path.GetFileName(hit.SourcePath),
+                        hit.Decision, hit.Content, hit.ParentChunkId }).ToArray();
+                    var relevant = ranked.FirstOrDefault(h => h.File == query.File && query.Evidence.All(e => h.Content?.Contains(e, StringComparison.OrdinalIgnoreCase) == true));
+                    queries.Add(new { query.Id, query.Style, query.Split, query.Text, query.File, ExpectedEvidence = query.Evidence,
+                        Rank = relevant?.Rank, FileRank = ranked.FirstOrDefault(h => h.File == query.File)?.Rank,
+                        Seconds = queryTimer.Elapsed.TotalSeconds, Characters = ranked.Sum(h => h.Content?.Length ?? 0), Results = ranked });
+                    Console.WriteLine($"Query {queries.Count}: evidence rank={relevant?.Rank.ToString() ?? "missing"}");
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    queryFailures++;
+                    queries.Add(new { query.Id, query.Style, query.Split, query.Text, query.File, ExpectedEvidence = query.Evidence,
+                        Rank = (int?)null, FileRank = (int?)null, Seconds = queryTimer.Elapsed.TotalSeconds,
+                        Characters = 0, Results = Array.Empty<object>(), Error = PipelineErrors.DetailCode(ex), Message = ex.Message });
+                    Console.WriteLine($"Query {queries.Count}: error={PipelineErrors.DetailCode(ex)}");
+                }
             }
             var fetches = new List<object>();
             foreach (var document in documents.Where(d => d.Status == "ready"))
@@ -69,16 +84,18 @@ internal static class CorpusEvaluation
                 ChatContext = loadedModels.Single(m => m.Id == settings.Ai.ChatModel).ContextLength,
                 EmbeddingContext = loadedModels.Single(m => m.Id == settings.Ai.EmbeddingModel).ContextLength,
                 Configuration = settings.PipelineConfigurationId(), IngestionSeconds = ingestionSeconds,
-                IngestionChatCalls = ingestionCalls, IngestionEmbeddingCalls = ingestionEmbeddingCalls,
+                IngestionChatCalls = ingestionCalls, IngestionEmbeddingCalls = ingestionEmbeddingCalls, QueryFailures = queryFailures,
                 ai.ChatSeconds, ai.EmbeddingSeconds, cycle,
                 Documents = documents.Select(d => new { File = Path.GetFileName(d.Path), d.Status, d.CategoryId, d.ErrorStage, d.ErrorDetailCode,
                     Characters = d.Original.Length, RetainedParagraphCharacters = d.Paragraphs?.Sum(p => p.Text.Length),
                     Parents = d.Parents?.Count, Chunks = d.Chunks?.Count, d.ProcessingNotices }), Queries = queries, Fetches = fetches,
                 Comparison = comparison
             };
-            await File.WriteAllTextAsync(Path.Combine(run, compareRetrieval ? "comparison.json" : "report.json"), JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }), token);
-            Console.WriteLine($"Complete: indexed={cycle.Indexed}, failed={cycle.Failed}, excluded={cycle.Excluded}; seconds={ingestionSeconds:F1}; chat calls={ingestionCalls}");
-            return cycle.Failed == 0 ? 0 : 2;
+            var output = reportPath is null ? Path.Combine(run, compareRetrieval ? "comparison.json" : "report.json") : Path.GetFullPath(reportPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+            await File.WriteAllTextAsync(output, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }), token);
+            Console.WriteLine($"Complete: indexed={cycle.Indexed}, failed={cycle.Failed}, excluded={cycle.Excluded}; seconds={ingestionSeconds:F1}; chat calls={ingestionCalls}; query failures={queryFailures}");
+            return cycle.Failed == 0 && queryFailures == 0 ? 0 : 2;
         }
         finally
         {

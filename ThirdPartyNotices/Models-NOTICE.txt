@@ -1,0 +1,16 @@
+AI models are not included in the Local RAG distribution.
+Their licenses are separate from Local RAG's GPL-3.0-or-later license.
+
+Gemma-3-4b-it-mm-NPU (development model):
+The original Gemma 3 model is subject to Google's Gemma Terms of Use.
+https://ai.google.dev/gemma/terms/
+Quantized/converted packages and the inference runtime may have additional notices.
+Check the exact model package downloaded through Lemonade.
+
+nomic-embed-text-v2-moe-GGUF (development embedding model):
+The original nomic-ai/nomic-embed-text-v2-moe model declares Apache-2.0.
+https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe
+Check the exact GGUF distribution's model card and license as well.
+
+Other models: consult the selected model's publisher and distribution package.
+Checked: 2026-11-06. Model families and versions can have different licenses.

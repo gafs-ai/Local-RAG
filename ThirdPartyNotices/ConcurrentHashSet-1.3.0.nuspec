@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>ConcurrentHashSet</id>
+    <version>1.3.0</version>
+    <title>ConcurrentHashSet</title>
+    <authors>Bar Arnon</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <description>A thread-safe hash-based set</description>
+    <releaseNotes>Adds: Custom struct enumerator.</releaseNotes>
+    <copyright>Copyright 2021 Bar Arnon</copyright>
+    <tags>concurrency</tags>
+    <repository type="git" url="https://github.com/i3arnon/ConcurrentHashSet.git" commit="cc4c0234138ab13c716bfb7f7be381aefec9c2bd" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1" />
+      <group targetFramework=".NETStandard1.0">
+        <dependency id="NETStandard.Library" version="1.6.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

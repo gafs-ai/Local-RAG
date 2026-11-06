@@ -10,8 +10,10 @@
             <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,22">
+            <Button DockPanel.Dock="Right" Content="ライセンス" Click="OpenLicenses" VerticalAlignment="Center" Margin="10,0,0,0" AutomationProperties.Name="ライセンス情報を開く"/>
+            <Button DockPanel.Dock="Right" Content="ヘルプ (F1)" Click="OpenHelp" VerticalAlignment="Center" Margin="10,0,0,0" AutomationProperties.Name="ヘルプを開く"/>
             <Border DockPanel.Dock="Right" Background="#E1EAF5" CornerRadius="6" Padding="12,6" VerticalAlignment="Center">
-                <TextBlock Text="開発版 · テキストRAG" Foreground="#234B72" />
+                <TextBlock x:Name="VersionBadge" Foreground="#234B72" />
             </Border>
             <Image Source="Assets/local-rag-128.png" Width="60" Height="60" Margin="0,0,14,0" DockPanel.Dock="Left" />
             <StackPanel>
@@ -77,7 +79,7 @@
                     <Separator Margin="4,16,4,8"/>
                     <Button x:Name="ResetIngestionButton" Content="データを初期化する" Click="ResetIngestionClick"
                             HorizontalAlignment="Left" Margin="4,4,4,8" IsEnabled="False" AutomationProperties.Name="取り込みデータを初期化する"/>
-                    <TextBlock Text="取り込んだ文書・ベクトル索引・処理履歴・再開情報を削除します。元ファイルと設定は残します。" TextWrapping="Wrap" Foreground="#526477" Margin="4,0,4,4"/>
+                    <TextBlock Text="現在のデータソースの文書・ベクトル・処理履歴・再開情報を削除します。元ファイル・設定・別ソースのデータは残します。" TextWrapping="Wrap" Foreground="#526477" Margin="4,0,4,4"/>
                     <TextBlock x:Name="DataResetStatus" TextWrapping="Wrap" Margin="4,4,4,12"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -128,13 +130,16 @@
                             </DataGrid.Columns>
                         </DataGrid>
                         <CheckBox x:Name="ExcludeDotHiddenBox" Content="名前が「.」で始まるファイル・フォルダを除外する" Margin="0,8,0,4"/>
-                        <TextBlock Text="監視フォルダ自体や、その上位にある「.」始まりのフォルダも対象です。取り込む場合は除外をOFFにするか、ignoreの ! で例外を指定してください。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+                        <TextBlock Text="明示的に選んだ監視フォルダ自体と上位フォルダのドット名は除外しません。配下の必要な項目はignoreの ! で例外を指定できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
                         <TextBlock Text="共通除外パターン" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,4" />
                         <TextBlock Text="例: *.tmp, **/bin/ など。gitignoreの記述方法と同様。" TextWrapping="Wrap" Foreground="#526477" />
                         <TextBox x:Name="GlobalIgnoreBox" Height="120" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="共通除外パターン" />
                         <TextBlock Text="各フォルダの.gitignore / .dockerignore / .npmignore にも従います。本アプリケーション用の .ragignore を設置できます（記述方法はgitignoreと同様）。" TextWrapping="Wrap" Foreground="#526477" />
                         <TextBlock Text="例外設定（!）は、優先されます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,16" />
                         <TextBlock Text="アプリケーション設定" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,8" />
+                        <TextBlock Text="データソース名" />
+                        <TextBox x:Name="DataSourceNameBox" MaxLength="200" AutomationProperties.Name="データソース名" />
+                        <TextBlock Text="初期値：Local-ユーザー名-ランダム4文字。別の名前への変更は別データソースへの切り替えになります。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12" />
                         <CheckBox x:Name="AutomaticMonitoringBox" Content="起動時に監視を開始する" Margin="0,0,0,12" />
                         <DockPanel>
                             <TextBlock Text="定期チェック間隔（分）" VerticalAlignment="Center" Margin="0,0,16,14" />

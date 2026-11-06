@@ -171,6 +171,7 @@ public interface ITextRagAi
 
 public sealed record TextDocumentState
 {
+    public string DataSourceName { get; init; } = AppSettings.DefaultDataSourceName;
     public ProcessingProvenance? Processing { get; init; }
     // Saved before parent grouping and before embedding-model-specific repacking.
     public List<TextChunk>? PreparedChildren { get; init; }

@@ -1,0 +1,233 @@
+[
+  {
+    "Package": "ConcurrentHashSet/1.3.0",
+    "License": "MIT",
+    "Authors": "Bar Arnon",
+    "Copyright": "Copyright 2021 Bar Arnon",
+    "Source": "https://github.com/i3arnon/ConcurrentHashSet.git"
+  },
+  {
+    "Package": "Dahomey.Cbor/1.26.3",
+    "License": "MIT",
+    "Authors": "Michaël Catanzariti",
+    "Copyright": "Copyright © Dahomey Technologies 2020",
+    "Source": "https://github.com/dahomey-technologies/Dahomey.Cbor.git"
+  },
+  {
+    "Package": "Microsoft.AspNetCore.JsonPatch.SystemTextJson/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.CodeAnalysis.Analyzers/5.9.0-1.26328.17",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/roslyn"
+  },
+  {
+    "Package": "Microsoft.CodeAnalysis.Common/5.9.0",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/roslyn"
+  },
+  {
+    "Package": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/roslyn"
+  },
+  {
+    "Package": "Microsoft.Extensions.AI.Abstractions/10.11.0",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/extensions"
+  },
+  {
+    "Package": "Microsoft.Extensions.Caching.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Configuration/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Configuration.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Configuration.Binder/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.DependencyInjection/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Diagnostics/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Diagnostics.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.FileProviders.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Hosting.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Http/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Logging/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Logging.Abstractions/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Options/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Options.ConfigurationExtensions/10.0.7",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.Extensions.Primitives/10.0.13",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "Microsoft.IO.RecyclableMemoryStream/3.0.1",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream"
+  },
+  {
+    "Package": "Microsoft.Spatial/7.22.0",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": ""
+  },
+  {
+    "Package": "ModelContextProtocol/2.3.0",
+    "License": "Apache-2.0",
+    "Authors": "ModelContextProtocol",
+    "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
+  },
+  {
+    "Package": "ModelContextProtocol.AspNetCore/2.3.0",
+    "License": "Apache-2.0",
+    "Authors": "ModelContextProtocol",
+    "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
+  },
+  {
+    "Package": "ModelContextProtocol.Core/2.3.0",
+    "License": "Apache-2.0",
+    "Authors": "ModelContextProtocol",
+    "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
+  },
+  {
+    "Package": "Semver/3.0.0",
+    "License": "MIT",
+    "Authors": "Jeff Walker, Max Hauser",
+    "Copyright": "Copyright © 2013-2024 Jeff Walker, Max Hauser",
+    "Source": "https://github.com/WalkerCodeRanger/semver"
+  },
+  {
+    "Package": "SurrealDb.Net/1.0.0",
+    "License": "LICENSE",
+    "Authors": "surrealdb",
+    "Copyright": "Copyright © SurrealDB Ltd",
+    "Source": "https://github.com/surrealdb/surrealdb.net"
+  },
+  {
+    "Package": "System.Reactive/6.0.0",
+    "License": "MIT",
+    "Authors": ".NET Foundation and Contributors",
+    "Copyright": "Copyright (c) .NET Foundation and Contributors.",
+    "Source": "https://github.com/dotnet/reactive"
+  },
+  {
+    "Package": "UTF.Unknown/2.7.0",
+    "License": "MPL-1.1",
+    "Authors": "Julian Verdurmen, Rustam Sayfutdinov, Rudi Pettazzi, Shy Shalom",
+    "Copyright": "",
+    "Source": "https://github.com/CharsetDetector/UTF-unknown"
+  },
+  {
+    "Package": "Websocket.Client/5.3.0",
+    "License": "MIT",
+    "Authors": "Mariusz Kotas",
+    "Copyright": "Copyright 2023 Mariusz Kotas. All rights reserved.",
+    "Source": "https://github.com/Marfusios/websocket-client"
+  }
+]

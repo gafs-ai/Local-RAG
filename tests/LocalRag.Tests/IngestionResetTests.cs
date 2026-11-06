@@ -43,9 +43,9 @@ public class IngestionResetTests
         Assert.Null(await repo.LoadMonitoringAsync(default));
         var remaining = await raw.RawQuery("INFO FOR DB; SELECT VALUE payload FROM text_revision; SELECT VALUE record::id(id) FROM text_space; SELECT VALUE value FROM app_notes; SELECT VALUE value FROM text_vectors_keep;");
         remaining.EnsureAllOks();
-        Assert.DoesNotContain(remaining.GetValue<DatabaseInfo>(0)!.tables.Keys, name => name.Length == "text_vectors_".Length + 64 && name.StartsWith("text_vectors_"));
+        Assert.Contains(orphan, remaining.GetValue<DatabaseInfo>(0)!.tables.Keys); // Unowned rows and shared table definitions are retained.
         Assert.Empty(remaining.GetValue<string[]>(1)!);
-        Assert.Empty(remaining.GetValue<string[]>(2)!);
+        Assert.NotEmpty(remaining.GetValue<string[]>(2)!); // Shared embedding-space metadata is retained.
         Assert.Equal("preserved", Assert.Single(remaining.GetValue<string[]>(3)!));
         Assert.Equal("preserved", Assert.Single(remaining.GetValue<string[]>(4)!));
         var otherData = await other.RawQuery("SELECT VALUE value FROM text_document;");

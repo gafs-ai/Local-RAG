@@ -52,7 +52,7 @@ public partial class MainWindow
                 _operationError = "DB接続とフォルダ・言語モデル・Embeddingモデルの設定を確認してください。";
                 return;
             }
-            _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token);
+            _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token, _loadedSettings.DataSourceName);
             _ragCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _ragAi = new LemonadeTextAi(_loadedSettings);
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);

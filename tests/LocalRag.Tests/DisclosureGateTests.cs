@@ -6,7 +6,7 @@ namespace LocalRag.Tests;
 public class DisclosureGateTests
 {
     [Fact]
-    public async Task DefaultPolicyUsesPatternsWithoutCallingExperimentalClassifier()
+    public async Task LegacyPolicyUsesFullPatternsWithoutCallingExperimentalClassifier()
     {
         var classifier = new Classifier(DisclosureDecision.Withheld);
         var gate = new DisclosureGate(classifier);

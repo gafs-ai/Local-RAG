@@ -12,12 +12,12 @@ public sealed partial class TextRagRepository
         var info = await _db.RawQuery("INFO FOR DB;", cancellationToken: token).ConfigureAwait(false);
         info.EnsureAllOks();
         var tables = info.GetValue<ResetDatabaseInfo>(0)?.tables ?? throw new InvalidDataException("DBのテーブル一覧を取得できません。");
-        // Include orphaned spaces left by interrupted initialization. Only exact app-generated
-        // identifiers are allowed into SQL; registry values and arbitrary table names are never interpolated.
+        // Vector spaces are shared across sources. Retain the tables/indexes and space registry;
+        // remove only rows owned by this source, including interrupted staging rows.
         var vectors = tables.Keys.Where(name => Regex.IsMatch(name, "^text_vectors_[0-9a-f]{64}$", RegexOptions.CultureInvariant)).ToArray();
-        var query = "BEGIN TRANSACTION; " + string.Join(" ", vectors.Select(name => $"REMOVE TABLE IF EXISTS {name};")) +
-            " DELETE text_document; DELETE text_revision; DELETE text_space; DELETE text_monitor; DELETE text_ingestion_history; COMMIT TRANSACTION;";
-        (await _db.RawQuery(query, cancellationToken: token).ConfigureAwait(false)).EnsureAllOks();
+        var query = "BEGIN TRANSACTION; " + string.Join(" ", vectors.Select(name => $"DELETE {name} WHERE data_source_name=$source;")) +
+            " DELETE text_document WHERE data_source_name=$source; DELETE text_revision WHERE data_source_name=$source; DELETE text_monitor WHERE data_source_name=$source; DELETE text_ingestion_history WHERE data_source_name=$source; COMMIT TRANSACTION;";
+        (await _db.RawQuery(query, new Dictionary<string, object?> { ["source"] = DataSourceName }, token).ConfigureAwait(false)).EnsureAllOks();
         Interlocked.Exchange(ref _historyWrites, 0);
     }
 

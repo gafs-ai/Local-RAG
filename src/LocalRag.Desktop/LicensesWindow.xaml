@@ -1,0 +1,19 @@
+<Window x:Class="LocalRag.Desktop.LicensesWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Local RAG — ライセンス情報" Width="1000" Height="740" MinWidth="760" MinHeight="500"
+ FontFamily="Yu Gothic UI" FontSize="14" WindowStartupLocation="CenterOwner" Background="#F5F7FA">
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+  <TextBlock Text="ライセンス情報" FontSize="26" FontWeight="SemiBold"/>
+  <TextBlock Grid.Row="1" Margin="0,8,0,16" TextWrapping="Wrap" Text="Local RAG本体、同梱ライブラリ、追加導入するソフトウェアのライセンスを確認できます。モデルや外部ソフトウェアにはそれぞれの利用条件が適用されます。"/>
+  <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+   <DockPanel><TextBox x:Name="FilterBox" DockPanel.Dock="Top" Padding="8" Margin="0,0,0,10" TextChanged="FilterChanged" AutomationProperties.Name="ライセンスを検索"/>
+    <ListBox x:Name="EntryList" SelectionChanged="EntryChanged" AutomationProperties.Name="ソフトウェア一覧" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+     <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="5"><TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap"/><TextBlock Text="{Binding License}" TextWrapping="Wrap" Foreground="#526477"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+     <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}"/></Style></ListBox.ItemContainerStyle>
+    </ListBox>
+   </DockPanel>
+   <TextBox x:Name="LicenseText" Grid.Column="2" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Padding="14" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="ライセンス原文と説明"/>
+  </Grid>
+ </Grid>
+</Window>

@@ -86,7 +86,7 @@ public class TextEncodingTests
         var input = fixture.Root + "-input";
         Directory.CreateDirectory(input);
         var examples = new[] { ("japanese.txt", TextEncodingMode.ShiftJis, Japanese), ("chinese.txt", TextEncodingMode.Gb18030, Chinese),
-            ("korean.txt", TextEncodingMode.Korean, Korean), ("private.txt", TextEncodingMode.ShiftJis, "社外秘\r\n" + Japanese),
+            ("korean.txt", TextEncodingMode.Korean, Korean), ("private.txt", TextEncodingMode.ShiftJis, "極秘\r\n" + Japanese),
             ("code.cs", TextEncodingMode.ShiftJis, "// " + Japanese + "public class 計算 { public int 足す(int a, int b) => a + b; }") };
         foreach (var (name, mode, text) in examples) await File.WriteAllBytesAsync(Path.Combine(input, name), Encoder(mode).GetBytes(text));
         var management = ManagementSettings.CreateDefault() with { Routes = [

@@ -20,7 +20,7 @@ internal static class ConfiguredScan
         try
         {
             await manager.EnsureRunningAsync(settings.Database, token: token);
-            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token);
+            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token, settings.DataSourceName);
             using var ai = new LemonadeTextAi(settings);
             using var service = new TextRagService(repository, ai, settings, dataDirectory);
             var result = await service.ScanAsync(new Progress<string>(Console.WriteLine), token);

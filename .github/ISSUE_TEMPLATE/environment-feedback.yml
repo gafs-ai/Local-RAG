@@ -1,0 +1,54 @@
+name: 動作環境・モデルのフィードバック
+description: PC環境とモデルの動作状況をお知らせください。
+title: "[動作環境] "
+body:
+  - type: markdown
+    attributes:
+      value: "ご協力ありがとうございます。文書本文、パス、ユーザー名、認証情報などの秘密情報は記載しないでください。"
+  - type: input
+    id: version
+    attributes:
+      label: Local RAGとLemonadeのバージョン
+  - type: input
+    id: cpu
+    attributes:
+      label: CPUモデル
+    validations:
+      required: true
+  - type: input
+    id: memory
+    attributes:
+      label: RAM容量
+      placeholder: "例：32GB"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: 専用GPUとビデオメモリ（なければ「なし」）
+  - type: input
+    id: npu
+    attributes:
+      label: NPU（わかれば機種・TOPS）
+  - type: input
+    id: models
+    attributes:
+      label: 言語モデルとEmbeddingモデルの名前
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: 動作状況
+      options:
+        - 快適
+        - 遅いが利用できる
+        - 動かない
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 補足
+      description: 文書の種類や件数、待ち時間、エラーの概要など。秘密情報を含めないでください。

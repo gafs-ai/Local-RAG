@@ -1,0 +1,12 @@
+The Windows installer uses WixToolset.UI.wixext 5.0.2.
+Copyright (c) .NET Foundation and contributors.
+License: Microsoft Reciprocal License (MS-RL), included in WiX-5.0.2-LICENSE.txt.
+
+The unchanged corresponding source is included in WiX-5.0.2-source.zip.
+Upstream: https://github.com/wixtoolset/wix
+Revision: aa65968c419420d32e3e1b647aea0082f5ca5b78 (5.0.2)
+Source archive SHA-256:
+ac593bf21864d9ad4b44720a702dae3651a51d199cfd5aee080aaa1286ab72f1
+
+Local RAG's own application and packaging scripts are GPL-3.0-or-later.
+Third-party components retain their respective licenses.

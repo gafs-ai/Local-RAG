@@ -7,8 +7,11 @@
     <RestorePackagesPath>$(MSBuildThisFileDirectory).packages</RestorePackagesPath>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Authors>GAFS Inc.</Authors>
-    <Version>0.0.0-rc.3</Version>
+    <ReleaseVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</ReleaseVersion>
+    <Version>$([System.Version]::Parse('$(ReleaseVersion)').ToString())</Version>
+    <InformationalVersion>$(ReleaseVersion)</InformationalVersion>
     <Company>GAFS Inc.</Company>
     <Copyright>Copyright (C) 2026 GAFS Inc.</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>

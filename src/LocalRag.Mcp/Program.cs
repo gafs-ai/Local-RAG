@@ -1,4 +1,5 @@
 using LocalRag.Infrastructure;
+using LocalRag.Core;
 using LocalRag.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,7 +17,7 @@ try
     builder.Logging.ClearProviders(); // stdout is exclusively the MCP protocol.
     // Discovery must not depend on the desktop application's startup order.
     builder.Services.AddSingleton<IRetrievalCalls>(new ForwardCalls(data));
-    builder.Services.AddMcpServer(o => o.ServerInfo = new() { Name = "LocalRAG", Version = "0.0.0" })
+    builder.Services.AddMcpServer(o => o.ServerInfo = new() { Name = "LocalRAG", Version = ProductInfo.Version })
         .WithStdioServerTransport().WithTools<RetrievalTools>();
     using var host = builder.Build();
     await host.RunAsync();

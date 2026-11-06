@@ -39,7 +39,7 @@ public sealed partial class TextRagService
             }), token, laneHeld: true).ConfigureAwait(false);
             completed = true;
             using var finalization = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var state = await repository.GetAsync(TextRagSettings.Hash(Path.GetFullPath(file.Path).ToUpperInvariant()), finalization.Token).ConfigureAwait(false);
+            var state = await repository.GetAsync(DocumentIdentity.Key(settings.DataSourceName, file.Path), finalization.Token).ConfigureAwait(false);
             var status = result.Deferred > 0 ? "deferred" : result.Unchanged > 0 ? "unchanged" : state?.Status ?? "skipped";
             await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, status,
                 status is "failed" ? state?.ErrorStage : null, status is "failed" ? state?.ErrorDetailCode : null,

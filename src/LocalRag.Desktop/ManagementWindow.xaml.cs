@@ -22,6 +22,7 @@ public partial class ManagementWindow : Window
     public ManagementWindow(AppSettings settings, int tab)
     {
         InitializeComponent();
+        SettingHelp.Attach(this);
         var source = (settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality)).ToOrderedSettings();
         Limits = settings.TextPipeline;
         _retrieval = source.Retrieval;
@@ -57,6 +58,7 @@ public partial class ManagementWindow : Window
         PatternsBox.IsChecked = _retrieval.PatternsEnabled;
         LlmBox.IsChecked = _retrieval.LlmEnabled;
         PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
+        LoadBoundaryPatterns();
         RefreshRetrieval(_retrieval.ConfidentialityPromptId);
         _refreshing = false;
         PromptList.SelectedIndex = 0;
@@ -314,6 +316,7 @@ public partial class ManagementWindow : Window
             PatternsBox.IsChecked = _retrieval.PatternsEnabled;
             LlmBox.IsChecked = _retrieval.LlmEnabled;
             PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
+            LoadBoundaryPatterns();
             RefreshRetrieval(_retrieval.ConfidentialityPromptId);
             PromptList.SelectedIndex = 0;
             RouteList.SelectedIndex = 0;
@@ -337,6 +340,8 @@ public partial class ManagementWindow : Window
         { ManagerStatus.Text = "文書・チャンク・AI応答の上限を整数で入力してください。"; return; }
         if (!int.TryParse(CodeResultLimitBox.Text, out var codeResultLimit))
         { ManagerStatus.Text = "ソースコード検索の返却上限を整数で入力してください。"; return; }
+        if (!int.TryParse(LeadingLinesBox.Text, out var leadingLines) || !int.TryParse(TrailingLinesBox.Text, out var trailingLines) || leadingLines < 0 || trailingLines < 0)
+        { ManagerStatus.Text = "秘匿検査の先頭・末尾行数は0以上の整数で入力してください。"; return; }
         if (!double.TryParse(HierarchySelfBox.Text, out var selfWeight) || !double.TryParse(HierarchyParentBox.Text, out var parentWeight) || !double.TryParse(HierarchyChildBox.Text, out var childWeight))
         { ManagerStatus.Text = "構造検索の重みを数値で入力してください。"; return; }
         var management = new ManagementSettings
@@ -347,6 +352,8 @@ public partial class ManagementWindow : Window
                 HierarchySearchEnabled = HierarchySearchBox.IsChecked == true, HierarchySelfWeight = selfWeight,
                 HierarchyParentWeight = parentWeight, HierarchyChildWeight = childWeight,
                 ConfidentialityEnabled = ConfidentialityBox.IsChecked == true, PatternsEnabled = PatternsBox.IsChecked == true, LlmEnabled = LlmBox.IsChecked == true,
+                BoundaryPatternsEnabled = BoundaryPatternsBox.IsChecked == true, LeadingLines = leadingLines, TrailingLines = trailingLines,
+                BoundaryPatterns = BoundaryPatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
                 Patterns = PatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() }
         };
         var limits = Limits with { MaxDocumentCharacters = document, MaxChunkCharacters = chunk, MaxOutputTokens = output,
@@ -356,4 +363,14 @@ public partial class ManagementWindow : Window
         if (errors.Count > 0) { ManagerStatus.Text = string.Join("\n", errors.Distinct()); return; }
         Result = management; Limits = limits; DialogResult = true;
     }
+
+    private void LoadBoundaryPatterns()
+    {
+        BoundaryPatternsBox.IsChecked = _retrieval.BoundaryPatternsEnabled;
+        LeadingLinesBox.Text = _retrieval.LeadingLines.ToString();
+        TrailingLinesBox.Text = _retrieval.TrailingLines.ToString();
+        BoundaryPatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.BoundaryPatterns);
+    }
+    private void OpenHelp(object sender, RoutedEventArgs e) => SettingHelp.Show(this, ManagerTabs.SelectedIndex switch
+    { 0 => "prompts", 1 => "categories", 2 => "routes", 3 => "privacy", _ => "start" });
 }

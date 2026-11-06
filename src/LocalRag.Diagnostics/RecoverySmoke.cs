@@ -44,7 +44,7 @@ internal static class RecoverySmoke
             Console.WriteLine("Interrupted worker and owned DB after first persisted embedding.");
             await manager.EnsureRunningAsync(settings.Database, token: token);
             Console.WriteLine("Recovered DB ready.");
-            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token);
+            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token, settings.DataSourceName);
             var state = (await repository.DocumentsAsync(token)).Single();
             var checkpoint = await repository.LoadMonitoringAsync(token);
             if (state.Status != "processing" || state.EmbeddedChunks != 1 || checkpoint?.Running != true ||
@@ -93,7 +93,7 @@ internal static class RecoverySmoke
         try
         {
             await manager.EnsureRunningAsync(settings.Database, token: token);
-            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token);
+            await using var repository = await TextRagRepository.OpenAsync(manager.Connection!, token, settings.DataSourceName);
             using var service = new TextRagService(repository, new RecoveryAi(Path.Combine(run, "second-embedding.started")), settings, data);
             var monitor = new PersistentMonitor(repository, MonitoringCheckpoint.ScopeFor(settings));
             await monitor.RunCycleAsync(async ct => { await service.ScanAsync(token: ct); }, token);

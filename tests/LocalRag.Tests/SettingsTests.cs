@@ -43,9 +43,13 @@ public class SettingsTests
         Assert.NotNull(settings.Management);
         Assert.False(settings.Management.Retrieval.LlmEnabled);
         Assert.True(settings.DisclosurePolicy().Enabled);
-        Assert.True(settings.DisclosurePolicy().PatternsEnabled);
+        Assert.False(settings.DisclosurePolicy().PatternsEnabled);
+        Assert.True(settings.DisclosurePolicy().BoundaryPatternsEnabled);
+        Assert.Equal(5, settings.DisclosurePolicy().LeadingLines);
+        Assert.Equal(0, settings.DisclosurePolicy().TrailingLines);
+        Assert.Equal(new[] { "極秘", "丸秘", "マル秘", "TOP SECRET", "SECRET" }, settings.DisclosurePolicy().BoundaryPatterns);
         Assert.False(settings.DisclosurePolicy().LlmEnabled);
-        Assert.False(File.Exists(store.FilePath));
+        Assert.True(File.Exists(store.FilePath)); // The random source name is persisted on first use.
         await store.SaveAsync(settings);
         Assert.False((await store.LoadAsync()).DisclosurePolicy().LlmEnabled);
     }

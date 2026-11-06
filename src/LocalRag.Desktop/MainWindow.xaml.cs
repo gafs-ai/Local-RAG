@@ -42,6 +42,8 @@ public partial class MainWindow : Window, IDisposable
     public MainWindow(string dataDirectory)
     {
         InitializeComponent();
+        VersionBadge.Text = ProductInfo.VersionLabel;
+        SettingHelp.Attach(this);
         _dataDirectory = dataDirectory;
         _settingsStore = new SettingsStore(dataDirectory);
         _server = new SurrealServerManager(dataDirectory);
@@ -51,7 +53,7 @@ public partial class MainWindow : Window, IDisposable
             _trayIcon = (System.Drawing.Icon)icon.Clone();
         _tray = new Forms.NotifyIcon
         {
-            Text = "Local RAG — 開発版",
+            Text = "Local RAG — " + ProductInfo.VersionLabel,
             Icon = _trayIcon,
             Visible = true,
             ContextMenuStrip = new Forms.ContextMenuStrip()
@@ -62,6 +64,13 @@ public partial class MainWindow : Window, IDisposable
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e) => await (_startupTask = InitializeAsync());
+    private void OpenHelp(object sender, RoutedEventArgs e) => SettingHelp.Show(this);
+    private void OpenLicenses(object sender, RoutedEventArgs e)
+    {
+        var window = OwnedWindows.OfType<LicensesWindow>().FirstOrDefault();
+        if (window is null) new LicensesWindow { Owner = this }.Show();
+        else window.Activate();
+    }
 
     private async Task InitializeAsync()
     {
@@ -72,6 +81,7 @@ public partial class MainWindow : Window, IDisposable
             foreach (var folder in settings.Folders) _folderRows.Add(new() { Path = folder.Path, Recursive = folder.Recursive, Priority = folder.Priority.ToString() });
             FolderGrid.ItemsSource = _folderRows;
             IntervalBox.Text = settings.MonitoringIntervalMinutes.ToString();
+            DataSourceNameBox.Text = settings.DataSourceName;
             UpdateExclusionBox.Text = settings.UpdateExclusionMinutes.ToString();
             ExcludeDotHiddenBox.IsChecked = settings.ExcludeDotHiddenEntries;
             GlobalIgnoreBox.Text = string.Join(Environment.NewLine, settings.GlobalIgnorePatterns);
@@ -204,6 +214,7 @@ public partial class MainWindow : Window, IDisposable
         var settings = _loadedSettings with
         {
             MonitoringIntervalMinutes = interval,
+            DataSourceName = DataSourceNameBox.Text.Trim(),
             UpdateExclusionMinutes = exclusion,
             ExcludeDotHiddenEntries = ExcludeDotHiddenBox.IsChecked == true,
             GlobalIgnorePatterns = GlobalIgnoreBox.Text.Split('\n').Select(line => line.TrimEnd('\r')).ToList(),

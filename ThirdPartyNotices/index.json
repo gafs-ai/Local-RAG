@@ -1,0 +1,557 @@
+[
+  {
+    "Name": "Local RAG",
+    "Version": "",
+    "License": "GPL-3.0-or-later",
+    "Scope": "本体",
+    "Description": "Copyright (C) 2026 GAFS Inc. GPL第3版またはそれ以降を選択できます。",
+    "Source": "https://github.com/gafs-ai/Local-RAG",
+    "Files": [
+      "LocalRAG-GPL-3.0.txt"
+    ]
+  },
+  {
+    "Name": "ConcurrentHashSet",
+    "Version": "1.3.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright 2021 Bar Arnon\nAuthors: Bar Arnon",
+    "Source": "https://github.com/i3arnon/ConcurrentHashSet.git",
+    "Files": [
+      "ConcurrentHashSet-1.3.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Dahomey.Cbor",
+    "Version": "1.26.3",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright © Dahomey Technologies 2020\nAuthors: Michaël Catanzariti",
+    "Source": "https://github.com/dahomey-technologies/Dahomey.Cbor.git",
+    "Files": [
+      "Dahomey.Cbor-1.26.3-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.AspNetCore.JsonPatch.SystemTextJson",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.AspNetCore.JsonPatch.SystemTextJson-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.CodeAnalysis.Analyzers",
+    "Version": "5.9.0-1.26328.17",
+    "License": "MIT",
+    "Scope": "ビルド時",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/roslyn",
+    "Files": [
+      "Microsoft.CodeAnalysis.Analyzers-5.9.0-1.26328.17-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.CodeAnalysis.Common",
+    "Version": "5.9.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/roslyn",
+    "Files": [
+      "Microsoft.CodeAnalysis.Common-5.9.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.CodeAnalysis.CSharp",
+    "Version": "5.9.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/roslyn",
+    "Files": [
+      "Microsoft.CodeAnalysis.CSharp-5.9.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.AI.Abstractions",
+    "Version": "10.11.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/extensions",
+    "Files": [
+      "Microsoft.Extensions.AI.Abstractions-10.11.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Caching.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Configuration-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Configuration.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Binder",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Configuration.Binder-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.DependencyInjection-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Diagnostics",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Diagnostics-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Diagnostics.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Diagnostics.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.FileProviders.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Hosting.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Http",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Http-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Logging-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Abstractions",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Logging.Abstractions-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Options",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Options-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+    "Version": "10.0.7",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Options.ConfigurationExtensions-10.0.7-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Primitives",
+    "Version": "10.0.13",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "Microsoft.Extensions.Primitives-10.0.13-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.IO.RecyclableMemoryStream",
+    "Version": "3.0.1",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream",
+    "Files": [
+      "Microsoft.IO.RecyclableMemoryStream-3.0.1-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Microsoft.Spatial",
+    "Version": "7.22.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://www.nuget.org/packages/Microsoft.Spatial/7.22.0",
+    "Files": [
+      "Microsoft.Spatial-7.22.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "ModelContextProtocol",
+    "Version": "2.3.0",
+    "License": "Apache-2.0",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk",
+    "Files": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "Name": "ModelContextProtocol.AspNetCore",
+    "Version": "2.3.0",
+    "License": "Apache-2.0",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk",
+    "Files": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "Name": "ModelContextProtocol.Core",
+    "Version": "2.3.0",
+    "License": "Apache-2.0",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
+    "Source": "https://github.com/modelcontextprotocol/csharp-sdk",
+    "Files": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "Name": "Semver",
+    "Version": "3.0.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright © 2013-2024 Jeff Walker, Max Hauser\nAuthors: Jeff Walker, Max Hauser",
+    "Source": "https://github.com/WalkerCodeRanger/semver",
+    "Files": [
+      "Semver-3.0.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "SurrealDb.Net",
+    "Version": "1.0.0",
+    "License": "Apache-2.0",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright © SurrealDB Ltd\nAuthors: surrealdb",
+    "Source": "https://github.com/surrealdb/surrealdb.net",
+    "Files": [
+      "SurrealDb.Net-1.0.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "System.Reactive",
+    "Version": "6.0.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright (c) .NET Foundation and Contributors.\nAuthors: .NET Foundation and Contributors",
+    "Source": "https://github.com/dotnet/reactive",
+    "Files": [
+      "System.Reactive-6.0.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "UTF.Unknown",
+    "Version": "2.7.0",
+    "License": "GPL-2.0-or-later（GPLv3を適用）",
+    "Scope": "同梱ライブラリ",
+    "Description": "\nAuthors: Julian Verdurmen, Rustam Sayfutdinov, Rudi Pettazzi, Shy Shalom",
+    "Source": "https://github.com/CharsetDetector/UTF-unknown",
+    "Files": [
+      "UTF.Unknown-2.7.0-GPL-3.0.txt",
+      "UTF.Unknown-2.7.0-NOTICE.txt",
+      "UTF.Unknown-2.7.0-README.md"
+    ]
+  },
+  {
+    "Name": "Websocket.Client",
+    "Version": "5.3.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright 2023 Mariusz Kotas. All rights reserved.\nAuthors: Mariusz Kotas",
+    "Source": "https://github.com/Marfusios/websocket-client",
+    "Files": [
+      "Websocket.Client-5.3.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "microsoft.netcore.app.runtime.win-x64",
+    "Version": "10.0.14",
+    "License": "MIT / 同梱第三者通知",
+    "Scope": "自己完結型配布に同梱",
+    "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "microsoft.netcore.app.runtime.win-x64-10.0.14-LICENSE.TXT",
+      "microsoft.netcore.app.runtime.win-x64-10.0.14-THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "Name": "microsoft.aspnetcore.app.runtime.win-x64",
+    "Version": "10.0.14",
+    "License": "MIT / 同梱第三者通知",
+    "Scope": "自己完結型配布に同梱",
+    "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "microsoft.aspnetcore.app.runtime.win-x64-10.0.14-LICENSE.txt",
+      "microsoft.aspnetcore.app.runtime.win-x64-10.0.14-THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "Name": "microsoft.windowsdesktop.app.runtime.win-x64",
+    "Version": "10.0.14",
+    "License": "MIT / 同梱第三者通知",
+    "Scope": "自己完結型配布に同梱",
+    "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "microsoft.windowsdesktop.app.runtime.win-x64-10.0.14-LICENSE"
+    ]
+  },
+  {
+    "Name": "WiX UI",
+    "Version": "5.0.2",
+    "License": "MS-RL",
+    "Scope": "インストーラに組み込み",
+    "Description": "アプリ本体とは別のライセンスです。MSIには対応ソースも同梱します。",
+    "Source": "https://github.com/wixtoolset/wix/tree/aa65968c419420d32e3e1b647aea0082f5ca5b78",
+    "Files": [
+      "WiX-5.0.2-LICENSE.txt",
+      "WiX-5.0.2-NOTICE.txt"
+    ]
+  },
+  {
+    "Name": "SurrealDB Server",
+    "Version": "3.3.5",
+    "License": "Business Source License 1.1",
+    "Scope": "初回に別途ダウンロード・別プロセス",
+    "Description": "SurrealDb.NetクライアントのApache-2.0とは異なります。追加利用許諾・制限・Change Dateは原文を確認してください。本体インストーラにDB実行ファイルは含めません。",
+    "Source": "https://github.com/surrealdb/surrealdb/blob/v3.3.5/LICENSE",
+    "Files": [
+      "SurrealDB-3.3.5-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Python",
+    "Version": "3.14.10",
+    "License": "PSF-2.0 / 同梱第三者通知",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "Pythonおよび構文解析用の実行環境。取得アーカイブにもライセンスを保持します。",
+    "Source": "https://www.python.org/downloads/release/python-31410/",
+    "Files": [
+      "Python-3.14.10-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter",
+    "Version": "0.26.0",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter/0.26.0/",
+    "Files": [
+      "tree-sitter-0.26.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-typescript",
+    "Version": "0.23.2",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-typescript/0.23.2/",
+    "Files": [
+      "tree-sitter-typescript-0.23.2-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-javascript",
+    "Version": "0.25.0",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-javascript/0.25.0/",
+    "Files": [
+      "tree-sitter-javascript-0.25.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-cpp",
+    "Version": "0.23.4",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-cpp/0.23.4/",
+    "Files": [
+      "tree-sitter-cpp-0.23.4-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-c",
+    "Version": "0.24.2",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-c/0.24.2/",
+    "Files": [
+      "tree-sitter-c-0.24.2-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-rust",
+    "Version": "0.24.2",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-rust/0.24.2/",
+    "Files": [
+      "tree-sitter-rust-0.24.2-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-java",
+    "Version": "0.23.5",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-java/0.23.5/",
+    "Files": [
+      "tree-sitter-java-0.23.5-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "tree-sitter-kotlin",
+    "Version": "1.1.0",
+    "License": "MIT",
+    "Scope": "必要時に別途ダウンロード",
+    "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
+    "Source": "https://pypi.org/project/tree-sitter-kotlin/1.1.0/",
+    "Files": [
+      "tree-sitter-kotlin-1.1.0-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Lemonade Server",
+    "Version": "",
+    "License": "Apache-2.0 / 同梱第三者通知",
+    "Scope": "利用者が別途インストール",
+    "Description": "本体には同梱しません。表示する原文は2026-11-06時点の上流LICENSEです。実際に利用する版・推論バックエンドの通知も確認してください。",
+    "Source": "https://github.com/lemonade-sdk/lemonade/blob/main/LICENSE",
+    "Files": [
+      "Lemonade-LICENSE.txt"
+    ]
+  },
+  {
+    "Name": "Gemma 3 / nomic / その他のモデル",
+    "Version": "",
+    "License": "モデル別の利用条件",
+    "Scope": "利用者が別途ダウンロード",
+    "Description": "モデルのライセンスはアプリ本体とは別です。Gemma 3はGemma利用規約、nomic v2原モデルはApache-2.0です。選択した量子化・変換配布物の条件も確認してください。",
+    "Source": "https://ai.google.dev/gemma/terms/",
+    "Files": [
+      "Models-NOTICE.txt"
+    ]
+  }
+]

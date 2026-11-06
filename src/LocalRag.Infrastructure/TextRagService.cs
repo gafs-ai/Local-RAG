@@ -7,7 +7,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
     TimeProvider? timeProvider = null) : ITextRetrieval, IDisposable
 {
     private readonly SemaphoreSlim _operations = new(1, 1);
-    private readonly string _configuration = settings.PipelineConfigurationId();
+    private readonly string _configuration = settings.DataSourceName == repository.DataSourceName ? settings.PipelineConfigurationId()
+        : throw new InvalidOperationException("設定とDB接続のデータソース名が一致しません。");
     private readonly TextRagSettings _retrievalPrompts = settings.RetrievalPrompts();
     private readonly DisclosureGate _gate = new(new TextConfidentialityClassifier(ai, settings.RetrievalPrompts()));
 
@@ -24,7 +25,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             var pipeline = new TextAiPipeline(ai, pipelineSettings);
             token.ThrowIfCancellationRequested();
 
-            var key = TextRagSettings.Hash(Path.GetFullPath(path).ToUpperInvariant());
+            var key = DocumentIdentity.Key(settings.DataSourceName, path);
             var previous = await repository.GetAsync(key, token).ConfigureAwait(false);
             TextDocumentState? state = previous;
             var stage = "read";
@@ -52,7 +53,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     ? previous with { Status = "processing", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, WithdrawalReason = null }
                     : new TextDocumentState
                     {
-                        Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash,
+                        Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash, DataSourceName = settings.DataSourceName,
                         ConfigurationId = _configuration, Original = snapshot.Text,
                         ProcessingNotices = [$"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}"]
                     };
@@ -155,7 +156,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 // Persist first-read failures too, without manufacturing content or a source hash.
                 else await repository.SaveAsync(new TextDocumentState
                 {
-                    Key = key, DocumentId = Guid.NewGuid(), Path = path, RevisionId = TextRagSettings.Hash(key + _configuration + "unreadable"),
+                    Key = key, DocumentId = Guid.NewGuid(), Path = path, DataSourceName = settings.DataSourceName, RevisionId = TextRagSettings.Hash(key + _configuration + "unreadable"),
                     ConfigurationId = _configuration, Status = "failed", ErrorCode = ex.GetType().Name,
                     ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex)
                 }, token).ConfigureAwait(false);

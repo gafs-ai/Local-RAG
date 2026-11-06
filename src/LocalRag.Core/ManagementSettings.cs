@@ -50,9 +50,14 @@ public sealed record RetrievalPipelineSettings
     public bool PatternsEnabled { get; init; } = true;
     public bool LlmEnabled { get; init; } = false;
     public List<string> Patterns { get; init; } = ["社外秘", "極秘", "CONFIDENTIAL"];
+    public bool BoundaryPatternsEnabled { get; init; } = false;
+    public int LeadingLines { get; init; } = 5;
+    public int TrailingLines { get; init; } = 0;
+    public List<string> BoundaryPatterns { get; init; } = ["極秘", "丸秘", "マル秘", "TOP SECRET", "SECRET"];
     public ConfidentialityPolicy Policy() => new()
     {
-        Enabled = ConfidentialityEnabled, PatternsEnabled = PatternsEnabled, LlmEnabled = LlmEnabled, Patterns = [.. Patterns]
+        Enabled = ConfidentialityEnabled, PatternsEnabled = PatternsEnabled, LlmEnabled = LlmEnabled, Patterns = Patterns,
+        BoundaryPatternsEnabled = BoundaryPatternsEnabled, LeadingLines = LeadingLines, TrailingLines = TrailingLines, BoundaryPatterns = BoundaryPatterns
     };
 }
 
@@ -111,7 +116,7 @@ public sealed record ManagementSettings
 
     public static ManagementSettings CreateDefault()
     {
-        var defaults = FromLegacy(new(), new());
+        var defaults = FromLegacy(new(), ConfidentialityPolicy.CreateDefault());
         return defaults with { Version = 2, Routes = [
             .. SourceLanguages.All.Select(l => new TextRoute { Name = l.Name + "用", Extensions = [.. l.Extensions], SourceMode = l.Mode,
                 ClassifyEnabled = false, DefaultCategoryId = "source_code" }),
@@ -236,11 +241,7 @@ public sealed record ManagementSettings
             errors.Add("構造検索の重みは自身を0より大きく1以下、親・子を0～1で指定してください。");
         if (!HasPrompt(Retrieval.ConfidentialityPromptId, PromptPurpose.Confidentiality))
             errors.Add("取得パイプラインのプロンプトが見つからないか用途が違います。");
-        if (Retrieval.Patterns is null || Retrieval.Patterns.Count > 100 || Retrieval.Patterns.Any(p => string.IsNullOrWhiteSpace(p) || p.Length > 2000))
-            errors.Add("秘匿パターンは空行を除き100件以内、各2000文字以内で指定してください。");
-        else foreach (var pattern in Retrieval.Patterns)
-            try { _ = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); }
-            catch (ArgumentException) { errors.Add("秘匿パターンに正しくない正規表現があります。"); break; }
+        errors.AddRange(Retrieval.Policy().Validate());
         return errors;
     }
     public static bool ValidExtension(string? value) => value is not null && Regex.IsMatch(value, "^\\.[a-z0-9][a-z0-9_+-]{0,19}$");
@@ -282,7 +283,9 @@ public sealed record ManagementSettings
         var retrieval = new RetrievalPipelineSettings
         {
             ConfidentialityPromptId = Import(legacy.ConfidentialityPrompt, PromptPurpose.Confidentiality, "秘匿判定"),
-            ConfidentialityEnabled = policy.Enabled, PatternsEnabled = policy.PatternsEnabled, LlmEnabled = policy.LlmEnabled, Patterns = [.. policy.Patterns]
+            ConfidentialityEnabled = policy.Enabled, PatternsEnabled = policy.PatternsEnabled, LlmEnabled = policy.LlmEnabled, Patterns = [.. policy.Patterns],
+            BoundaryPatternsEnabled = policy.BoundaryPatternsEnabled, LeadingLines = policy.LeadingLines, TrailingLines = policy.TrailingLines,
+            BoundaryPatterns = [.. policy.BoundaryPatterns]
         };
         return new() { UserPrompts = prompts, Categories = legacy.Categories.Select(c => new ManagedCategory(c.Id,
             string.IsNullOrWhiteSpace(c.Description) ? c.Id : c.Description[..Math.Min(100, c.Description.Length)], c.Description, c.Excluded)).ToList(), DefaultTextRoute = route, Retrieval = retrieval };
