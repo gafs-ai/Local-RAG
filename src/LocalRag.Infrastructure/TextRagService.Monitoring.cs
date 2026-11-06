@@ -6,7 +6,38 @@ namespace LocalRag.Infrastructure;
 public sealed partial class TextRagService
 {
     private readonly SemaphoreSlim _scans = new(1, 1);
+    private readonly SemaphoreSlim _discoveries = new(1, 1);
+    private readonly object _queueSync = new();
+    private FileWorkQueue? _activeQueue;
+    private Action? _wakeQueue;
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
+
+    /// <summary>Refresh waiting files without waiting for or cancelling an active AI operation.</summary>
+    public async Task<bool> RefreshFileListAsync(CancellationToken token = default)
+    {
+        await _discoveries.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            FileWorkQueue? queue;
+            lock (_queueSync) queue = _activeQueue;
+            if (queue is null) return false;
+            var discovery = await DiscoverAsync(token).ConfigureAwait(false);
+            lock (_queueSync)
+            {
+                if (!ReferenceEquals(queue, _activeQueue)) return false;
+                queue.Replace(discovery);
+                ShowQueue(queue);
+                _wakeQueue?.Invoke();
+            }
+            return true;
+        }
+        finally { _discoveries.Release(); }
+    }
+
+    private void SetActiveQueue(FileWorkQueue? queue, Action? wake = null)
+    {
+        lock (_queueSync) { _activeQueue = queue; _wakeQueue = wake; }
+    }
 
     private async Task<FileDiscovery> DiscoverAsync(CancellationToken token)
     {
@@ -22,22 +53,44 @@ public sealed partial class TextRagService
         try
         {
             RequireModels();
-            var discovery = await DiscoverAsync(token).ConfigureAwait(false);
-            var result = await ReconcileAsync(discovery, token).ConfigureAwait(false);
-            var queue = new FileWorkQueue(); queue.Replace(discovery); ShowQueue(queue);
-            while (queue.Take() is { } file)
+            var queue = new FileWorkQueue();
+            SetActiveQueue(queue);
+            await RefreshFileListAsync(token).ConfigureAwait(false);
+            var result = new TextCycleResult(0, 0, 0, 0, 0, 0, 0);
+            while (true)
             {
-                ShowQueue(queue);
-                try { result = Add(result, await ProcessFileAsync(file, progress, token).ConfigureAwait(false)); }
-                finally { queue.Complete(); ShowQueue(queue); }
+                var discovery = queue.TakeReconciliation();
+                if (discovery is not null) result = Add(result, await ReconcileAsync(discovery, token).ConfigureAwait(false));
+                await _operations.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    FileWorkItem? file;
+                    lock (_queueSync)
+                    {
+                        // A refresh may have arrived while reconciliation waited for the AI lane.
+                        if (queue.HasReconciliation) continue;
+                        file = queue.Take();
+                        if (file is null) { _activeQueue = null; break; }
+                    }
+                    ShowQueue(queue);
+                    var remember = false;
+                    try
+                    {
+                        var processed = await ProcessFileAsync(file, progress, token, laneHeld: true).ConfigureAwait(false);
+                        remember = processed.Failed == 0 && processed.Deferred == 0;
+                        result = Add(result, processed);
+                    }
+                    finally { queue.Complete(remember); ShowQueue(queue); }
+                }
+                finally { _operations.Release(); }
             }
             return result;
         }
-        finally { ChangeActivity(null, "待機中", []); _scans.Release(); }
+        finally { SetActiveQueue(null); ChangeActivity(null, "待機中", []); _scans.Release(); }
     }
 
     public async Task RunMonitoringAsync(PersistentMonitor monitor, IProgress<string>? progress,
-        Func<TextCycleResult, Task> onResult, Func<Exception, Task> onFailure, Func<DateTimeOffset, Task> onWaiting, CancellationToken token)
+        Func<TextCycleResult, Task> onResult, Func<Exception, Task> onFailure, Func<DateTimeOffset, Task> onWaiting, CancellationToken token, bool immediate = false)
     {
         await _scans.WaitAsync(token).ConfigureAwait(false);
         using var stopping = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -46,6 +99,7 @@ public sealed partial class TextRagService
             RequireModels();
             var queue = new FileWorkQueue();
             var wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
+            SetActiveQueue(queue, () => wake.Writer.TryWrite(true));
             async Task Work()
             {
                 try
@@ -86,18 +140,15 @@ public sealed partial class TextRagService
             var checks = monitor.RunAsync(async ct =>
             {
                 // Filesystem discovery never waits for the AI/database operation lane.
-                var discovery = await DiscoverAsync(ct).ConfigureAwait(false);
-                queue.Replace(discovery);
-                ShowQueue(queue);
-                wake.Writer.TryWrite(true);
-                progress?.Report($"チェック完了：処理待ち {queue.Count}、更新除外 {discovery.Deferred}、未探索フォルダ {discovery.Scan.FailedRoots}。実行中のファイルは継続します。");
-            }, TimeSpan.FromMinutes(settings.MonitoringIntervalMinutes), onFailure, onWaiting, stopping.Token);
+                await RefreshFileListAsync(ct).ConfigureAwait(false);
+                progress?.Report($"チェック完了：処理待ち {queue.Count}。実行中のファイルは継続します。");
+            }, TimeSpan.FromMinutes(settings.MonitoringIntervalMinutes), onFailure, onWaiting, stopping.Token, immediate);
             await Task.WhenAny(worker, checks).ConfigureAwait(false);
             stopping.Cancel();
             try { await Task.WhenAll(worker, checks).ConfigureAwait(false); }
             catch { if (checks.IsFaulted) await checks.ConfigureAwait(false); throw; }
         }
-        finally { ChangeActivity(null, "待機中", []); _scans.Release(); }
+        finally { SetActiveQueue(null); ChangeActivity(null, "待機中", []); _scans.Release(); }
     }
 
     private async Task<TextCycleResult> ReconcileAsync(FileDiscovery discovery, CancellationToken token)

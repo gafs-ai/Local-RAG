@@ -15,7 +15,7 @@ public sealed class PersistentMonitor(
     private int _cycleRunning;
 
     public async Task RunAsync(Func<CancellationToken, Task> cycle, TimeSpan interval,
-        Func<Exception, Task> onFailure, Func<DateTimeOffset, Task> onWaiting, CancellationToken token)
+        Func<Exception, Task> onFailure, Func<DateTimeOffset, Task> onWaiting, CancellationToken token, bool immediate = false)
     {
         if (interval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(interval));
         MonitoringCheckpoint? checkpoint;
@@ -27,7 +27,7 @@ public sealed class PersistentMonitor(
         try
         {
             var now = _clock.GetUtcNow();
-            var due = now + (checkpoint?.Remaining(scope, now, interval) ?? TimeSpan.Zero);
+            var due = immediate ? now : now + (checkpoint?.Remaining(scope, now, interval) ?? TimeSpan.Zero);
             while (true)
             {
                 token.ThrowIfCancellationRequested();

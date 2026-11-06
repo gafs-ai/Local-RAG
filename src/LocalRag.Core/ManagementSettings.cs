@@ -20,7 +20,7 @@ public sealed record TextRoute
     public string Extension { get; init; } = "*";
     public bool ClassifyEnabled { get; init; } = true;
     public string ClassifyPromptId { get; init; } = "system.classification";
-    public List<string> EnabledCategoryIds { get; init; } = ["general", "specification", "procedure", "meeting", "excluded"];
+    public List<string> EnabledCategoryIds { get; init; } = ["general", "specification", "procedure", "meeting", "source_code"];
     public string DefaultCategoryId { get; init; } = "general";
     public string FormatPromptId { get; init; } = "system.format";
     public string ChunkPromptId { get; init; } = "system.chunk";
@@ -106,7 +106,7 @@ public sealed record ManagementSettings
         var defaults = FromLegacy(new(), new());
         return defaults with { Version = 2, Routes = [
             .. SourceLanguages.All.Select(l => new TextRoute { Name = l.Name + "用", Extensions = [.. l.Extensions], SourceMode = l.Mode,
-                ClassifyEnabled = false, DefaultCategoryId = "specification" }),
+                ClassifyEnabled = false, DefaultCategoryId = "source_code" }),
             new() { Name = "Markdown用", Extensions = [".md", ".markdown"], SourceMode = SourceCodeMode.Text,
                 ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure, FormatPromptId = "",
                 MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000 },

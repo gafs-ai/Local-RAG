@@ -18,19 +18,29 @@ public partial class MainWindow
     private Task _monitorTask = Task.CompletedTask;
     private Task _ragTask = Task.CompletedTask;
     private bool _ragChanging;
+    private bool _monitoringEnabled;
+    private bool _manualScanRunning;
+    private Task _scanTask = Task.CompletedTask;
+    private Task _refreshTask = Task.CompletedTask;
     private readonly SemaphoreSlim _ragConfiguration = new(1, 1);
 
-    private async Task ReconfigureRagAsync(bool refreshAi = false)
+    private async Task ReconfigureRagAsync(bool refreshAi = false, bool? startMonitoring = null, bool reconnectDatabase = false)
     {
         await _ragConfiguration.WaitAsync();
+        var resumeMonitoring = startMonitoring ?? _monitoringEnabled;
         _ragChanging = true;
-        RagPanel.IsEnabled = false;
+        RagPanel.IsEnabled = SearchPanel.IsEnabled = false;
         SearchList.ItemsSource = null;
         SearchOutput.Clear();
         SearchStatus.Text = "";
         try
         {
             await StopRagAsync();
+            if (reconnectDatabase && !_shuttingDown)
+            {
+                await _server.ShutdownAsync(_loadedSettings.Database.StopOnExit);
+                await (_databaseTask = StartServerAsync());
+            }
             if (refreshAi && !_shuttingDown) await (_aiTask = RefreshModelsAsync(_loadedSettings.Ai));
             SearchList.ItemsSource = null;
             SearchOutput.Clear();
@@ -39,7 +49,7 @@ public partial class MainWindow
             if (_server.Connection is null || _loadedSettings.Folders.Count == 0 ||
                 string.IsNullOrWhiteSpace(_loadedSettings.Ai.ChatModel) || string.IsNullOrWhiteSpace(_loadedSettings.Ai.EmbeddingModel))
             {
-                RagStatus.Text = "DB接続とフォルダ・チャット・Embeddingモデルの設定を確認し、保存してください。";
+                _operationError = "DB接続とフォルダ・言語モデル・Embeddingモデルの設定を確認してください。";
                 return;
             }
             _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token);
@@ -50,11 +60,8 @@ public partial class MainWindow
             _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));
             ShowDocuments(await _repository.DocumentStatusesAsync(_lifetime.Token));
             await RefreshHistoryAsync(_rag);
-            var policy = _loadedSettings.DisclosurePolicy();
-            PolicyStatus.Text = policy.Enabled
-                ? $"機密検査：パターン {(policy.PatternsEnabled ? "ON" : "OFF")} ／ ローカルLLM（試験的）{(policy.LlmEnabled ? "ON" : "OFF")}" : "機密検査は無効です。未検査の本文・出典を表示します。";
-            RagPanel.IsEnabled = true;
-            RagStatus.Text = "取り込みと検索を利用できます。";
+            RagPanel.IsEnabled = SearchPanel.IsEnabled = true;
+            _operationError = null;
             McpStatus.Text = "MCPは無効です。";
             if (_loadedSettings.Mcp.Enabled)
             {
@@ -67,56 +74,58 @@ public partial class MainWindow
                 catch (OperationCanceledException) { throw; }
                 catch (Exception) { McpStatus.Text = "MCPを開始できません。ポートの競合・設定を確認し、設定を保存して再試行してください。"; }
             }
-            if (_loadedSettings.AutomaticMonitoring) StartMonitoring();
+            if (resumeMonitoring) StartMonitoring(immediate: !_starting);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { RagStatus.Text = SafeMessage(ex); }
-        finally { _ragChanging = false; _ragConfiguration.Release(); }
+        catch (Exception ex) { _operationError = SafeMessage(ex); }
+        finally { _ragChanging = false; _ragConfiguration.Release(); UpdateApplicationStatus(); }
     }
 
-    private void StartMonitoring()
+    private void StartMonitoring(bool immediate = true)
     {
         if (_rag is null || !_monitorTask.IsCompleted) return;
+        _monitoringEnabled = true;
+        _operationError = null;
+        PauseButton.Content = "監視停止";
         _monitorCancellation?.Dispose();
         _monitorCancellation = CancellationTokenSource.CreateLinkedTokenSource(_ragCancellation!.Token);
-        _monitorTask = MonitorAsync(_monitorCancellation.Token);
+        _monitorTask = MonitorAsync(_monitorCancellation.Token, immediate);
+        UpdateApplicationStatus();
     }
 
-    private async Task MonitorAsync(CancellationToken token)
+    private async Task MonitorAsync(CancellationToken token, bool immediate)
     {
-        ScanButton.IsEnabled = false;
         try
         {
-            var progress = new Progress<string>(message => Dispatcher.Invoke(() => RagStatus.Text = message));
-            await _rag!.RunMonitoringAsync(_persistentMonitor!, progress, async result =>
+            await _rag!.RunMonitoringAsync(_persistentMonitor!, null, async result =>
             {
                 var documents = await _repository!.DocumentStatusesAsync(token).ConfigureAwait(false);
                 await Dispatcher.InvokeAsync(() =>
                 {
                     ShowDocuments(documents);
-                    RagStatus.Text = $"直近の処理：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、索引対象外 {result.Deleted}、更新除外 {result.Deferred}。定期チェックと待ち行列の処理を継続します。";
+                    _operationError = null;
+                    UpdateApplicationStatus();
                 });
             }, ex => Dispatcher.InvokeAsync(() =>
             {
-                RagStatus.Text = $"チェックを保留しました（{ex.GetType().Name}）。次の定期チェックで再試行します。";
+                _operationError = $"ファイル確認に失敗しました（{ex.GetType().Name}）。次回に再試行します。";
+                UpdateApplicationStatus();
             }).Task, due => Dispatcher.InvokeAsync(() =>
             {
-                RagStatus.Text = $"次回チェック予定：{due.ToLocalTime():yyyy/MM/dd HH:mm:ss}。処理待ちのファイルは順次取り込みます。";
-            }).Task, token);
+                UpdateApplicationStatus();
+            }).Task, token, immediate);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception ex) { RagStatus.Text = $"自動監視を停止しました（{ex.GetType().Name}）。DB接続と設定を確認し、設定を保存して再開してください。"; }
-        finally { ScanButton.IsEnabled = !_shuttingDown; }
+        catch (Exception ex) { _operationError = $"監視を停止しました（{ex.GetType().Name}）。接続と設定を確認してください。"; }
+        finally { _monitoringEnabled = false; PauseButton.Content = "監視再開"; UpdateApplicationStatus(); }
     }
 
     private async Task RunCycleAsync(CancellationToken token)
     {
-        var progress = new Progress<string>(message => Dispatcher.Invoke(() => RagStatus.Text = message));
-        var result = await _rag!.ScanAsync(progress, token).ConfigureAwait(false);
+        await _rag!.ScanAsync(null, token).ConfigureAwait(false);
         var documents = await _repository!.DocumentStatusesAsync(token).ConfigureAwait(false);
         await Dispatcher.InvokeAsync(() =>
         {
-            RagStatus.Text = $"完了：更新 {result.Indexed}、対象外 {result.Excluded}、変更なし {result.Unchanged}、保留 {result.Failed}、削除 {result.Deleted}、更新除外 {result.Deferred}、未探索フォルダ {result.InaccessibleRoots}。";
             ShowDocuments(documents);
         });
     }
@@ -133,15 +142,55 @@ public partial class MainWindow
     private async void PauseMonitoring(object sender, RoutedEventArgs e)
     {
         if (_ragChanging || _shuttingDown) return;
-        _monitorCancellation?.Cancel();
-        await _monitorTask;
-        RagStatus.Text = "自動監視を一時停止しました。設定を保存すると自動監視設定に従って再開します。";
+        PauseButton.IsEnabled = false;
+        try
+        {
+            if (_monitoringEnabled)
+            {
+                _monitoringEnabled = false;
+                _monitorCancellation?.Cancel();
+                await _monitorTask;
+            }
+            else
+            {
+                await _scanTask;
+                if (!_shuttingDown && !_ragChanging) StartMonitoring();
+            }
+        }
+        finally { PauseButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
     private async void ScanNow(object sender, RoutedEventArgs e)
     {
-        if (_rag is null || _ragChanging || _shuttingDown || !_ragTask.IsCompleted || !_monitorTask.IsCompleted) return;
-        await (_ragTask = RunUserActionAsync(() => _persistentMonitor!.RunCycleAsync(RunCycleAsync, _ragCancellation!.Token)));
+        if (_rag is null || _ragChanging || _shuttingDown || !_refreshTask.IsCompleted) return;
+        await (_refreshTask = RefreshOrScanAsync());
+    }
+
+    private async Task RefreshOrScanAsync()
+    {
+        ScanButton.IsEnabled = false;
+        try
+        {
+            if (!await _rag!.RefreshFileListAsync(_ragCancellation!.Token))
+            {
+                await _scanTask;
+                if (!_shuttingDown && !_ragChanging) _scanTask = RunManualScanAsync();
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { _operationError = SafeMessage(ex); }
+        finally { ScanButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
+    }
+
+    private async Task RunManualScanAsync()
+    {
+        _manualScanRunning = true;
+        _operationError = null;
+        UpdateApplicationStatus();
+        try { await _persistentMonitor!.RunCycleAsync(RunCycleAsync, _ragCancellation!.Token); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { _operationError = SafeMessage(ex); }
+        finally { _manualScanRunning = false; UpdateApplicationStatus(); }
     }
 
     private async void SearchText(object sender, RoutedEventArgs e)
@@ -181,14 +230,13 @@ public partial class MainWindow
 
     private async Task RunUserActionAsync(Func<Task> action)
     {
-        SearchButton.IsEnabled = FetchButton.IsEnabled = ScanButton.IsEnabled = false;
+        SearchButton.IsEnabled = FetchButton.IsEnabled = false;
         try { await action(); }
         catch (OperationCanceledException) { SearchStatus.Text = "処理を中断しました。"; }
         catch (Exception ex) { SearchStatus.Text = SafeMessage(ex); }
         finally
         {
             SearchButton.IsEnabled = FetchButton.IsEnabled = !_shuttingDown;
-            ScanButton.IsEnabled = !_shuttingDown && _monitorTask.IsCompleted;
         }
     }
 
@@ -198,7 +246,10 @@ public partial class MainWindow
         _monitorCancellation?.Cancel();
         if (_mcp is not null) { await _mcp.DisposeAsync(); _mcp = null; }
         McpStatus.Text = "MCPは停止しています。";
-        await Task.WhenAll(_monitorTask, _ragTask);
+        await Task.WhenAll(_monitorTask, _ragTask, _refreshTask, _scanTask);
+        _monitoringEnabled = false;
+        _currentFile = null;
+        PauseButton.Content = "監視再開";
         _rag?.Dispose(); _rag = null;
         _persistentMonitor = null;
         _ragAi?.Dispose(); _ragAi = null;

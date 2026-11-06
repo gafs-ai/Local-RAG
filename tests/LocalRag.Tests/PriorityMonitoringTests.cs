@@ -5,6 +5,41 @@ namespace LocalRag.Tests;
 
 public class PriorityMonitoringTests
 {
+    [ServerFact]
+    public async Task ManualRefreshDuringOneShotScanAddsHighPriorityFileWithoutInterruptingActiveFile()
+    {
+        await using var fixture = await ServerFixture.StartAsync();
+        var root = fixture.Root + "-input";
+        var high = Path.Combine(root, "high"); Directory.CreateDirectory(high);
+        var now = DateTime.UtcNow;
+        async Task Make(string path, string text, int age)
+        { await File.WriteAllTextAsync(path, text); File.SetLastWriteTimeUtc(path, now.AddMinutes(-age)); }
+        await Make(Path.Combine(root, "active.txt"), "active", 20);
+        await Make(Path.Combine(root, "low.txt"), "low", 30);
+        var settings = new AppSettings { Folders = [new(root, Priority: 1), new(high, Priority: 99)],
+            Ai = new() { ChatModel = "test", EmbeddingModel = "test" },
+            TextPipeline = new() { ClassifyEnabled = false, FormatEnabled = false } };
+        await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
+        var ai = new BlockingAi();
+        using var service = new TextRagService(repo, ai, settings, fixture.Root);
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Assert.False(await service.RefreshFileListAsync(stop.Token));
+        var run = service.ScanAsync(token: stop.Token);
+        try
+        {
+            await ai.Started.Task.WaitAsync(stop.Token);
+            await Make(Path.Combine(high, "high.txt"), "high", 60);
+            Assert.True(await service.RefreshFileListAsync(stop.Token).WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Single(ai.Inputs);
+            Assert.False(run.IsCompleted);
+        }
+        finally { ai.Finish.TrySetResult(); }
+        var result = await run;
+        Assert.Equal(3, result.Indexed);
+        Assert.Equal(["active", "high", "low"], ai.Inputs);
+        Assert.False(await service.RefreshFileListAsync(stop.Token));
+    }
+
     [Fact]
     public void CompletedUnchangedFilesDoNotReturnAheadOfWaitingWorkButChangesAndFailuresDo()
     {
@@ -145,6 +180,9 @@ public class PriorityMonitoringTests
         await ai.Started.Task.WaitAsync(stop.Token);
         await Make(Path.Combine(high, "high.txt"), "high", 60);
         await Make(mutable, "mutable updated", 0);
+        Assert.True(await service.RefreshFileListAsync(stop.Token).WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.False(ai.Finish.Task.IsCompleted);
+        Assert.Single(ai.Inputs);
         tick.SetResult();
         await secondCheck.Task.WaitAsync(stop.Token); // Check completed while the first embedding is still blocked.
         Assert.False(ai.Finish.Task.IsCompleted);

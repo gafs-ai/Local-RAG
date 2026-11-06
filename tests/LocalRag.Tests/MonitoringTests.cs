@@ -12,6 +12,21 @@ public class MonitoringTests
     private static readonly TimeSpan Interval = TimeSpan.FromMinutes(15);
 
     [Fact]
+    public async Task ExplicitResumeChecksImmediatelyDespiteRecentCheckpoint()
+    {
+        var clock = new Clock();
+        var store = new Store { State = new(Scope, false, Start, LastStartedUtc: Start) };
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var monitor = new PersistentMonitor(store, Scope, clock, (_, _) => throw new Exception("Must not wait after applying settings"));
+        var calls = 0;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => monitor.RunAsync(token =>
+        {
+            calls++; stop.Cancel(); return Task.FromCanceled(token);
+        }, Interval, ex => Task.FromException(ex), _ => Task.CompletedTask, stop.Token, immediate: true));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
     public void LegacyCompletionCheckpointTriggersOneImmediateCheck()
     {
         var legacy = new MonitoringCheckpoint(Scope, false, Start, SchemaVersion: 1);

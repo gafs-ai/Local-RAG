@@ -7,7 +7,7 @@
   <StackPanel Margin="0,0,0,16"><TextBlock Text="処理設定" FontSize="26" FontWeight="SemiBold" Foreground="#17334B"/>
    <TextBlock Text="編集内容は「保存して適用」でまとめて反映します。取り込み設定の変更後は再索引が必要です。" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
   <TabControl x:Name="ManagerTabs" Grid.Row="1" Padding="16" SelectionChanged="TabChanged">
-   <TabItem Header="プロンプトマネージャー">
+   <TabItem Header="プロンプト管理">
     <Grid Margin="0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="260"/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
      <DockPanel><StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><WrapPanel>
       <Button Content="白紙から作成" Click="NewPrompt"/><Button Content="コピー" Click="CopyPrompt"/></WrapPanel>
@@ -22,7 +22,7 @@
      </Grid>
     </Grid>
    </TabItem>
-   <TabItem Header="カテゴリマネージャー">
+   <TabItem Header="カテゴリ管理">
     <DockPanel Margin="0,8"><StackPanel DockPanel.Dock="Top"><TextBlock Text="カテゴリ名を入力します。説明は空欄でも構いません。「検索対象外」はそのカテゴリの文書を索引に公開しません。" TextWrapping="Wrap" Margin="0,0,0,12"/>
      <WrapPanel Margin="0,0,0,12"><Button Content="カテゴリを追加" Click="AddCategory"/><Button Content="選択したカテゴリを削除" Click="DeleteCategory"/></WrapPanel></StackPanel>
      <DataGrid x:Name="CategoryGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" AutomationProperties.Name="カテゴリ一覧">
@@ -32,7 +32,7 @@
       </DataGrid.Columns></DataGrid>
     </DockPanel>
    </TabItem>
-   <TabItem Header="テキストパイプライン">
+   <TabItem Header="テキスト処理">
     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,8">
      <TextBlock Text="上から順に確認し、拡張子が一致した最初の設定を適用します。共通設定にも .txt などの拡張子を指定し、下へ配置してください。一致する設定がないファイルは対象外です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
@@ -95,7 +95,7 @@
      </UniformGrid></Expander>
     </StackPanel></ScrollViewer>
    </TabItem>
-   <TabItem Header="取得パイプライン">
+   <TabItem Header="取得処理">
     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,8">
      <TextBlock Text="検索と全文取得に共通する設定" FontSize="20" FontWeight="SemiBold"/>
      <TextBlock Text="メディアやカテゴリで分岐せず、管理画面とMCPの取得に同じ秘匿設定を適用します。" TextWrapping="Wrap" Margin="0,8,0,18"/>

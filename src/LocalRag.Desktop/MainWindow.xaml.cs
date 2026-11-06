@@ -20,6 +20,7 @@ public partial class MainWindow : Window, IDisposable
     private readonly string _dataDirectory;
     private readonly SettingsStore _settingsStore;
     private readonly Forms.NotifyIcon _tray;
+    private readonly System.Drawing.Icon _trayIcon;
     private CancellationTokenSource _lifetime = new();
     private readonly SurrealServerManager _server;
     private readonly LemonadeServerManager _lemonade = new();
@@ -30,6 +31,12 @@ public partial class MainWindow : Window, IDisposable
     private bool _shuttingDown;
     private bool _disposed;
     private bool _settingsLoaded;
+    private bool _starting = true;
+    private bool _dbFailed;
+    private bool _aiFailed;
+    private string? _operationError;
+    private string? _currentFile;
+    private int _localDbPort;
     private AppSettings _loadedSettings = new();
 
     public MainWindow(string dataDirectory)
@@ -38,11 +45,14 @@ public partial class MainWindow : Window, IDisposable
         _dataDirectory = dataDirectory;
         _settingsStore = new SettingsStore(dataDirectory);
         _server = new SurrealServerManager(dataDirectory);
-        DataPathText.Text = dataDirectory;
+        using (var stream = System.Windows.Application.GetResourceStream(
+                   new Uri("pack://application:,,,/Assets/local-rag.ico")).Stream)
+        using (var icon = new System.Drawing.Icon(stream, System.Drawing.SystemIcons.Application.Size))
+            _trayIcon = (System.Drawing.Icon)icon.Clone();
         _tray = new Forms.NotifyIcon
         {
             Text = "Local RAG — 開発版",
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = _trayIcon,
             Visible = true,
             ContextMenuStrip = new Forms.ContextMenuStrip()
         };
@@ -72,35 +82,69 @@ public partial class MainWindow : Window, IDisposable
             AiExecutableBox.Text = settings.Ai.ServerExecutablePath;
             ChatModelBox.Text = settings.Ai.ChatModel;
             EmbeddingModelBox.Text = settings.Ai.EmbeddingModel;
-            SpeechModelBox.Text = settings.Ai.SpeechModel;
+            _localDbPort = settings.Database.Port;
             DbPortBox.Text = settings.Database.Port.ToString();
+            DbEndpointBox.Text = settings.Database.ExternalEndpoint;
+            AutoStartDbBox.IsChecked = settings.Database.AutoStartServer;
+            await LoadExternalCredentialsAsync();
             StopDbBox.IsChecked = settings.Database.StopOnExit;
             McpEnabledBox.IsChecked = settings.Mcp.Enabled;
             McpPortBox.Text = settings.Mcp.Port.ToString();
             _settingsLoaded = true;
-            SettingsStatus.Text = "設定はローカルに保存します。一致パターン検査は既定ON、LLM機密判定は試験的な機能で既定OFFです。";
+            SettingsStatus.Text = "";
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             SettingsPanel.IsEnabled = false;
+            SaveButton.IsEnabled = false;
             AiButton.IsEnabled = false;
             AiStatus.Text = "設定を読み込めません。元の設定を上書きしないため編集を停止しました。";
             SettingsStatus.Text = SafeMessage(ex);
+            _operationError = "設定を読み込めません。";
         }
         if (_settingsLoaded && !_shuttingDown)
             await Task.WhenAll(_databaseTask = StartServerAsync(), _aiTask = RefreshModelsAsync(_loadedSettings.Ai));
-        if (_settingsLoaded && !_shuttingDown) await ReconfigureRagAsync();
+        if (_settingsLoaded && !_shuttingDown) await ReconfigureRagAsync(startMonitoring: _loadedSettings.AutomaticMonitoring);
+        _starting = false;
+        UpdateApplicationStatus();
     }
 
-    private void BrowseAiExecutable(object sender, RoutedEventArgs e)
+    private void RemoveFolder(object sender, RoutedEventArgs e)
     {
-        if (!_settingsLoaded || _shuttingDown) return;
-        var picker = new Microsoft.Win32.OpenFileDialog
-        {
-            Title = "Lemonadeサーバーの実行ファイルを選択", Filter = "実行ファイル (*.exe)|*.exe", CheckFileExists = true
-        };
-        if (picker.ShowDialog(this) == true) AiExecutableBox.Text = picker.FileName;
+        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted) return;
+        if (((FrameworkElement)sender).DataContext is not FolderDraft row) return;
+        FolderGrid.CancelEdit();
+        FolderGrid.CancelEdit(System.Windows.Controls.DataGridEditingUnit.Row);
+        _folderRows.Remove(row);
+        SettingsStatus.Text = "フォルダを一覧から削除しました。「設定を保存」で反映します。";
+    }
+
+    private async void DbEndpointChanged(object sender, RoutedEventArgs e)
+    {
+        try { await LoadExternalCredentialsAsync(); }
+        catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
+    }
+
+    private string? _credentialsEndpoint;
+    private async Task LoadExternalCredentialsAsync()
+    {
+        var endpoint = DbEndpointBox.Text.Trim();
+        if (_credentialsEndpoint == endpoint) return;
+        DbUserBox.Clear(); DbPasswordBox.Clear();
+        _credentialsEndpoint = endpoint;
+        var settings = new DatabaseSettings { ExternalEndpoint = endpoint };
+        if (!settings.UsesExternalEndpoint || settings.Validate().Count > 0) return;
+        var credentials = await new ServerCredentialStore(_dataDirectory, settings.Endpoint).LoadAsync(_lifetime.Token);
+        if (DbEndpointBox.Text.Trim() == endpoint) DbUserBox.Text = credentials?.Username ?? "";
+    }
+
+    private void UpdateApplicationStatus()
+    {
+        ApplicationStatus.Text = _shuttingDown ? "終了処理中" : _dbFailed ? "DBへの接続に失敗しました" :
+            _aiFailed ? "Lemonade Serverへの接続に失敗しました" : _starting ? "起動中" :
+            _operationError ?? (_currentFile is not null ? "ファイル処理中" :
+                _manualScanRunning ? "ファイル確認中" : _monitoringEnabled ? "監視中" : "停止中");
     }
 
     private void BrowseFolders(object sender, RoutedEventArgs e)
@@ -165,12 +209,13 @@ public partial class MainWindow : Window, IDisposable
             GlobalIgnorePatterns = GlobalIgnoreBox.Text.Split('\n').Select(line => line.TrimEnd('\r')).ToList(),
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
             Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
-            Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true },
+            Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true,
+                AutoStartServer = AutoStartDbBox.IsChecked == true, ExternalEndpoint = DbEndpointBox.Text.Trim() },
             Folders = folders,
-            Ai = new AiConnectionSettings
+            Ai = _loadedSettings.Ai with
             {
                 BaseUrl = BaseUrlBox.Text.Trim(), ChatModel = ChatModelBox.Text.Trim(),
-                EmbeddingModel = EmbeddingModelBox.Text.Trim(), SpeechModel = SpeechModelBox.Text.Trim(),
+                EmbeddingModel = EmbeddingModelBox.Text.Trim(),
                 AutoStartServer = AutoStartAiBox.IsChecked == true, StopServerOnExit = StopAiBox.IsChecked == true,
                 ServerExecutablePath = AiExecutableBox.Text.Trim()
             }
@@ -180,7 +225,11 @@ public partial class MainWindow : Window, IDisposable
         return settings;
     }
 
-    private async void SaveSettings(object sender, RoutedEventArgs e) => await (_saveTask = SaveSettingsAsync());
+    private async void SaveSettings(object sender, RoutedEventArgs e)
+    {
+        if (!_saveTask.IsCompleted) return;
+        await (_saveTask = SaveSettingsAsync());
+    }
 
     private async void OpenManager(object sender, RoutedEventArgs e)
     {
@@ -193,7 +242,7 @@ public partial class MainWindow : Window, IDisposable
 
     private async Task SaveManagementAsync(ManagementSettings management, TextRagSettings limits)
     {
-        SaveButton.IsEnabled = false;
+        SaveButton.IsEnabled = SettingsPanel.IsEnabled = false;
         try
         {
             var settings = _loadedSettings with { SchemaVersion = 2, Management = management, TextPipeline = limits };
@@ -204,33 +253,42 @@ public partial class MainWindow : Window, IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
-        finally { SaveButton.IsEnabled = true; }
+        finally { SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown; }
     }
 
     private async Task SaveSettingsAsync()
     {
         if (!_settingsLoaded || _shuttingDown || !_startupTask.IsCompleted) return;
-        SaveButton.IsEnabled = false;
+        SaveButton.IsEnabled = SettingsPanel.IsEnabled = false;
         try
         {
             await _aiTask;
+            await _databaseTask;
             var settings = ReadSettings();
-            if (DbPasswordBox.Password.Length > 0 || DbUserBox.Text.Length > 0)
+            var credentialsChanged = false;
+            if (settings.Database.UsesExternalEndpoint)
             {
-                if (_server.Connection is not null || !_databaseTask.IsCompleted)
-                    throw new InvalidDataException("DBの接続中は認証情報を変更できません。接続できない状態で設定してください。");
-                await new ServerCredentialStore(_dataDirectory).SaveAsync(new ServerCredentials(DbUserBox.Text.Trim(), DbPasswordBox.Password), _lifetime.Token);
+                var store = new ServerCredentialStore(_dataDirectory, settings.Database.Endpoint);
+                var previous = await store.LoadAsync(_lifetime.Token);
+                var username = DbUserBox.Text.Trim();
+                if (DbPasswordBox.Password.Length > 0)
+                {
+                    await store.SaveAsync(new(username, DbPasswordBox.Password), _lifetime.Token);
+                    credentialsChanged = true;
+                }
+                else if (previous is null || previous.Username != username)
+                    throw new InvalidDataException("外部DBのユーザー名とパスワードを指定してください。保存済みパスワードを維持する場合は空欄にします。");
                 DbPasswordBox.Clear();
-                DbUserBox.Clear();
             }
+            var reconnect = credentialsChanged || settings.Database.ExternalEndpoint != _loadedSettings.Database.ExternalEndpoint || _server.Connection is null;
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
-            await ReconfigureRagAsync(refreshAi: true);
-            SettingsStatus.Text = "設定を保存しました。取り込み・検索タブで状態を確認できます。DBポート変更は再起動後に反映します。";
+            await ReconfigureRagAsync(refreshAi: true, reconnectDatabase: reconnect);
+            SettingsStatus.Text = "設定を保存しました。" + (settings.Database.Port != _localDbPort ? "DBポート変更は再起動後に反映します。" : "");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
-        finally { SaveButton.IsEnabled = true; }
+        finally { SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown; }
     }
 
     private async void CheckAi(object sender, RoutedEventArgs e)
@@ -256,15 +314,15 @@ public partial class MainWindow : Window, IDisposable
             ModelList.ItemsSource = models.Select(m => $"{m.Id}   ·   {string.Join(", ", m.Labels)}   ·   {(m.VerifiedLocal ? "ローカル" : "ローカル性未確認／利用不可")}");
             FillModels(ChatModelBox, models, "chat");
             FillModels(EmbeddingModelBox, models, "embeddings");
-            FillModels(SpeechModelBox, models, "transcription");
             var hasEmbedding = models.Any(m => m.VerifiedLocal && m.Labels.Contains("embeddings"));
             AiStatus.Text = $"接続できました（{models.Count}モデル）。" +
                 (status.ManagedByApplication ? "このアプリが起動したLemonadeです。" : "既存のLemonadeです。アプリ終了時にも停止しません。") +
-                (hasEmbedding ? "Embedding候補があります。推論の実動作は別途検証します。" : "Embedding用モデルが未準備です。索引作成には追加設定が必要です。");
+                (hasEmbedding ? "" : "Embeddingモデルが未準備です。");
+            _aiFailed = false;
         }
-        catch (OperationCanceledException) { ClearModels(); AiStatus.Text = "接続確認を中断しました（時間切れまたは終了）。"; }
-        catch (Exception ex) { ClearModels(); AiStatus.Text = SafeMessage(ex); }
-        finally { AiButton.IsEnabled = !_shuttingDown; }
+        catch (OperationCanceledException) { ClearModels(); _aiFailed = !_shuttingDown; AiStatus.Text = "接続確認を中断しました（時間切れまたは終了）。"; }
+        catch (Exception ex) { ClearModels(); _aiFailed = true; AiStatus.Text = SafeMessage(ex); }
+        finally { AiButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
     private void ClearModels()
@@ -272,7 +330,6 @@ public partial class MainWindow : Window, IDisposable
         ModelList.ItemsSource = null;
         FillModels(ChatModelBox, [], "chat");
         FillModels(EmbeddingModelBox, [], "embeddings");
-        FillModels(SpeechModelBox, [], "transcription");
     }
 
     private static void FillModels(System.Windows.Controls.ComboBox combo, IReadOnlyList<LemonadeModel> models, string label)
@@ -284,7 +341,7 @@ public partial class MainWindow : Window, IDisposable
 
     private async void CheckDatabase(object sender, RoutedEventArgs e)
     {
-        if (!_settingsLoaded || _shuttingDown || !_databaseTask.IsCompleted) return;
+        if (!_settingsLoaded || _shuttingDown || !_databaseTask.IsCompleted || !_saveTask.IsCompleted || !_startupTask.IsCompleted) return;
         await (_databaseTask = CheckDatabaseAsync());
     }
 
@@ -293,33 +350,34 @@ public partial class MainWindow : Window, IDisposable
         DbButton.IsEnabled = false;
         try
         {
-            var status = await _server.EnsureRunningAsync(_loadedSettings.Database,
+            var status = await _server.EnsureRunningAsync(_loadedSettings.Database with { Port = _localDbPort },
                 new Progress<string>(message => DatabaseStatus.Text = message), _lifetime.Token);
             DatabaseStatus.Text = $"SurrealDB {status.Version} に接続しました（ポート {status.Port}）。" +
                 (status.ManagedByApplication ? "このアプリが起動したDBです。" : "既存のDBです。アプリ終了時にも停止しません。");
+            _dbFailed = false;
         }
-        catch (OperationCanceledException) { DatabaseStatus.Text = "DBの準備を中断しました。"; }
-        catch (Exception ex) { DatabaseStatus.Text = SafeMessage(ex); }
-        finally { DbButton.IsEnabled = !_shuttingDown; }
+        catch (OperationCanceledException) { _dbFailed = !_shuttingDown; DatabaseStatus.Text = "DBの準備を中断しました。"; }
+        catch (Exception ex) { _dbFailed = true; DatabaseStatus.Text = SafeMessage(ex); }
+        finally { DbButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
     private async Task CheckDatabaseAsync()
     {
         DbButton.IsEnabled = false;
-        DatabaseStatus.Text = "保存と再読み込みを確認しています…";
+        DatabaseStatus.Text = "DBへの接続を確認しています…";
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             timeout.CancelAfter(TimeSpan.FromMinutes(20));
-            await _server.EnsureRunningAsync(_loadedSettings.Database,
+            var status = await _server.EnsureRunningAsync(_loadedSettings.Database with { Port = _localDbPort },
                 new Progress<string>(message => DatabaseStatus.Text = message), timeout.Token);
-            var result = await DatabaseProbe.RunAsync(_server.Connection!, timeout.Token);
-            DatabaseStatus.Text = result.Detail;
+            DatabaseStatus.Text = $"SurrealDB {status.Version} に接続しました。";
+            _dbFailed = false;
             if (_rag is null && !_shuttingDown) await ReconfigureRagAsync();
         }
-        catch (OperationCanceledException) { DatabaseStatus.Text = "保存機能の確認を中断しました。"; }
-        catch (Exception ex) { DatabaseStatus.Text = SafeMessage(ex); }
-        finally { DbButton.IsEnabled = !_shuttingDown; }
+        catch (OperationCanceledException) { _dbFailed = !_shuttingDown; DatabaseStatus.Text = "接続確認を中断しました。"; }
+        catch (Exception ex) { _dbFailed = true; DatabaseStatus.Text = SafeMessage(ex); }
+        finally { DbButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
     private static string SafeMessage(Exception ex) => ex switch
@@ -344,7 +402,8 @@ public partial class MainWindow : Window, IDisposable
     internal async Task PrepareShutdownAsync()
     {
         _shuttingDown = true;
-        RagPanel.IsEnabled = false;
+        RagPanel.IsEnabled = SearchPanel.IsEnabled = SaveButton.IsEnabled = false;
+        UpdateApplicationStatus();
         SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = false;
         DatabaseStatus.Text = "終了処理を待っています…";
         _lifetime.Cancel();
@@ -360,7 +419,8 @@ public partial class MainWindow : Window, IDisposable
             _lifetime.Dispose();
             _lifetime = new CancellationTokenSource();
             _shuttingDown = false;
-            SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = _settingsLoaded;
+            SaveButton.IsEnabled = SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = _settingsLoaded;
+            UpdateApplicationStatus();
             throw;
         }
     }
@@ -373,6 +433,7 @@ public partial class MainWindow : Window, IDisposable
         _tray.Visible = false;
         _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
+        _trayIcon.Dispose();
         _lifetime.Dispose();
         _monitorCancellation?.Dispose();
         _server.DisposeAsync().GetAwaiter().GetResult();

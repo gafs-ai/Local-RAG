@@ -8,9 +8,12 @@ public sealed record ServerCredentials(string Username, string Password)
     public override string ToString() => "ServerCredentials [protected]";
 }
 
-public sealed class ServerCredentialStore(string dataDirectory)
+public sealed class ServerCredentialStore(string dataDirectory, Uri? externalEndpoint = null)
 {
-    private readonly string _path = Path.Combine(Path.GetFullPath(dataDirectory), "server", "credentials.dpapi");
+    // Keep local-server credentials and each external server's credentials independent.
+    private readonly string _path = Path.Combine(Path.GetFullPath(dataDirectory), "server", externalEndpoint is null
+        ? "credentials.dpapi" : "external-" + Convert.ToHexString(SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(externalEndpoint.GetLeftPart(UriPartial.Authority)))) + ".dpapi");
 
     public async Task<ServerCredentials?> LoadAsync(CancellationToken token = default)
     {

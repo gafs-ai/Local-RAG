@@ -71,8 +71,9 @@ public class IngestionRecoveryTests
     [InlineData(false, true)]
     public async Task MixedTypesUseDefaultOnlyWhenNoExclusionDecisionIsOverridden(bool exclusionVote, bool excludedDefault)
     {
-        var ai = new MixedAi(exclusionVote);
         var options = new TextRagSettings { DefaultCategory = excludedDefault ? "excluded" : "procedure" };
+        options.Categories.Add(new() { Id = "excluded", Description = "検索対象外", Excluded = true });
+        var ai = new MixedAi(exclusionVote, options.Categories);
         var pipeline = new TextAiPipeline(ai, options);
         // Two equal windows: no category has a majority.
         var source = new string('x', 1000);
@@ -145,12 +146,12 @@ public class IngestionRecoveryTests
         Assert.Null(await service.FetchAsync(document.DocumentId));
     }
 
-    private sealed class MixedAi(bool exclusion) : ITextRagAi
+    private sealed class MixedAi(bool exclusion, IReadOnlyList<TextCategory> configuredCategories) : ITextRagAi
     {
         public List<string> Inputs { get; } = [];
         public Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token)
         {
-            var categories = new TextRagSettings().Categories.Select(c => new { c.Id, c.Description });
+            var categories = configuredCategories.Select(c => new { c.Id, c.Description });
             var overhead = TextAiPipeline.InputBytes(new { categories, document = "" });
             return Task.FromResult(overhead + 500 + 160);
         }

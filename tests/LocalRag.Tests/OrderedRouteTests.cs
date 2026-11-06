@@ -68,6 +68,11 @@ public class OrderedRouteTests
         Assert.Empty(settings.Validate());
         Assert.Equal(SourceCodeMode.CSharp, settings.RouteFor("a.cs").SourceMode);
         Assert.Equal(SourceCodeMode.Python, settings.RouteFor("a.py").SourceMode);
+        Assert.DoesNotContain(settings.Categories, c => c.Id == "excluded");
+        Assert.Contains(settings.Categories, c => c.Id == "source_code" && c.Name == "ソースコード" && !c.Excluded);
+        foreach (var language in SourceLanguages.All)
+            foreach (var extension in language.Extensions)
+                Assert.Equal("source_code", settings.Resolve(new(), "sample" + extension).DefaultCategory);
         Assert.Equal("共通設定", settings.Routes![^1].Name);
         Assert.Equal(new[] { ".txt" }, settings.Routes[^1].Extensions);
     }

@@ -58,6 +58,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 "@ | Set-Content (Join-Path $notices "$name-LICENSE.txt") -Encoding utf8
+        } elseif ($key -eq 'UTF.Unknown/2.7.0' -and $license.InnerText -eq 'MPL-1.1') {
+            # This pinned package's README explicitly offers GPL-2.0-or-later as
+            # an alternative. Preserve that notice and include the GPLv3 text.
+            $readme = Join-Path $packageDir 'README.md'
+            if ((Get-Content $readme -Raw) -notmatch 'GNU General Public License Version 2 or later') {
+                throw 'UTF.Unknown alternative license notice changed; review before packaging.'
+            }
+            Copy-Item $readme (Join-Path $notices "$name-README.md")
+            Copy-Item LICENSE (Join-Path $notices "$name-GPL-3.0.txt")
+            @"
+UTF.Unknown 2.7.0 is distributed here under its GPL-2.0-or-later alternative,
+using GPL version 3. The NuGet metadata reports MPL-1.1; see the included
+upstream README for the alternative license grant.
+Upstream source: https://github.com/CharsetDetector/UTF-unknown/tree/fd4c6fab634ef3783f8b5cb88e9ae9b2cc295ad5
+The library has not been modified by Local RAG.
+"@ | Set-Content (Join-Path $notices "$name-NOTICE.txt") -Encoding utf8
         } elseif ($license.InnerText -ne 'Apache-2.0') { throw "Unhandled dependency license: $key" }
         $inventory += [pscustomobject]@{Package=$key;License=$license.InnerText;Authors=[string]$metadata.package.metadata.authors;Copyright=$copyright;Source=[string]$metadata.package.metadata.repository.url}
     }

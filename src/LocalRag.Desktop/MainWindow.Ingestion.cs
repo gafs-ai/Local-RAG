@@ -12,6 +12,7 @@ public partial class MainWindow
         long lastSequence = -1;
         IReadOnlyList<FileWorkItem>? lastWaiting = null;
         CurrentFileText.Text = "待機中"; CurrentStageText.Text = "待機中";
+        _currentFile = null;
         QueueStatusText.Text = "取り込み待ち：0件（探索後に表示）";
         IngestionQueueGrid.ItemsSource = null;
         service.ActivityChanged += activity => Dispatcher.BeginInvoke(() =>
@@ -20,6 +21,8 @@ public partial class MainWindow
             lastSequence = activity.Sequence;
             CurrentFileText.Text = activity.CurrentFile ?? "待機中";
             CurrentStageText.Text = activity.Stage;
+            _currentFile = activity.CurrentFile;
+            UpdateApplicationStatus();
             if (ReferenceEquals(lastWaiting, activity.Waiting)) return;
             lastWaiting = activity.Waiting;
             QueueStatusText.Text = $"取り込み待ち：{activity.Waiting.Count:N0}件（実行中は含まない・優先度／更新日時順）";

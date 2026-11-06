@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Local RAG — 管理" Width="1020" Height="840" MinWidth="820" MinHeight="620"
         FontFamily="Yu Gothic UI" FontSize="14" Background="#F5F7FA"
+        Icon="Assets/local-rag.ico"
         Loaded="OnLoaded" Closing="OnClosing" WindowStartupLocation="CenterScreen">
     <Grid Margin="28">
         <Grid.RowDefinitions>
@@ -12,41 +13,34 @@
             <Border DockPanel.Dock="Right" Background="#E1EAF5" CornerRadius="6" Padding="12,6" VerticalAlignment="Center">
                 <TextBlock Text="開発版 · テキストRAG" Foreground="#234B72" />
             </Border>
+            <Image Source="Assets/local-rag-128.png" Width="60" Height="60" Margin="0,0,14,0" DockPanel.Dock="Left" />
             <StackPanel>
                 <TextBlock Text="Local RAG" FontSize="30" FontWeight="SemiBold" Foreground="#17334B" />
-                <TextBlock Text="ローカル文書の検索環境を準備する" Foreground="#526477" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
         <TabControl Grid.Row="1" Padding="20" BorderBrush="#D9E1EA" Background="White">
-            <TabItem Header="  概要・接続確認  ">
+            <TabItem Header="  接続状態  ">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="4,12">
-                        <TextBlock Text="現在の状態" FontSize="21" FontWeight="SemiBold" Foreground="#17334B" />
-                        <Border Background="#FFF7E6" Padding="16" CornerRadius="6" Margin="0,14,0,22">
-                            <TextBlock TextWrapping="Wrap" Foreground="#755620"
-                                       Text="指定した拡張子のUTF-8テキストを取り込み・検索・MCP取得できます。既定は.txtと.mdです。処理設定からプロンプト・カテゴリ・パイプラインを管理できます。Word・PDF・音声の変換は後続対応です。" />
-                        </Border>
                         <TextBlock Text="AI接続" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock x:Name="AiStatus" Text="未確認。設定タブの接続先を使って確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
-                        <Button x:Name="AiButton" Content="モデル一覧を確認" Click="CheckAi" HorizontalAlignment="Left" />
+                        <Button x:Name="AiButton" Content="接続確認・モデル一覧更新" Click="CheckAi" HorizontalAlignment="Left" />
                         <ListBox x:Name="ModelList" Height="155" Margin="0,12,0,22" BorderBrush="#D9E1EA" />
-                        <TextBlock Text="データ保存・ベクトル検索" FontSize="17" FontWeight="SemiBold" />
-                        <TextBlock x:Name="DatabaseStatus" Text="未確認。診断専用の小さなデータで確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
-                        <Button x:Name="DbButton" Content="保存・検索機能を確認" Click="CheckDatabase" HorizontalAlignment="Left" />
+                        <TextBlock Text="DB接続" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="DatabaseStatus" Text="未確認。設定されたDBへの接続を確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
+                        <Button x:Name="DbButton" Content="接続確認" Click="CheckDatabase" HorizontalAlignment="Left" />
                         <TextBlock Text="MCP接続" FontSize="17" FontWeight="SemiBold" Margin="0,22,0,0" />
                         <TextBlock x:Name="McpStatus" Text="未準備。フォルダとAIモデルを設定してください。" TextWrapping="Wrap" Margin="0,8" />
-                        <TextBlock Text="閉じるボタンはタスクトレイに格納します。トレイの「管理画面を開く」で再表示できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,26,0,0" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="  取り込み・検索  ">
+            <TabItem Header="  取り込み  ">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="RagPanel" Margin="4,12" IsEnabled="False">
-                        <TextBlock Text="テキストの取り込み" FontSize="20" FontWeight="SemiBold" />
-                        <TextBlock x:Name="RagStatus" Text="フォルダとチャット・Embeddingモデルを設定してください。" TextWrapping="Wrap" Margin="0,10" />
+                        <TextBlock Text="取り込み" FontSize="20" FontWeight="SemiBold" />
                         <WrapPanel>
-                            <Button x:Name="ScanButton" Content="今すぐ1回実行" Click="ScanNow" Margin="0,0,10,0" />
-                            <Button x:Name="PauseButton" Content="監視を一時停止" Click="PauseMonitoring" />
+                            <Button x:Name="ScanButton" Content="今すぐ実行" Click="ScanNow" Margin="0,0,10,0" />
+                            <Button x:Name="PauseButton" Content="監視停止" Click="PauseMonitoring" />
                         </WrapPanel>
                         <TextBlock Text="現在処理中のファイル" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <TextBox x:Name="CurrentFileText" Text="待機中" IsReadOnly="True" TextWrapping="Wrap" AutomationProperties.Name="現在処理中のファイル" />
@@ -76,16 +70,19 @@
                                 <DataGridTextColumn Header="フルパス" Binding="{Binding Path}" Width="420" />
                             </DataGrid.Columns>
                         </DataGrid>
-                        <Expander Header="索引の現在の状態（旧バージョンの完了時刻は未記録）" Margin="0,12">
-                            <ListBox x:Name="DocumentStatusList" Height="110" />
-                        </Expander>
-                        <TextBlock Text="ローカル検索" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" />
-                        <TextBlock Text="返却前に機密検査します。拒否・判定できない場合も原本のパスを表示しますが、本文は表示しません。原本はご自身で開いて確認できます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6" />
-                        <TextBlock x:Name="PolicyStatus" TextWrapping="Wrap" Foreground="#755620" />
+                        <TextBlock Text="索引の状態" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <ListBox x:Name="DocumentStatusList" Height="110" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="  検索  ">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="SearchPanel" Margin="4,12" IsEnabled="False">
+                        <TextBlock Text="検索" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" />
                         <TextBox x:Name="QueryBox" AutomationProperties.Name="検索語" />
                         <WrapPanel>
                             <Button x:Name="SearchButton" Content="検索" Click="SearchText" Margin="0,0,10,0" />
-                            <Button x:Name="FetchButton" Content="選択した文書の全文を取得" Click="FetchText" />
+                            <Button x:Name="FetchButton" Content="選択した文書を取得" Click="FetchText" />
                         </WrapPanel>
                         <TextBlock x:Name="SearchStatus" TextWrapping="Wrap" Margin="0,8" />
                         <ListBox x:Name="SearchList" DisplayMemberPath="Label" Height="100" />
@@ -93,100 +90,96 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="  フォルダ・AI・DB設定  ">
+            <TabItem Header="  設定  ">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="4,10,4,0">
+                        <Button x:Name="SaveButton" Content="設定を保存" Click="SaveSettings" HorizontalAlignment="Left" Background="#173F66" Foreground="White" />
+                        <TextBlock x:Name="SettingsStatus" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="#526477" />
+                    </StackPanel>
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="SettingsPanel" Margin="4,12">
                         <TextBlock Text="処理設定" FontSize="18" FontWeight="SemiBold" />
                         <WrapPanel Margin="0,10,0,16">
-                            <Button Content="プロンプトマネージャー" Tag="0" Click="OpenManager" Margin="0,0,8,8"/>
-                            <Button Content="カテゴリマネージャー" Tag="1" Click="OpenManager" Margin="0,0,8,8"/>
-                            <Button Content="テキストパイプライン" Tag="2" Click="OpenManager" Margin="0,0,8,8"/>
-                            <Button Content="取得パイプライン" Tag="3" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="プロンプト管理" Tag="0" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="カテゴリ管理" Tag="1" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="テキスト処理" Tag="2" Click="OpenManager" Margin="0,0,8,8"/>
+                            <Button Content="取得処理" Tag="3" Click="OpenManager" Margin="0,0,8,8"/>
                         </WrapPanel>
                         <TextBlock Text="監視フォルダ" FontSize="18" FontWeight="SemiBold" />
-                        <Button Content="フォルダを選んで追加…" Click="BrowseFolders" HorizontalAlignment="Left" Margin="0,8,0,6" AutomationProperties.Name="フォルダを選んで追加"/>
+                        <Button Content="追加" Click="BrowseFolders" HorizontalAlignment="Left" Margin="0,8,0,6" AutomationProperties.Name="フォルダを選んで追加"/>
                         <TextBlock Text="ボタンからフォルダを選択できます（複数選択可）。パスの直接入力もできます。優先度は0～100で、大きいほど先に処理します。同じ優先度では更新日時の新しい順です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6,0,0" />
-                        <DataGrid x:Name="FolderGrid" Height="150" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" AutomationProperties.Name="監視フォルダと優先度">
+                        <DataGrid x:Name="FolderGrid" Height="300" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" AutomationProperties.Name="監視フォルダと優先度">
                             <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="" Width="64">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <Button Content="削除" Click="RemoveFolder" Padding="8,4" Margin="2" AutomationProperties.Name="フォルダを削除" />
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="フォルダの絶対パス" Binding="{Binding Path, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                                 <DataGridTextColumn Header="優先度" Binding="{Binding Priority, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
                                 <DataGridCheckBoxColumn Header="サブフォルダ" Binding="{Binding Recursive, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
                             </DataGrid.Columns>
                         </DataGrid>
-                        <CheckBox x:Name="ExcludeDotHiddenBox" Content="名前が「.」で始まるファイル・フォルダを除外する（既定ON）" Margin="0,8,0,4"/>
+                        <CheckBox x:Name="ExcludeDotHiddenBox" Content="名前が「.」で始まるファイル・フォルダを除外する" Margin="0,8,0,4"/>
                         <TextBlock Text="監視フォルダ自体や、その上位にある「.」始まりのフォルダも対象です。取り込む場合は除外をOFFにするか、ignoreの ! で例外を指定してください。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
-                        <CheckBox x:Name="AutomaticMonitoringBox" Content="起動時・設定保存後に自動監視を開始する" Margin="0,0,0,12" />
-                        <Expander Header="全フォルダ共通の除外パターン（ignore）" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="1行1パターン。例：*.tmp、**/bin/。# はコメント、! は例外です。各フォルダの .gitignore / .dockerignore / .npmignore / .ragignore も自動で読み取ります。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6"/>
-                                <TextBox x:Name="GlobalIgnoreBox" Height="120" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="全体の除外パターン"/>
-                                <TextBlock Text="例外が最優先です。どれかの設定の ! に一致すれば、ほかの設定や「.」始まりによる除外より優先して取り込み対象に戻します。行の順番は問いません。" TextWrapping="Wrap" Foreground="#526477"/>
-                            </StackPanel>
-                        </Expander>
+                        <TextBlock Text="共通除外パターン" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,4" />
+                        <TextBlock Text="例: *.tmp, **/bin/ など。gitignoreの記述方法と同様。" TextWrapping="Wrap" Foreground="#526477" />
+                        <TextBox x:Name="GlobalIgnoreBox" Height="120" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="共通除外パターン" />
+                        <TextBlock Text="各フォルダの.gitignore / .dockerignore / .npmignore にも従います。本アプリケーション用の .ragignore を設置できます（記述方法はgitignoreと同様）。" TextWrapping="Wrap" Foreground="#526477" />
+                        <TextBlock Text="例外設定（!）は、優先されます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,16" />
+                        <TextBlock Text="アプリケーション設定" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,8" />
+                        <CheckBox x:Name="AutomaticMonitoringBox" Content="起動時に監視を開始する" Margin="0,0,0,12" />
                         <DockPanel>
-                            <TextBlock Text="定期チェック間隔（分・既定5）" VerticalAlignment="Center" Margin="0,0,16,14" />
+                            <TextBlock Text="定期チェック間隔（分）" VerticalAlignment="Center" Margin="0,0,16,14" />
                             <TextBox x:Name="IntervalBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="監視間隔" />
                         </DockPanel>
                         <DockPanel>
-                            <TextBlock Text="更新除外期間（分・既定10、0で無効）" VerticalAlignment="Center" Margin="0,0,16,14" />
+                            <TextBlock Text="更新除外期間（分、0で無効）" VerticalAlignment="Center" Margin="0,0,16,14" />
                             <TextBox x:Name="UpdateExclusionBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="更新除外期間"/>
                         </DockPanel>
-                        <TextBlock Text="処理中も定期チェックし、待ち順を更新します。実行中のファイルは中断しません。更新除外期間内のファイルは手動実行でも対象外です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+                        <TextBlock Text="更新除外期間より新しいファイルは更新しません（自動保存アプリケーションへの対策）。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
                         <TextBlock Text="Lemonade Server" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,4" />
-                        <TextBlock Text="このPCのAPI接続先" />
+                        <TextBlock Text="接続先" />
                         <TextBox x:Name="BaseUrlBox" AutomationProperties.Name="AI接続先" />
-                        <CheckBox x:Name="AutoStartAiBox" Content="Lemonadeが起動していなければ自動起動する（既定ON）" Margin="0,6" />
+                        <CheckBox x:Name="AutoStartAiBox" Content="Lemonadeが起動していなければ自動起動する" Margin="0,6" />
                         <CheckBox x:Name="StopAiBox" Content="アプリ終了時に、このアプリが起動したLemonadeも終了する" Margin="0,0,0,6" />
-                        <TextBlock Text="起動時にモデル一覧を自動更新します。起動済みのLemonadeを利用した場合は終了しません。" TextWrapping="Wrap" Foreground="#526477" />
-                        <Expander Header="Lemonade実行ファイル（通常は自動検出）" Margin="0,6,0,10">
-                            <StackPanel>
-                                <TextBox x:Name="AiExecutableBox" AutomationProperties.Name="Lemonade実行ファイル" />
-                                <Button Content="実行ファイルを選択…" Click="BrowseAiExecutable" HorizontalAlignment="Left" />
-                                <TextBlock Text="空欄ならインストール先とPATHから検出します。LemonadeServer.exeまたはlemond.exeを選択してください。" TextWrapping="Wrap" Foreground="#526477" />
-                            </StackPanel>
-                        </Expander>
+                        <TextBlock Text="Lemonade実行ファイル（空欄で自動検出）" Margin="0,6,0,0" />
+                        <TextBox x:Name="AiExecutableBox" AutomationProperties.Name="Lemonade実行ファイル" />
+                        <TextBlock Text="設定する場合、LemonadeServer.exeまたはlemond.exeの絶対パスを記載します" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,10" />
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="20" /><ColumnDefinition /></Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="チャット・整形用モデル" />
+                                <TextBlock Text="言語モデル" />
                                 <ComboBox x:Name="ChatModelBox" IsEditable="True" AutomationProperties.Name="チャットモデル" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Embedding用モデル" />
+                                <TextBlock Text="Embeddingモデル" />
                                 <ComboBox x:Name="EmbeddingModelBox" IsEditable="True" AutomationProperties.Name="Embeddingモデル" />
                             </StackPanel>
                         </Grid>
-                        <TextBlock Text="音声認識用モデル" />
-                        <ComboBox x:Name="SpeechModelBox" IsEditable="True" AutomationProperties.Name="音声認識モデル" />
-                        <TextBlock Text="モデル一覧を確認すると、各用途のローカルモデルを選べます。未選択の用途は未準備として保存します。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,18" />
-                        <TextBlock Text="SurrealDB" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock Text="DBが起動していない場合は、必要な実行ファイルを自動取得して起動します。初回は約307MiBのダウンロードが必要です。" TextWrapping="Wrap" Foreground="#526477" Margin="0,6,0,8" />
-                        <TextBlock Text="このPCのDBポート（変更はアプリ再起動後）" />
-                        <TextBox x:Name="DbPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="DBポート" />
+                        <TextBlock Text="推奨モデル 言語モデル: Gemma, Embeddingモデル: nomic" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,0" />
+                        <TextBlock Text="SurrealDB" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,6" />
+                        <CheckBox x:Name="AutoStartDbBox" Content="SurrealDBが起動していなければ自動起動する" Margin="0,6" />
                         <CheckBox x:Name="StopDbBox" Content="アプリ終了時に、このアプリが起動したSurrealDBも終了する" Margin="0,0,0,12" AutomationProperties.Name="DBも終了する" />
+                        <TextBlock Text="自動起動するSurrealDBのDBポート（変更後はアプリ再起動）" />
+                        <TextBox x:Name="DbPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="DBポート" />
+                        <TextBlock Text="以下は、アプリケーションから自動起動する場合は空欄にしてください" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,6" />
+                        <TextBlock Text="外部SurrealDBの接続先（ws:// または wss://）" />
+                        <TextBox x:Name="DbEndpointBox" AutomationProperties.Name="外部DB接続先" LostFocus="DbEndpointChanged" />
+                        <TextBlock Text="ユーザー名" /><TextBox x:Name="DbUserBox" AutomationProperties.Name="DBユーザー名" />
+                        <TextBlock Text="パスワード" /><PasswordBox x:Name="DbPasswordBox" Padding="8" Margin="0,6,0,14" AutomationProperties.Name="DBパスワード" />
                         <TextBlock Text="MCP" FontSize="18" FontWeight="SemiBold" />
                         <CheckBox x:Name="McpEnabledBox" Content="MCPからの検索・全文取得を有効にする" Margin="0,8" />
-                        <TextBlock Text="このPCのMCPポート（設定保存で反映）" />
+                        <TextBlock Text="MCPポート" />
                         <TextBox x:Name="McpPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="MCPポート" />
-                        <Expander Header="既存のSurrealDBへ接続する場合">
-                            <StackPanel Margin="12,8">
-                                <TextBlock Text="接続できない場合に、既存サーバーの管理用認証情報を保存して再試行します。パスワードはWindowsのユーザー別保護を使って保存します。" TextWrapping="Wrap" />
-                                <TextBlock Text="ユーザー名" /><TextBox x:Name="DbUserBox" AutomationProperties.Name="DBユーザー名" />
-                                <TextBlock Text="パスワード" /><PasswordBox x:Name="DbPasswordBox" Padding="8" Margin="0,6,0,14" AutomationProperties.Name="DBパスワード" />
-                            </StackPanel>
-                        </Expander>
-                        <Button x:Name="SaveButton" Content="設定を保存" Click="SaveSettings" HorizontalAlignment="Left" Background="#173F66" Foreground="White" />
-                        <TextBlock x:Name="SettingsStatus" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="#526477" />
-                    </StackPanel>
+                        </StackPanel>
                 </ScrollViewer>
+                </DockPanel>
             </TabItem>
         </TabControl>
         <DockPanel Grid.Row="2" Margin="0,16,0,0">
-            <Button DockPanel.Dock="Right" Content="アプリを終了" Click="ExitClick" Margin="10,0,0,0" />
-            <StackPanel>
-                <TextBlock Text="保存先" FontSize="11" Foreground="#526477" />
-                <TextBlock x:Name="DataPathText" FontSize="11" Foreground="#526477" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+            <Button DockPanel.Dock="Right" Content="アプリを完全終了" Click="ExitClick" Margin="10,0,0,0" />
+            <TextBlock x:Name="ApplicationStatus" Text="起動中" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#526477" AutomationProperties.Name="アプリケーションの状態" />
         </DockPanel>
     </Grid>
 </Window>

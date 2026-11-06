@@ -136,6 +136,7 @@ public class TextRagTests
         await File.WriteAllTextAsync(secretFile, "社外秘\n\nmoon confidential engineering design details");
         await File.WriteAllTextAsync(Path.Combine(input, "excluded.txt"), "検索対象外の文書");
         var settings = Settings(input);
+        settings.TextPipeline.Categories.Add(new() { Id = "excluded", Description = "検索対象外", Excluded = true });
         var ai = new FakeTextAi();
         await using var repository = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         using var service = new TextRagService(repository, ai, settings, fixture.Root);

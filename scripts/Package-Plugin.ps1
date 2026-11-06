@@ -22,6 +22,8 @@ Get-ChildItem -LiteralPath $distribution -File | Where-Object {
 } | Copy-Item -Destination $server.FullName
 Copy-Item -LiteralPath (Join-Path $distribution 'ThirdPartyNotices') -Destination $plugin -Recurse
 Copy-Item -LiteralPath (Join-Path $repo 'LICENSE'),(Join-Path $repo 'COPYRIGHT') -Destination $plugin
+$assets = New-Item -ItemType Directory -Path (Join-Path $plugin 'assets')
+Copy-Item -LiteralPath (Join-Path $repo 'Assets/Brand/local-rag-512.png'),(Join-Path $repo 'Assets/Brand/local-rag-128.png') -Destination $assets.FullName
 $manifest = [ordered]@{
     '$schema' = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
     name = 'local-rag'; version = $build.Version
@@ -29,7 +31,7 @@ $manifest = [ordered]@{
     author = @{name='GAFS Inc.'}; license = 'GPL-3.0-or-later'
     extensions = @{'com.openai'=@{
         requires_local_executor=$true
-        interface=@{displayName='Local RAG';shortDescription='ローカル文書の検索と取得';developerName='GAFS Inc.';capabilities=@('Read')}
+        interface=@{displayName='Local RAG';shortDescription='ローカル文書の検索と取得';developerName='GAFS Inc.';capabilities=@('Read');logo='./assets/local-rag-512.png';composerIcon='./assets/local-rag-128.png'}
     }}
 }
 if ($Format -eq 'Portable') {
@@ -92,7 +94,7 @@ Compress-Archive -Path $plugin -DestinationPath (Join-Path $output 'local-rag.zi
 $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $output 'local-rag.zip'))
 try {
     $requiredManifest = if ($Format -eq 'Desktop') { 'local-rag/.codex-plugin/plugin.json' } else { 'local-rag/plugin.json' }
-    foreach ($required in @($requiredManifest,"local-rag/$mcpFile",'local-rag/server/LocalRag.Mcp.exe')) {
+    foreach ($required in @($requiredManifest,"local-rag/$mcpFile",'local-rag/server/LocalRag.Mcp.exe','local-rag/assets/local-rag-512.png','local-rag/assets/local-rag-128.png')) {
         if (!$archive.GetEntry($required)) { throw "Required plugin file missing from archive: $required" }
     }
 } finally { $archive.Dispose() }

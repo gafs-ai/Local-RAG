@@ -4,8 +4,11 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>../../Assets/Brand/local-rag.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Resource Include="../../Assets/Brand/local-rag.ico" Link="Assets/local-rag.ico" />
+    <Resource Include="../../Assets/Brand/local-rag-128.png" Link="Assets/local-rag-128.png" />
     <ProjectReference Include="../LocalRag.Infrastructure/LocalRag.Infrastructure.csproj" />
     <ProjectReference Include="../LocalRag.Mcp/LocalRag.Mcp.csproj" />
     <Using Remove="System.Windows.Forms" />

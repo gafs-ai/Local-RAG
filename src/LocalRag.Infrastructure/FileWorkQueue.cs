@@ -50,6 +50,7 @@ public sealed class FileWorkQueue
     private readonly Dictionary<string, FileWorkItem> _completed = new(StringComparer.OrdinalIgnoreCase);
     private FileDiscovery? _reconciliation;
     public int Count { get { lock (_sync) return _waiting.Count; } }
+    public bool HasReconciliation { get { lock (_sync) return _reconciliation is not null; } }
     public IReadOnlyList<FileWorkItem> Snapshot() { lock (_sync) return _waiting.ToArray(); }
     public void Replace(FileDiscovery discovery)
     {

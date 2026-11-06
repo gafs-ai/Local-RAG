@@ -50,9 +50,18 @@ public sealed class SurrealServerManager : IAsyncDisposable
         {
             if (Connection is not null)
             {
-                if (Status!.Port != settings.Port) throw new InvalidOperationException("DBポートの変更はアプリの再起動後に適用されます。");
+                if (Connection.Endpoint != settings.Endpoint) throw new InvalidOperationException("DB接続先の変更はアプリの再起動後に適用されます。");
                 await VerifyConnectionAsync(Connection, token).ConfigureAwait(false);
-                return Status;
+                return Status!;
+            }
+            if (settings.UsesExternalEndpoint)
+            {
+                var externalCredentials = await new ServerCredentialStore(Path.GetDirectoryName(_directory)!, settings.Endpoint).LoadAsync(token).ConfigureAwait(false)
+                    ?? throw new InvalidDataException("外部DBのユーザー名とパスワードを設定してください。");
+                var external = new ServerConnection(settings.Endpoint, externalCredentials);
+                var version = await VerifyConnectionAsync(external, token).ConfigureAwait(false);
+                Connection = external;
+                return Status = new(version, false, settings.Endpoint.Port);
             }
             Directory.CreateDirectory(_directory);
             // Held while this application is managing the server. A second manager must not acquire stop ownership.
@@ -72,6 +81,8 @@ public sealed class SurrealServerManager : IAsyncDisposable
 
             if (saved is not null && IsOwnedProcessAlive(saved))
                 throw new InvalidOperationException("以前起動したDBが応答していません。重複起動せず、既存プロセスの状態確認を待ちます。");
+            if (!settings.AutoStartServer)
+                throw new InvalidOperationException("SurrealDBに接続できません。自動起動は無効です。");
             var executable = await _installer.EnsureInstalledAsync(progress, token).ConfigureAwait(false);
             credentials ??= ServerCredentialStore.Generate();
             if (!File.Exists(Path.Combine(_directory, "credentials.dpapi")))
@@ -171,7 +182,9 @@ public sealed class SurrealServerManager : IAsyncDisposable
     public static async Task<string> VerifyConnectionAsync(ServerConnection connection, CancellationToken token)
     {
         using var http = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false }) { Timeout = TimeSpan.FromSeconds(5) };
-        var text = await http.GetStringAsync(new Uri(connection.Endpoint, "/version"), token).ConfigureAwait(false);
+        var versionEndpoint = new UriBuilder(connection.Endpoint) { Scheme = connection.Endpoint.Scheme switch
+            { "ws" => "http", "wss" => "https", var scheme => scheme }, Port = connection.Endpoint.Port, Path = "/version" }.Uri;
+        var text = await http.GetStringAsync(versionEndpoint, token).ConfigureAwait(false);
         var match = Regex.Match(text, @"\bsurrealdb-(\d+\.\d+\.\d+)\b", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
         if (!match.Success || !Version.TryParse(match.Groups[1].Value, out var version) || version < new Version(3, 1))
             throw new InvalidDataException("接続先にはDiskANN対応のSurrealDB 3.1以降が必要です。");

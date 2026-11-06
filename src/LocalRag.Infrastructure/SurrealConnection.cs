@@ -16,7 +16,8 @@ public static class SurrealConnection
     {
         if (string.IsNullOrEmpty(database) || database.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch != '_'))
             throw new ArgumentException("DB名が不正です。", nameof(database));
-        // The HTTP transport has no persistent socket to keep graceful server shutdown waiting.
+        // Managed local servers use HTTP; external endpoints may use ws/wss.
+        // Dispose clients before shutting down an owned server so sockets cannot delay shutdown.
         var options = SurrealDbOptions.Create().WithEndpoint(connection.Endpoint.ToString())
             .WithUsername(connection.Credentials.Username).WithPassword(connection.Credentials.Password)
             .WithNamespace("localrag").WithDatabase(database).Build();

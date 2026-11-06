@@ -82,7 +82,9 @@ public class BoundedPipelineTests
     {
         var handler = new BoundedHandler(2048) { Category = n => n % 2 == 0 ? "general" : "excluded" };
         using var ai = new LemonadeTextAi(Settings(), handler);
-        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => new TextAiPipeline(ai, new()).ClassifyAsync(new string('a', 3000), default));
+        var options = new TextRagSettings();
+        options.Categories.Add(new() { Id = "excluded", Description = "検索対象外", Excluded = true });
+        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => new TextAiPipeline(ai, options).ClassifyAsync(new string('a', 3000), default));
         Assert.Equal("category_conflict", error.Code);
         Assert.Equal(3000, handler.ClassificationInputs.Sum(s => s.Length));
     }

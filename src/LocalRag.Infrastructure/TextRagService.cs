@@ -249,5 +249,5 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             throw new InvalidDataException("Embedding応答が不正です。");
     }
 
-    public void Dispose() { _operations.Dispose(); _scans.Dispose(); }
+    public void Dispose() { _operations.Dispose(); _scans.Dispose(); _discoveries.Dispose(); }
 }

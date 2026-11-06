@@ -74,7 +74,7 @@ public sealed record TextRagSettings
         new(), new() { Id = "specification", Description = "仕様書・設計書" },
         new() { Id = "procedure", Description = "作業手順・利用方法" },
         new() { Id = "meeting", Description = "議事録・会議メモ" },
-        new() { Id = "excluded", Description = "本文に検索対象外との明示指定がある文書", Excluded = true }
+        new() { Id = "source_code", Description = "ソースコード" }
     ];
 
     public IReadOnlyList<string> Validate()

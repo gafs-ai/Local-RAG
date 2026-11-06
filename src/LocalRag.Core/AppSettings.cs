@@ -44,7 +44,7 @@ public sealed record AppSettings
         else
         {
             errors.AddRange(Mcp.Validate());
-            if (Mcp.Port == Database?.Port) errors.Add("MCPとDBには異なるポートを指定してください。");
+            if (Database is { UsesExternalEndpoint: false } && Mcp.Port == Database.Port) errors.Add("MCPとDBには異なるポートを指定してください。");
         }
         if (TextPipeline is null) errors.Add("テキスト処理設定がありません。");
         else errors.AddRange(TextPipeline.Validate());
@@ -83,12 +83,25 @@ public sealed record WatchedFolder(string Path, bool Recursive = true, int Prior
 public sealed record DatabaseSettings
 {
     public int Port { get; init; } = 8000;
+    public bool AutoStartServer { get; init; } = true;
+    public string ExternalEndpoint { get; init; } = "";
     public bool StopOnExit { get; init; } = true;
 
-    public IReadOnlyList<string> Validate() => Port is < 1024 or > 65535
-        ? ["DBポートは1024～65535で指定してください。"] : [];
+    public bool UsesExternalEndpoint => !string.IsNullOrWhiteSpace(ExternalEndpoint);
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+        if (Port is < 1024 or > 65535) errors.Add("DBポートは1024～65535で指定してください。");
+        if (ExternalEndpoint is null || UsesExternalEndpoint &&
+            (!Uri.TryCreate(ExternalEndpoint, UriKind.Absolute, out var uri) ||
+             uri.Scheme is not ("ws" or "wss") || string.IsNullOrEmpty(uri.Host) ||
+             uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 ||
+             uri.AbsolutePath is not ("/" or "/rpc")))
+            errors.Add("外部DB接続先はws://またはwss://で指定してください（パスは空または/rpc、認証情報・クエリは含めません）。");
+        return errors;
+    }
 
-    public Uri Endpoint => new($"http://127.0.0.1:{Port}");
+    public Uri Endpoint => UsesExternalEndpoint ? new(ExternalEndpoint.Trim()) : new($"http://127.0.0.1:{Port}");
 }
 
 public sealed record AiConnectionSettings
