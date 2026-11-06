@@ -71,17 +71,22 @@ public class SourceCodePipelineTests
         using (var service = new TextRagService(repository, first, settings, Path.Combine(fixture.Root, "data")))
             Assert.Equal(1, (await service.ScanAsync()).Failed);
         var checkpoint = Assert.Single(await repository.DocumentsAsync(default));
-        Assert.True(checkpoint.CodeUnits![0].DescribedCharacters > 0);
-        Assert.Single(checkpoint.CodeUnits[0].Descriptions);
+        var interrupted = checkpoint.CodeUnits!.Single(u => u.Kind == "function");
+        Assert.True(interrupted.DescribedCharacters > 0);
+        Assert.Single(interrupted.Descriptions);
         var second = new CodeAi();
         using var resumed = new TextRagService(repository, second, settings, Path.Combine(fixture.Root, "data"));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         var ready = Assert.Single(await repository.DocumentsAsync(default));
-        Assert.Equal(first.Fragments[0] + string.Concat(second.Fragments.TakeWhile((_, index) => index < ready.CodeUnits![0].Descriptions.Count - 1)), ready.CodeUnits![0].Code);
-        Assert.All(ready.CodeUnits!, u => Assert.Equal(u.Code.Length, u.DescribedCharacters));
+        var function = ready.CodeUnits!.Single(u => u.Kind == "function");
+        Assert.Equal(first.Fragments[0] + string.Concat(second.Fragments.Take(function.Descriptions.Count - 1)), function.Code);
+        Assert.All(ready.CodeUnits!, u => Assert.True(u.DescriptionCompleted));
+        Assert.Equal(function.Code.Length, function.DescribedCharacters);
         Assert.All(second.EmbeddingInputs, s => { Assert.Contains("説明", s); Assert.DoesNotContain("public", s); });
         var hits = await resumed.SearchAsync("足し算", 10);
-        Assert.Equal(new[] { "class", "file", "function" }, hits.Select(h => h.SourceKind).Order().ToArray());
+        Assert.Contains(hits, h => h.SourceKind == "class");
+        Assert.DoesNotContain(hits, h => h.SourceKind == "function");
+        Assert.Equal(hits.Count, hits.Select(h => h.ParentChunkId).Distinct().Count());
         Assert.All(hits, hit => { Assert.Contains("説明", hit.Content!); Assert.Contains("public", hit.Content!); Assert.Null(hit.StartParagraph); Assert.NotNull(hit.StartLine); });
         Assert.Equal(code, (await resumed.FetchAsync(ready.DocumentId))!.Content);
         using var calls = new LocalRetrievalCalls(resumed);

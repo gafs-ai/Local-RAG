@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LocalRag.Core;
 
 namespace LocalRag.Infrastructure;
@@ -16,47 +17,74 @@ public sealed partial class TextRagService
             await repository.SaveAsync(state, token).ConfigureAwait(false);
         }
         var units = state.CodeUnits.ToList();
-        // Prose descriptions require more output than category IDs or paragraph ranges.
-        // Reserve the same output budget during subdivision and both completion attempts.
         var outputTokens = Math.Min(options.MaxOutputTokens, 512);
         var budget = await pipeline.InputBudgetAsync(options.CodePrompt, token, outputTokens).ConfigureAwait(false);
-        for (var i = 0; i < units.Count; i++)
+        int Depth(SourceCodeUnit unit) => unit.ContainerId is null ? 0 : 1 + Depth(units.Single(u => u.Id == unit.ContainerId));
+        // Complete descendants first; checkpoint each fragment and each skip.
+        var order = Enumerable.Range(0, units.Count).OrderBy(i => units[i].Kind == "function" ? 0 : units[i].Kind == "class" ? 1 : 2)
+            .ThenByDescending(i => Depth(units[i])).ToArray();
+        foreach (var i in order)
         {
             var unit = units[i];
+            if (unit.DescriptionCompleted) continue;
             if (unit.DescribedCharacters < 0 || unit.DescribedCharacters > unit.Code.Length) throw new InvalidDataException("コード説明の再開位置が不正です。");
-            object Input(string part) => new { language = SourceLanguages.Find(options.SourceMode)?.Name ?? Path.GetExtension(state.Path), unit.Kind,
-                name = unit.Name[..Math.Min(200, unit.Name.Length)], fragment = part };
-            foreach (var part in TextWindows.Split(unit.Code[unit.DescribedCharacters..], s => TextAiPipeline.InputBytes(Input(s)) <= budget))
+            object Input(string part, string evidence) => new { language = SourceLanguages.Find(options.SourceMode)?.Name ?? Path.GetExtension(state.Path),
+                unit.Kind, name = unit.Name[..Math.Min(200, unit.Name.Length)], evidence, fragment = part };
+            async Task Save()
             {
-                token.ThrowIfCancellationRequested();
-                progress?.Report($"コード説明を作成中：{i + 1}/{units.Count}（{unit.Kind}）");
-                string description;
-                try
-                {
-                    description = await pipeline.JsonAsync(options.CodePrompt, Input(part), root =>
-                    {
-                        var value = TextAiPipeline.StringProperty(root, "description");
-                        if (string.IsNullOrWhiteSpace(value) || value.Length > 4000)
-                            throw new PipelineValidationException("response_schema", "コード説明の本文が不正です。");
-                        return value;
-                    }, token, outputTokens).ConfigureAwait(false);
-                }
-                catch (Exception ex) when (ex is System.Text.Json.JsonException ||
-                    ex is PipelineValidationException { Code: "response_schema" or "output_incomplete" })
-                {
-                    token.ThrowIfCancellationRequested();
-                    // Invalid model output is discarded after the correction attempt. Index only
-                    // known structural facts, never a guessed behavior or the raw source as prose.
-                    description = $"構造情報：{unit.Kind} {unit.Name}（{unit.StartLine}–{unit.EndLine}行）。" +
-                        "この断片の動作説明はAI応答が不正のため未作成です。";
-                    unit = unit with { DescriptionFallbackUsed = true };
-                    state = state with { ProcessingNotices = state.ProcessingNotices.Append("code_description_structural").Distinct().ToList() };
-                }
-                unit = unit with { DescribedCharacters = unit.DescribedCharacters + part.Length, Descriptions = [.. unit.Descriptions, description] };
                 units[i] = unit;
                 state = state with { CodeUnits = units.ToList() };
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
             }
+            async Task<string> Describe(object input)
+            {
+                progress?.Report($"コード説明を作成中：{unit.Kind} {unit.Name}");
+                return await pipeline.JsonAsync(options.CodePrompt, input, root =>
+                {
+                    var value = TextAiPipeline.StringProperty(root, "description");
+                    if (string.IsNullOrWhiteSpace(value) || value.Length > 4000)
+                        throw new PipelineValidationException("response_schema", "コード説明の本文が不正です。");
+                    return value;
+                }, token, outputTokens).ConfigureAwait(false);
+            }
+            if (unit.Kind == "function")
+            {
+                foreach (var part in TextWindows.Split(unit.Code[unit.DescribedCharacters..], s => TextAiPipeline.InputBytes(Input(s, "source_fragment")) <= budget))
+                {
+                    token.ThrowIfCancellationRequested();
+                    string description;
+                    try { description = await Describe(Input(part, "source_fragment")); }
+                    catch (Exception ex) when (InvalidDescription(ex))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        description = $"構造情報：{unit.Kind} {unit.Name}（{unit.StartLine}–{unit.EndLine}行）。動作説明はAI応答が不正のため未作成です。";
+                        unit = unit with { DescriptionFallbackUsed = true };
+                        state = state with { ProcessingNotices = state.ProcessingNotices.Append("code_description_structural").Distinct().ToList() };
+                    }
+                    unit = unit with { DescribedCharacters = unit.DescribedCharacters + part.Length, Descriptions = [.. unit.Descriptions, description] };
+                    await Save();
+                }
+            }
+            else
+            {
+                // Files use explicit documentation or direct-child descriptions, never all source.
+                var evidence = unit.Documentation.Length > 0 ? "documentation" : "members";
+                var material = unit.Documentation.Length > 0 ? unit.Documentation : CodeHierarchy.Outline(unit, units);
+                if (unit.Kind == "class" && unit.Documentation.Length == 0 && TextAiPipeline.InputBytes(Input(unit.Code, "source")) <= budget)
+                { material = unit.Code; evidence = "source"; }
+                if (string.IsNullOrWhiteSpace(material) || TextAiPipeline.InputBytes(Input(material, evidence)) > budget)
+                    unit = unit with { DescriptionSkipped = true };
+                else
+                {
+                    try { unit = unit with { Descriptions = [await Describe(Input(material, evidence))] }; }
+                    catch (Exception ex) when (InvalidDescription(ex))
+                    { token.ThrowIfCancellationRequested(); unit = unit with { DescriptionSkipped = true }; }
+                }
+                if (unit.DescriptionSkipped)
+                    state = state with { ProcessingNotices = state.ProcessingNotices.Append("code_" + unit.Kind + "_description_skipped").Distinct().ToList() };
+            }
+            unit = unit with { DescriptionCompleted = true };
+            await Save();
         }
         var chunks = new List<TextChunk>();
         var parents = new List<TextParentChunk>();
@@ -64,17 +92,17 @@ public sealed partial class TextRagService
         for (var i = 0; i < units.Count; i++)
         {
             var unit = units[i];
-            var description = string.Join("\n\n", unit.Descriptions);
-            if (description.Length == 0) throw new InvalidDataException("コード説明がありません。");
-            var title = $"{unit.Kind}: {unit.Name}（{unit.StartLine}–{unit.EndLine}行）";
-            var label = unit.DescriptionFallbackUsed ? "説明（AI生成・一部は構造情報のみ。動作説明が未作成の断片あり）" : "説明（AI生成・長文は断片ごとの説明）";
-            var text = $"{label}：\n{description}\n\nソースコード：\n{unit.Code}";
-            parents.Add(new(unit.Id, i + 1, i + 1, text, title, unit.Kind, unit.StartLine, unit.EndLine, unit.ContainerId));
-            foreach (var part in TextWindows.Split(description, options.MaxChunkCharacters, embeddingBudget))
-                chunks.Add(new(i + 1, i + 1, part, unit.Id));
+            // Retain containers for function hits even if the container embedding was skipped.
+            parents.Add(new(unit.Id, i + 1, i + 1, CodeHierarchy.Full(unit), CodeHierarchy.Title(unit), unit.Kind, unit.StartLine, unit.EndLine, unit.ContainerId));
+            if (unit.DescriptionSkipped) continue;
+            foreach (var part in TextWindows.Split(CodeHierarchy.Description(unit), options.MaxChunkCharacters, embeddingBudget))
+                chunks.Add(new(i + 1, i + 1, part, unit.Id, "code_description"));
         }
         state = state with { Chunks = chunks, Parents = parents };
         await repository.SaveAsync(state, token).ConfigureAwait(false);
         return state;
     }
+
+    private static bool InvalidDescription(Exception ex) => ex is JsonException ||
+        ex is PipelineValidationException { Code: "response_schema" or "output_incomplete" };
 }

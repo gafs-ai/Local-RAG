@@ -16,6 +16,15 @@ public sealed class ServerFactAttribute : FactAttribute
     }
 }
 
+public sealed class ServerTheoryAttribute : TheoryAttribute
+{
+    public ServerTheoryAttribute()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOCALRAG_TEST_TOOLS")))
+            Skip = "実SurrealDBテストはLOCALRAG_TEST_TOOLSを指定して実行します。";
+    }
+}
+
 internal sealed class ServerFixture : IAsyncDisposable
 {
     public string Root { get; } = Path.Combine(Path.GetTempPath(), "LocalRag.Tests", Guid.NewGuid().ToString("N"));

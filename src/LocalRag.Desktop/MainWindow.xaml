@@ -36,6 +36,7 @@
             </TabItem>
             <TabItem Header="  取り込み  ">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
                     <StackPanel x:Name="RagPanel" Margin="4,12" IsEnabled="False">
                         <TextBlock Text="取り込み" FontSize="20" FontWeight="SemiBold" />
                         <WrapPanel>
@@ -72,6 +73,12 @@
                         </DataGrid>
                         <TextBlock Text="索引の状態" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <ListBox x:Name="DocumentStatusList" Height="110" />
+                    </StackPanel>
+                    <Separator Margin="4,16,4,8"/>
+                    <Button x:Name="ResetIngestionButton" Content="データを初期化する" Click="ResetIngestionClick"
+                            HorizontalAlignment="Left" Margin="4,4,4,8" IsEnabled="False" AutomationProperties.Name="取り込みデータを初期化する"/>
+                    <TextBlock Text="取り込んだ文書・ベクトル索引・処理履歴・再開情報を削除します。元ファイルと設定は残します。" TextWrapping="Wrap" Foreground="#526477" Margin="4,0,4,4"/>
+                    <TextBlock x:Name="DataResetStatus" TextWrapping="Wrap" Margin="4,4,4,12"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

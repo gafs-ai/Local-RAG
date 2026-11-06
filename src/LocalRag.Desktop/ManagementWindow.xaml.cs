@@ -30,11 +30,13 @@ public partial class ManagementWindow : Window
         _routes = new(source.OrderedRoutes().Select(r => new RouteDraft(r)));
         PromptPurposeBox.ItemsSource = new[] { new PurposeChoice(PromptPurpose.Classification, "分類用"), new(PromptPurpose.Format, "フォーマット用"),
             new(PromptPurpose.Chunk, "チャンクの結合用"), new(PromptPurpose.ParentChunk, "チャンクをまとめる用"),
-            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用") };
+            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.ParentDescription, "文書の親チャンク説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用") };
         ChildModeBox.ItemsSource = new Choice[] { new("Inherit", "共通動作（Markdownは機械的に結合）"), new("Paragraphs", "結合しない：段落単位"),
             new("Mechanical", "機械的に結合：文字数とモデル上限"), new("Llm", "LLMで結合を判断") };
         ParentModeBox.ItemsSource = new Choice[] { new("Inherit", "共通の親チャンク設定"), new("None", "親を作らない"),
             new("Structure", "機械的：Markdownは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
+        ParentEmbeddingBox.ItemsSource = new Choice[] { new("None", "親を埋め込まない"), new("TextWhenFits", "入力上限に収まる親全文だけ埋め込む"),
+            new("TextOrSummary", "親全文を埋め込む：長い場合は子の説明から生成") };
         Choice[] inputChoices = [new("Text", "通常のテキスト"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
         SourceModeBox.ItemsSource = inputChoices;
         EncodingModeBox.ItemsSource = TextEncodings.All;
@@ -50,6 +52,7 @@ public partial class ManagementWindow : Window
         ParentLevelBox.ItemsSource = Enumerable.Range(1, 6).ToArray();
         ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
         ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
+        CodeResultLimitBox.Text = _retrieval.CodeResultMaxCharacters.ToString();
         PatternsBox.IsChecked = _retrieval.PatternsEnabled;
         LlmBox.IsChecked = _retrieval.LlmEnabled;
         PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
@@ -133,7 +136,7 @@ public partial class ManagementWindow : Window
         if (row.IsSystem) { ManagerStatus.Text = "配布プロンプトは削除できません。"; return; }
         if (Selection(ConfidentialityPromptBox) == row.Id || _routes.Any(r =>
             r.Value.ClassifyPromptId == row.Id || r.Value.FormatPromptId == row.Id || r.Value.ChunkPromptId == row.Id ||
-            r.Value.ParentPromptId == row.Id || r.Value.CodePromptId == row.Id ||
+            r.Value.ParentPromptId == row.Id || r.Value.CodePromptId == row.Id || r.Value.ParentDescriptionPromptId == row.Id ||
             r.Value.CategoryOverrides.Any(s => s.FormatPromptId == row.Id || s.ChunkPromptId == row.Id || s.ParentPromptId == row.Id)))
         { ManagerStatus.Text = "使用中のプロンプトです。パイプラインの選択を変更してから削除してください。"; return; }
         _prompts.Remove(row); PromptList.SelectedIndex = 0; ManagerStatus.Text = "";
@@ -162,6 +165,7 @@ public partial class ManagementWindow : Window
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).ToList(),
             ClassifyEnabled = ClassifyBox.IsChecked == true, ClassifyPromptId = Selection(ClassifyPromptBox),
             ChildMode = Enum.Parse<ChildChunkMode>(Selection(ChildModeBox)), ParentMode = Enum.Parse<ParentChunkMode>(Selection(ParentModeBox)),
+            ParentEmbedding = Enum.Parse<ParentEmbeddingMode>(Selection(ParentEmbeddingBox)), ParentDescriptionPromptId = Selection(ParentDescriptionBox),
             SourceMode = Enum.Parse<SourceCodeMode>(Selection(SourceModeBox)),
             EncodingMode = (TextEncodingMode)EncodingModeBox.SelectedValue,
             MarkdownParentMinCharacters = int.TryParse(MarkdownParentMinBox.Text, out var minimum) ? minimum : -1,
@@ -182,6 +186,8 @@ public partial class ManagementWindow : Window
             var value = route.Value;
             RouteNameBox.Text = value.Name; RouteExtensionsBox.Text = string.Join(" ", value.Extensions ?? []);
             ChildModeBox.SelectedValue = value.ChildMode.ToString(); ParentModeBox.SelectedValue = value.ParentMode.ToString();
+            ParentEmbeddingBox.SelectedValue = value.ParentEmbedding.ToString();
+            ParentDescriptionBox.ItemsSource = Choices(PromptPurpose.ParentDescription); ParentDescriptionBox.SelectedValue = value.ParentDescriptionPromptId;
             SourceModeBox.SelectedValue = value.SourceMode.ToString();
             EncodingModeBox.SelectedValue = value.EncodingMode;
             MarkdownParentMinBox.Text = value.MarkdownParentMinCharacters.ToString();
@@ -283,6 +289,7 @@ public partial class ManagementWindow : Window
             ParagraphChildrenBox.IsChecked = Limits.ParagraphChildren;
             ParentLevelBox.SelectedItem = Limits.ParentHeadingLevel;
             ConfidentialityBox.IsChecked = _retrieval.ConfidentialityEnabled;
+            CodeResultLimitBox.Text = _retrieval.CodeResultMaxCharacters.ToString();
             PatternsBox.IsChecked = _retrieval.PatternsEnabled;
             LlmBox.IsChecked = _retrieval.LlmEnabled;
             PatternTextBox.Text = string.Join(Environment.NewLine, _retrieval.Patterns);
@@ -307,11 +314,13 @@ public partial class ManagementWindow : Window
         CommitGrids(); CaptureRoute();
         if (!int.TryParse(DocumentLimitBox.Text, out var document) || !int.TryParse(ChunkLimitBox.Text, out var chunk) || !int.TryParse(OutputLimitBox.Text, out var output))
         { ManagerStatus.Text = "文書・チャンク・AI応答の上限を整数で入力してください。"; return; }
+        if (!int.TryParse(CodeResultLimitBox.Text, out var codeResultLimit))
+        { ManagerStatus.Text = "ソースコード検索の返却上限を整数で入力してください。"; return; }
         var management = new ManagementSettings
         {
             UserPrompts = _prompts.Where(p => !p.IsSystem).Select(p => p.Build()).ToList(), Categories = _categories.Select(c => c.Build()).ToList(),
             Version = 2, Routes = _routes.Select(r => r.Value).ToList(),
-            Retrieval = _retrieval with { ConfidentialityPromptId = Selection(ConfidentialityPromptBox),
+            Retrieval = _retrieval with { CodeResultMaxCharacters = codeResultLimit, ConfidentialityPromptId = Selection(ConfidentialityPromptBox),
                 ConfidentialityEnabled = ConfidentialityBox.IsChecked == true, PatternsEnabled = PatternsBox.IsChecked == true, LlmEnabled = LlmBox.IsChecked == true,
                 Patterns = PatternTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() }
         };

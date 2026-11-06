@@ -31,7 +31,13 @@ public static class SourceCodeParser
         if (tree.GetDiagnostics(token).Any(d => d.Severity == DiagnosticSeverity.Error))
             throw new PipelineValidationException("code_syntax", "C#の構文を解析できません。原文を修正するかテキスト処理を選択してください。");
         var source = tree.GetText(token);
-        var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, source.Lines.Count, code) };
+        var root = tree.GetCompilationUnitRoot(token);
+        string Comments(SyntaxNode node) => string.Join("\n", node.GetLeadingTrivia().Where(t =>
+            t.IsKind(SyntaxKind.SingleLineCommentTrivia) || t.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+            t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) || t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia)).Select(t => t.ToFullString()));
+        var first = root.ChildNodes().FirstOrDefault();
+        var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, source.Lines.Count, code)
+            { Documentation = first is not null && first is not BaseTypeDeclarationSyntax ? Comments(first) : "" } };
         var ids = new Dictionary<SyntaxNode, string>();
         foreach (var node in tree.GetRoot(token).DescendantNodes())
         {
@@ -58,7 +64,14 @@ public static class SourceCodeParser
             var end = span.End;
             var firstLine = source.Lines.GetLineFromPosition(start).LineNumber + 1;
             var lastLine = source.Lines.GetLineFromPosition(Math.Max(start, end - 1)).LineNumber + 1;
-            units.Add(new(id, container, node is BaseTypeDeclarationSyntax ? "class" : "function", name, firstLine, lastLine, code[start..end]));
+            var variables = node is TypeDeclarationSyntax typeNode ? typeNode.Members.SelectMany(member => member switch
+            {
+                BaseFieldDeclarationSyntax field => field.Declaration.Variables.Select(v => field.Declaration.Type + " " + v.Identifier.Text),
+                PropertyDeclarationSyntax property => new[] { property.Type + " " + property.Identifier.Text },
+                _ => Enumerable.Empty<string>()
+            }).ToList() : [];
+            units.Add(new(id, container, node is BaseTypeDeclarationSyntax ? "class" : "function", name, firstLine, lastLine, code[start..end])
+                { Documentation = Comments(node), Variables = variables });
             ids.Add(node, id);
         }
         return units;
@@ -70,18 +83,34 @@ public static class SourceCodeParser
             source = json.load(sys.stdin)["code"]
             tree = ast.parse(source)
             units = []
+            def variables(node):
+                if not isinstance(node, ast.ClassDef):
+                    return []
+                names = set()
+                for statement in node.body:
+                    if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                        targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                        for target in targets:
+                            for part in ast.walk(target):
+                                if isinstance(part, ast.Name): names.add(part.id)
+                    if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        for part in ast.walk(statement):
+                            if isinstance(part, ast.Attribute) and isinstance(part.ctx, ast.Store) and isinstance(part.value, ast.Name) and part.value.id in ('self', 'cls'):
+                                names.add(part.value.id + '.' + part.attr)
+                return sorted(names)
             def visit(node, parent):
                 if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                     if len(units) >= 999:
                         raise ValueError("units")
                     ident = "u" + str(len(units) + 1)
                     start = min([node.lineno] + [d.lineno for d in node.decorator_list])
-                    units.append({"Id": ident, "ContainerId": parent, "Kind": "class" if isinstance(node, ast.ClassDef) else "function", "Name": node.name, "StartLine": start, "EndLine": node.end_lineno})
+                    units.append({"Id": ident, "ContainerId": parent, "Kind": "class" if isinstance(node, ast.ClassDef) else "function", "Name": node.name, "StartLine": start, "EndLine": node.end_lineno,
+                                  "Documentation": ast.get_docstring(node) or "", "Variables": variables(node)})
                     parent = ident
                 for child in ast.iter_child_nodes(node):
                     visit(child, parent)
             visit(tree, "file")
-            print(json.dumps(units, ensure_ascii=True))
+            print(json.dumps({"Documentation": ast.get_docstring(tree) or "", "Units": units}, ensure_ascii=True))
         except (SyntaxError, ValueError, RecursionError):
             sys.exit(2)
         """;
@@ -105,20 +134,22 @@ public static class SourceCodeParser
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             await errors.ConfigureAwait(false);
             if (process.ExitCode != 0) throw new PipelineValidationException("code_syntax", "Pythonの構文を解析できません。原文を修正するかテキスト処理を選択してください。");
-            var definitions = JsonSerializer.Deserialize<List<PythonUnit>>(await output.ConfigureAwait(false)) ?? throw new InvalidDataException("Python解析の応答が不正です。");
+            var parsed = JsonSerializer.Deserialize<PythonResult>(await output.ConfigureAwait(false)) ?? throw new InvalidDataException("Python解析の応答が不正です。");
             var offsets = new List<int> { 0 };
             for (var i = 0; i < code.Length; i++) if (code[i] == '\n') offsets.Add(i + 1);
-            var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, offsets.Count, code) };
-            foreach (var unit in definitions)
+            var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, offsets.Count, code) { Documentation = parsed.Documentation } };
+            foreach (var unit in parsed.Units)
             {
                 if (unit.StartLine < 1 || unit.EndLine < unit.StartLine || unit.EndLine > offsets.Count || units.Any(u => u.Id == unit.Id) ||
                     !units.Any(u => u.Id == unit.ContainerId) || unit.Kind is not ("class" or "function")) throw new InvalidDataException("Pythonコード範囲が不正です。");
                 units.Add(new(unit.Id, unit.ContainerId, unit.Kind, unit.Name, unit.StartLine, unit.EndLine,
-                    code[offsets[unit.StartLine - 1]..(unit.EndLine < offsets.Count ? offsets[unit.EndLine] : code.Length)]));
+                    code[offsets[unit.StartLine - 1]..(unit.EndLine < offsets.Count ? offsets[unit.EndLine] : code.Length)])
+                    { Documentation = unit.Documentation, Variables = unit.Variables });
             }
             return units;
         }
         finally { if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false); } }
     }
-    private sealed record PythonUnit(string Id, string ContainerId, string Kind, string Name, int StartLine, int EndLine);
+    private sealed record PythonResult(string Documentation, List<PythonUnit> Units);
+    private sealed record PythonUnit(string Id, string ContainerId, string Kind, string Name, int StartLine, int EndLine, string Documentation, List<string> Variables);
 }

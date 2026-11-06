@@ -32,22 +32,24 @@ public static class TreeSitterSourceParser
             await errors.ConfigureAwait(false);
             if (process.ExitCode != 0) throw new PipelineValidationException(process.ExitCode == 2 ? "code_syntax" : "code_parser",
                 "選択された言語で構文解析できませんでした。");
-            var definitions = JsonSerializer.Deserialize<List<Unit>>(await output.ConfigureAwait(false)) ?? throw new InvalidDataException("構文解析の応答が不正です。");
+            var parsed = JsonSerializer.Deserialize<Parsed>(await output.ConfigureAwait(false)) ?? throw new InvalidDataException("構文解析の応答が不正です。");
             var bytes = Encoding.UTF8.GetBytes(code);
             var lines = code.Count(c => c == '\n') + 1;
-            var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, lines, code) };
-            foreach (var unit in definitions)
+            var units = new List<SourceCodeUnit> { new("file", null, "file", Path.GetFileName(path), 1, lines, code) { Documentation = parsed.Documentation } };
+            foreach (var unit in parsed.Units)
             {
                 if (unit.StartByte < 0 || unit.EndByte <= unit.StartByte || unit.EndByte > bytes.Length || unit.StartLine < 1 ||
                     unit.EndLine < unit.StartLine || unit.EndLine > lines || units.Any(u => u.Id == unit.Id) ||
                     !units.Any(u => u.Id == unit.ContainerId) || unit.Kind is not ("class" or "function"))
                     throw new InvalidDataException("ソースコードの範囲が不正です。");
                 units.Add(new(unit.Id, unit.ContainerId, unit.Kind, unit.Name, unit.StartLine, unit.EndLine,
-                    new UTF8Encoding(false, true).GetString(bytes, unit.StartByte, unit.EndByte - unit.StartByte)));
+                    new UTF8Encoding(false, true).GetString(bytes, unit.StartByte, unit.EndByte - unit.StartByte))
+                    { Documentation = unit.Documentation, Variables = unit.Variables });
             }
             return units;
         }
         finally { if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false); } }
     }
-    private sealed record Unit(string Id, string ContainerId, string Kind, string Name, int StartByte, int EndByte, int StartLine, int EndLine);
+    private sealed record Parsed(string Documentation, List<Unit> Units);
+    private sealed record Unit(string Id, string ContainerId, string Kind, string Name, int StartByte, int EndByte, int StartLine, int EndLine, string Documentation, List<string> Variables);
 }

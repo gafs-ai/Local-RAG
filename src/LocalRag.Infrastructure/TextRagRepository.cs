@@ -4,7 +4,7 @@ using SurrealDb.Net;
 
 namespace LocalRag.Infrastructure;
 
-public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text, string? ParentId = null);
+public sealed record StoredTextChunk(string DocumentKey, string RevisionId, int Ordinal, int Start, int End, string Text, string? ParentId = null, string EmbeddingKind = "child");
 
 public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringCheckpointStore
 {
@@ -70,7 +70,7 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
     public async Task StageChunkAsync(TextDocumentState state, int ordinal, float[] embedding, CancellationToken token)
     {
         var chunk = state.Chunks![ordinal];
-        var payload = JsonSerializer.Serialize(new StoredTextChunk(state.Key, state.RevisionId, ordinal, chunk.Start, chunk.End, chunk.Text, chunk.ParentId));
+        var payload = JsonSerializer.Serialize(new StoredTextChunk(state.Key, state.RevisionId, ordinal, chunk.Start, chunk.End, chunk.Text, chunk.ParentId, chunk.EmbeddingKind));
         var result = await _db.RawQuery($"UPSERT type::record('{Table(state.SpaceId!)}', $key) SET document_key=$document, revision=$revision, configuration=$configuration, active=false, payload=$payload, embedding=$embedding;",
             new Dictionary<string, object?>
             {

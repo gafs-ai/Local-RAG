@@ -6,7 +6,7 @@ namespace LocalRag.Core;
 
 [JsonConverter(typeof(JsonStringEnumConverter<PromptPurpose>))]
 // Search is retained only to deserialize older settings; it is removed during migration.
-public enum PromptPurpose { Classification, Format, Chunk, Search, Confidentiality, ParentChunk, CodeDescription }
+public enum PromptPurpose { Classification, Format, Chunk, Search, Confidentiality, ParentChunk, CodeDescription, ParentDescription }
 
 public sealed record ManagedPrompt(string Id, string Name, PromptPurpose Purpose, string Text);
 public sealed record ManagedCategory(string Id, string Name, string Description = "", bool Excluded = false);
@@ -26,6 +26,8 @@ public sealed record TextRoute
     public string ChunkPromptId { get; init; } = "system.chunk";
     public string ParentPromptId { get; init; } = "system.parent";
     public string CodePromptId { get; init; } = "system.code";
+    public ParentEmbeddingMode ParentEmbedding { get; init; } = ParentEmbeddingMode.None;
+    public string ParentDescriptionPromptId { get; init; } = "system.parent-description";
     public ChildChunkMode ChildMode { get; init; }
     public ParentChunkMode ParentMode { get; init; }
     public SourceCodeMode SourceMode { get; init; }
@@ -38,6 +40,7 @@ public sealed record TextRoute
 // Retrieval has no extension/category branches and is shared by future media pipelines.
 public sealed record RetrievalPipelineSettings
 {
+    public int CodeResultMaxCharacters { get; init; } = 8000;
     public string ConfidentialityPromptId { get; init; } = "system.confidentiality";
     public bool ConfidentialityEnabled { get; init; } = true;
     public bool PatternsEnabled { get; init; } = true;
@@ -59,6 +62,7 @@ public static class SystemPrompts
         new ManagedPrompt("system.chunk", "標準：チャンクの結合", PromptPurpose.Chunk, TextRagSettings.DefaultChunkPrompt),
         new ManagedPrompt("system.parent", "標準：チャンクをまとめる", PromptPurpose.ParentChunk, TextRagSettings.DefaultParentPrompt),
         new ManagedPrompt("system.code", "標準：ソースコードの説明", PromptPurpose.CodeDescription, TextRagSettings.DefaultCodePrompt),
+        new ManagedPrompt("system.parent-description", "標準：文書の親チャンクの説明", PromptPurpose.ParentDescription, TextRagSettings.DefaultParentDescriptionPrompt),
         new ManagedPrompt("system.confidentiality", "標準：秘匿判定", PromptPurpose.Confidentiality, new TextRagSettings().ConfidentialityPrompt)
     });
 }
@@ -109,8 +113,9 @@ public sealed record ManagementSettings
                 ClassifyEnabled = false, DefaultCategoryId = "source_code" }),
             new() { Name = "Markdown用", Extensions = [".md", ".markdown"], SourceMode = SourceCodeMode.Text,
                 ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure, FormatPromptId = "",
-                MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000 },
-            new() { Name = "共通設定", Extensions = [".txt"], SourceMode = SourceCodeMode.Text, ChildMode = ChildChunkMode.Llm, FormatPromptId = "" }] };
+                MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000, ParentEmbedding = ParentEmbeddingMode.TextOrSummary },
+            new() { Name = "共通設定", Extensions = [".txt"], SourceMode = SourceCodeMode.Text, ChildMode = ChildChunkMode.Llm, FormatPromptId = "",
+                ParentEmbedding = ParentEmbeddingMode.TextOrSummary }] };
     }
 
     public TextRagSettings Resolve(TextRagSettings limits, string path)
@@ -131,6 +136,7 @@ public sealed record ManagementSettings
             ChildMode = route.ChildMode, ParentMode = route.ParentMode, SourceMode = route.SourceMode, EncodingMode = route.EncodingMode,
             MarkdownParentMinCharacters = route.MarkdownParentMinCharacters, MarkdownParentMaxCharacters = route.MarkdownParentMaxCharacters,
             ParentPrompt = Prompt(route.ParentPromptId), CodePrompt = Prompt(route.CodePromptId),
+            ParentEmbedding = route.ParentEmbedding, ParentDescriptionPrompt = Prompt(route.ParentDescriptionPromptId),
             ClassifyEnabled = route.ClassifyEnabled, ClassifyPrompt = Prompt(route.ClassifyPromptId),
             DefaultCategory = route.DefaultCategoryId, FormatEnabled = route.FormatPromptId.Length != 0,
             ChunkEnabled = route.ChunkPromptId.Length != 0,
@@ -202,6 +208,8 @@ public sealed record ManagementSettings
             if (!Enum.IsDefined(route.EncodingMode)) errors.Add("文字コードの指定が不正です。");
             if (!TextRagSettings.ValidMarkdownParentBounds(route.MarkdownParentMinCharacters, route.MarkdownParentMaxCharacters))
                 errors.Add($"{route.Name}: Markdownの親チャンクは最小0文字以上、最大50～262144文字、最小≦最大で指定してください。");
+            if (!Enum.IsDefined(route.ParentEmbedding) || !HasPrompt(route.ParentDescriptionPromptId, PromptPurpose.ParentDescription))
+                errors.Add($"{route.Name}: 親チャンクの埋め込み方式・説明プロンプトを確認してください。");
             if (!Enum.IsDefined(route.ChildMode) || !Enum.IsDefined(route.ParentMode) || !Enum.IsDefined(route.SourceMode) ||
                 !HasPrompt(route.ParentPromptId, PromptPurpose.ParentChunk) || !HasPrompt(route.CodePromptId, PromptPurpose.CodeDescription))
                 errors.Add($"{route.Extension}: チャンク処理方式またはプロンプトが不正です。");
@@ -217,6 +225,8 @@ public sealed record ManagementSettings
                     (step.ChunkPromptId is not null && !HasPrompt(step.ChunkPromptId, PromptPurpose.Chunk, true)) ||
                     (step.ParentPromptId is not null && !HasPrompt(step.ParentPromptId, PromptPurpose.ParentChunk))) errors.Add($"{route.Extension}: カテゴリ別設定を確認してください。");
         }
+        if (Retrieval.CodeResultMaxCharacters is < 500 or > 262144)
+            errors.Add("ソースコード検索の返却上限は500～262144文字で指定してください。");
         if (!HasPrompt(Retrieval.ConfidentialityPromptId, PromptPurpose.Confidentiality))
             errors.Add("取得パイプラインのプロンプトが見つからないか用途が違います。");
         if (Retrieval.Patterns is null || Retrieval.Patterns.Count > 100 || Retrieval.Patterns.Any(p => string.IsNullOrWhiteSpace(p) || p.Length > 2000))
@@ -249,6 +259,8 @@ public sealed record ManagementSettings
         }
         var route = new TextRoute
         {
+            ParentEmbedding = legacy.ParentEmbedding,
+            ParentDescriptionPromptId = Import(legacy.ParentDescriptionPrompt, PromptPurpose.ParentDescription, "親チャンクの説明"),
             EncodingMode = legacy.EncodingMode,
             MarkdownParentMinCharacters = legacy.MarkdownParentMinCharacters, MarkdownParentMaxCharacters = legacy.MarkdownParentMaxCharacters,
             ClassifyEnabled = legacy.ClassifyEnabled, ClassifyPromptId = Import(legacy.ClassifyPrompt, PromptPurpose.Classification, "分類"),

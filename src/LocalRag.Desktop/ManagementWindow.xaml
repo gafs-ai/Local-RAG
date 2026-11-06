@@ -58,7 +58,7 @@
        <TextBlock Text="1. チャンクの結合（子チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
        <ComboBox x:Name="ChildModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="子チャンクの結合方式"/>
        <TextBlock Text="LLMで結合する場合のプロンプト"/><ComboBox x:Name="DefaultChunkBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の結合"/>
-       <TextBlock Text="2. チャンクをまとめる（返却用の親チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
+       <TextBlock Text="2. チャンクをまとめる（親チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
        <ComboBox x:Name="ParentModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクのまとめ方式"/>
        <TextBlock Text="Markdownの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
        <UniformGrid Columns="2">
@@ -67,6 +67,10 @@
        </UniformGrid>
        <TextBlock Text="短い章は後続の章と結合します。最大を超える結合はせず、長い章は分割します。末尾などでは最小未満を許容します。新規Markdown設定の初期値：最小500・最大4,000文字。" TextWrapping="Wrap" Foreground="#526477"/>
        <TextBlock Text="LLMでまとめる場合のプロンプト"/><ComboBox x:Name="DefaultParentBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクプロンプト"/>
+       <TextBlock Text="3. 文書の親チャンクも検索対象にする" FontWeight="SemiBold" Margin="0,12,0,0"/>
+       <ComboBox x:Name="ParentEmbeddingBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクの埋め込み方式"/>
+       <TextBlock Text="親の説明を作るプロンプト"/><ComboBox x:Name="ParentDescriptionBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクの説明プロンプト"/>
+       <TextBlock Text="Markdown・テキスト向け。子の本文も検索対象に残します。長い親の説明は子の説明から作り、検索結果には原文を返します。ソースコードには適用しません。" TextWrapping="Wrap" Foreground="#526477"/>
       </StackPanel>
      </Grid>
      <TextBlock Text="有効カテゴリとカテゴリ別の処理" FontWeight="SemiBold" Margin="0,16,0,8"/>
@@ -79,7 +83,7 @@
       </DataGrid.Columns>
      </DataGrid>
      <TextBlock Text="共通動作と文書構造" FontWeight="SemiBold" Margin="0,16,0,8"/>
-     <CheckBox x:Name="ParentChunksBox" Content="子チャンクで検索し、親チャンクを返す" Margin="0,4"/>
+     <CheckBox x:Name="ParentChunksBox" Content="共通動作で親チャンクを作り、検索時に親を返す" Margin="0,4"/>
      <StackPanel Orientation="Horizontal" Margin="0,4">
       <TextBlock Text="Markdownの章区切り：見出しレベル" VerticalAlignment="Center"/>
       <ComboBox x:Name="ParentLevelBox" Width="70" Margin="8,0" AutomationProperties.Name="親チャンクの見出しレベル"/>
@@ -107,6 +111,9 @@
      <CheckBox x:Name="LlmBox" Content="ローカルAIで秘匿判定する（試験的 / experimental）" Margin="0,0,0,8"/>
      <TextBlock Text="既定はOFFです。モデルによっては公開してよい文書も非開示と判定するため、必要な場合に有効にしてください。一致パターン検査の設定は独立しています。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
      <TextBlock Text="秘匿判定用プロンプト"/><ComboBox x:Name="ConfidentialityPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="秘匿判定プロンプト"/>
+     <TextBlock Text="ソースコード検索：1件の返却上限（文字数）" Margin="0,16,0,4"/>
+     <TextBox x:Name="CodeResultLimitBox" AutomationProperties.Name="ソースコード検索の返却上限"/>
+     <TextBlock Text="標準8,000文字。クラスが長い場合は関数、直接ヒットしたクラス・ファイルが長い場合は一覧と説明へ縮小します。全文取得には適用しません。" TextWrapping="Wrap" Foreground="#526477"/>
     </StackPanel></ScrollViewer>
    </TabItem>
   </TabControl>

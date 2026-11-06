@@ -123,7 +123,7 @@ public class OrderedRouteTests
             Assert.Null(await service.FetchAsync(id));
             Assert.Equal(1, (await service.ScanAsync()).Indexed);
             Assert.Equal(3, Assert.Single(await repository.DocumentsAsync(default)).CodeUnits!.Count);
-            Assert.Equal(3, (await service.SearchAsync("検索", 10)).Count);
+            Assert.Equal(2, (await service.SearchAsync("検索", 10)).Count); // Function hit returns its class.
         }
         var removed = settings with { Management = management with { Routes = [text with { Extensions = [".md"] }] } };
         using var unavailable = new TextRagService(repository, new FakeTextAi(), removed, fixture.Root);

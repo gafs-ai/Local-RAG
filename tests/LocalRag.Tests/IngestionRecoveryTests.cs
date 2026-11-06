@@ -124,12 +124,15 @@ public class IngestionRecoveryTests
         Assert.Equal(1, (await service.ScanAsync()).Indexed);
         var document = Assert.Single(await repository.DocumentsAsync(default));
         Assert.Equal(3, document.CodeUnits!.Count);
-        Assert.All(document.CodeUnits, unit => { Assert.True(unit.DescriptionFallbackUsed); Assert.Equal(unit.Code.Length, unit.DescribedCharacters); });
+        var function = document.CodeUnits.Single(u => u.Kind == "function");
+        Assert.True(function.DescriptionFallbackUsed);
+        Assert.Equal(function.Code.Length, function.DescribedCharacters);
+        Assert.All(document.CodeUnits.Where(u => u.Kind != "function"), unit => Assert.True(unit.DescriptionSkipped));
         Assert.Contains("code_description_structural", document.ProcessingNotices);
         Assert.All(ai.OutputReservations, n => Assert.Equal(512, n));
         Assert.Equal(6, ai.OutputReservations.Count); // one correction per unit
         Assert.All(ai.Embeddings, text => { Assert.Contains("構造情報", text); Assert.DoesNotContain("=> a + b", text); Assert.DoesNotContain("made-up", text); });
-        Assert.All(await service.SearchAsync("Calculator", 10), hit => Assert.Contains("動作説明が未作成", hit.Content!));
+        Assert.All(await service.SearchAsync("Calculator", 10), hit => Assert.Contains("説明未作成", hit.Content!));
         Assert.Equal(original, (await service.FetchAsync(document.DocumentId))!.Content);
         var hidden = settings with { Management = settings.Management! with { Retrieval = new() { Patterns = [@"a \+ b"] } } };
         using var blocked = new TextRagService(repository, ai, hidden, Path.Combine(fixture.Root, "data"));

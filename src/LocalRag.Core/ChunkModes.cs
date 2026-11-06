@@ -6,6 +6,8 @@ namespace LocalRag.Core;
 public enum ChildChunkMode { Inherit, Paragraphs, Mechanical, Llm }
 [JsonConverter(typeof(JsonStringEnumConverter<ParentChunkMode>))]
 public enum ParentChunkMode { Inherit, None, Structure, Llm }
+[JsonConverter(typeof(JsonStringEnumConverter<ParentEmbeddingMode>))]
+public enum ParentEmbeddingMode { None, TextWhenFits, TextOrSummary }
 [JsonConverter(typeof(JsonStringEnumConverter<SourceCodeMode>))]
 // Auto/Code are accepted only for migration of older settings.
 public enum SourceCodeMode { Auto, Text, Code, CSharp, Python, TypeScript, JavaScript, Cpp, C, Rust, Java, Kotlin }

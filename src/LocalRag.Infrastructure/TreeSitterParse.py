@@ -47,6 +47,54 @@ units = []
 def text(node):
     return source[node.start_byte:node.end_byte].decode("utf-8") if node else ""
 
+def documentation(node):
+    comments = []
+    previous = node.prev_named_sibling
+    line = node.start_point.row
+    while previous and "comment" in previous.type and line - previous.end_point.row <= 1:
+        comments.insert(0, text(previous))
+        line = previous.start_point.row
+        previous = previous.prev_named_sibling
+    return "\n".join(comments)
+
+def variables(node):
+    names = []
+    fields = {"field_declaration", "field_definition", "public_field_definition", "property_declaration", "const_item"}
+    def declared(part):
+        name = part.child_by_field_name("name") or part.child_by_field_name("property")
+        if name:
+            names.append(text(name))
+            return
+        declarators = part.children_by_field_name("declarator")
+        if declarators:
+            for declarator in declarators:
+                if declarator.type == "variable_declarator":
+                    declared(declarator)
+                    continue
+                while declarator.child_by_field_name("declarator"):
+                    declarator = declarator.child_by_field_name("declarator")
+                names.append(text(declarator))
+            return
+        for child in part.named_children:
+            if child.type in {"variable_declarator", "variable_declaration"}:
+                declared(child)
+            elif grammar == "kotlin" and child.type in {"simple_identifier", "identifier"}:
+                names.append(text(child))
+    def walk(part):
+        if part.type in types or part.type in functions or part.type in expressions:
+            return
+        if part.type in fields:
+            declared(part)
+            return
+        if grammar == "kotlin" and part.type == "class_parameter" and any(c.type in {"val", "var"} for c in part.children):
+            declared(part)
+            return
+        for child in part.named_children:
+            walk(child)
+    for child in node.named_children:
+        walk(child)
+    return list(dict.fromkeys(names))
+
 def name_of(node):
     name = node.child_by_field_name("name")
     if name:
@@ -87,13 +135,16 @@ def visit(node, container):
         ident = "u" + str(len(units) + 1)
         units.append({"Id": ident, "ContainerId": container, "Kind": kind, "Name": name[:200],
                       "StartByte": span.start_byte, "EndByte": span.end_byte,
-                      "StartLine": span.start_point.row + 1, "EndLine": span.end_point.row + 1})
+                      "StartLine": span.start_point.row + 1, "EndLine": span.end_point.row + 1,
+                      "Documentation": documentation(span), "Variables": variables(node) if kind == "class" else []})
         container = ident
     for child in node.named_children:
         visit(child, container)
 
 try:
     visit(root, "file")
-    print(json.dumps(units, ensure_ascii=True))
+    first = next((n for n in root.named_children if "comment" not in n.type), None)
+    file_doc = documentation(first) if first and first.type not in types | functions | expressions else ""
+    print(json.dumps({"Documentation": file_doc, "Units": units}, ensure_ascii=True))
 except (ValueError, RecursionError):
     sys.exit(2)

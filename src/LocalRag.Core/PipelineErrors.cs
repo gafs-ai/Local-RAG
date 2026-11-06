@@ -33,6 +33,10 @@ public static class PipelineErrors
         "chunk_code_fallback" => "分割応答が再試行後も不正のためコードで分割",
         "category_default_conflict" => "文書の種類が混在するため既定カテゴリを使用",
         "code_description_structural" => "コード説明の一部は構造情報で代替（動作による検索精度に制限）",
+        "code_class_description_skipped" => "クラス説明を作成できず、クラスの埋め込みを省略（関数は個別処理）",
+        "code_file_description_skipped" => "ファイル説明を作成できず、ファイル単位の埋め込みを省略",
+        "code_no_descriptions" => "埋め込み可能なコード説明がないため索引への公開を省略",
+        "parent_embedding_skipped" => "親チャンクの埋め込みを省略（子チャンクの索引は保持）",
         "empty_text" => "検索可能な本文がありません（空文書・空白のみ）",
         _ => "代替処理あり"
     };
@@ -41,7 +45,7 @@ public static class PipelineErrors
     {
         "ready" => "ready（検索可能）", "processing" => "processing（処理中）",
         "failed" => "failed（処理保留・再試行対象）", "excluded" => "excluded（カテゴリによる除外）",
-        "skipped" => "skipped（本文なし・更新時に再確認）",
+        "skipped" => "skipped（本文または索引可能な説明なし・更新時に再確認）",
         "deleted" => "deleted（索引対象外・原本は削除しません）" + (withdrawalReason switch
         {
             "ignored" => "：除外ルールに一致", "outside_roots" => "：監視フォルダの対象外",
@@ -58,7 +62,7 @@ public static class PipelineErrors
     {
         "read" => "ファイル読み取り", "prepare" => "処理準備", "classify" => "分類",
         "format" => "整形", "chunk" => "チャンクの結合・まとめ", "code" => "コード解析・説明作成", "embedding" => "埋め込み",
-        "publish" => "索引の公開", _ => "取り込み"
+        "parent_embedding" => "親チャンクの説明・埋め込み準備", "publish" => "索引の公開", _ => "取り込み"
     };
 
     private static string Detail(string? code) => code switch

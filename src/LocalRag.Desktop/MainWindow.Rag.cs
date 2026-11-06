@@ -78,7 +78,11 @@ public partial class MainWindow
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { _operationError = SafeMessage(ex); }
-        finally { _ragChanging = false; _ragConfiguration.Release(); UpdateApplicationStatus(); }
+        finally
+        {
+            _ragChanging = false; _ragConfiguration.Release(); UpdateApplicationStatus();
+            ResetIngestionButton.IsEnabled = !_shuttingDown && !_resettingData && _server.Connection is not null;
+        }
     }
 
     private void StartMonitoring(bool immediate = true)
@@ -253,7 +257,9 @@ public partial class MainWindow
         _rag?.Dispose(); _rag = null;
         _persistentMonitor = null;
         _ragAi?.Dispose(); _ragAi = null;
-        if (_repository is not null) { await _repository.DisposeAsync(); _repository = null; }
+        await _historyRefresh.WaitAsync();
+        try { if (_repository is not null) { await _repository.DisposeAsync(); _repository = null; } }
+        finally { _historyRefresh.Release(); }
         _ragCancellation?.Dispose(); _ragCancellation = null;
     }
 }

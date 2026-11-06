@@ -227,13 +227,13 @@ public partial class MainWindow : Window, IDisposable
 
     private async void SaveSettings(object sender, RoutedEventArgs e)
     {
-        if (!_saveTask.IsCompleted) return;
+        if (!_saveTask.IsCompleted || _resettingData) return;
         await (_saveTask = SaveSettingsAsync());
     }
 
     private async void OpenManager(object sender, RoutedEventArgs e)
     {
-        if (!_settingsLoaded || _shuttingDown || !_saveTask.IsCompleted || !_startupTask.IsCompleted) return;
+        if (!_settingsLoaded || _shuttingDown || _resettingData || !_saveTask.IsCompleted || !_startupTask.IsCompleted) return;
         var tab = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
         var editor = new ManagementWindow(_loadedSettings, tab) { Owner = this };
         if (editor.ShowDialog() != true) return;
@@ -405,11 +405,12 @@ public partial class MainWindow : Window, IDisposable
         RagPanel.IsEnabled = SearchPanel.IsEnabled = SaveButton.IsEnabled = false;
         UpdateApplicationStatus();
         SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = false;
+        ResetIngestionButton.IsEnabled = false;
         DatabaseStatus.Text = "終了処理を待っています…";
         _lifetime.Cancel();
         try
         {
-            await Task.WhenAll(_startupTask, _databaseTask, _saveTask, _aiTask);
+            await Task.WhenAll(_startupTask, _databaseTask, _saveTask, _aiTask, _resetTask);
             await StopRagAsync();
             await _lemonade.ShutdownAsync(_loadedSettings.Ai.StopServerOnExit);
             await _server.ShutdownAsync(_loadedSettings.Database.StopOnExit);

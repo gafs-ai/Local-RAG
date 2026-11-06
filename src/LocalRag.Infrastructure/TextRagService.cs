@@ -73,6 +73,12 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 {
                     stage = "code";
                     state = await PrepareCodeAsync(state, pipeline, pipelineSettings, progress, token).ConfigureAwait(false);
+                    if (state.Chunks is { Count: 0 })
+                    {
+                        await repository.SaveAsync(state with { Status = "skipped", ProcessingNotices =
+                            state.ProcessingNotices.Append("code_no_descriptions").Distinct().ToList() }, token).ConfigureAwait(false);
+                        return new(0, 1, 0, 0, 0, 0);
+                    }
                 }
                 if (!isCode && state.Paragraphs is null)
                 {
@@ -93,10 +99,16 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                         ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
                     await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
-                for (var ordinal = state.EmbeddedChunks; ordinal < state.Chunks.Count; ordinal++)
+                if (!isCode && !state.ParentEmbeddingsCompleted)
+                {
+                    stage = "parent_embedding";
+                    state = await PrepareParentEmbeddingsAsync(state, pipeline, pipelineSettings, progress, token).ConfigureAwait(false);
+                }
+                var preparedChunks = state.Chunks ?? throw new InvalidDataException("埋め込み用チャンクがありません。");
+                for (var ordinal = state.EmbeddedChunks; ordinal < preparedChunks.Count; ordinal++)
                 {
                     stage = "embedding";
-                    var batch = await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, state.Chunks[ordinal].Text)], token).ConfigureAwait(false);
+                    var batch = await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, preparedChunks[ordinal].Text)], token).ConfigureAwait(false);
                     ValidateVectors(batch, 1);
                     if (state.SpaceId is null)
                     {
@@ -175,10 +187,19 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (chunk.ParentId is not null)
                 {
                     parent = document.Parents?.SingleOrDefault(p => p.Id == chunk.ParentId && p.Start <= chunk.Start && p.End >= chunk.End);
-                    if (parent is null || !seenParents.Add(document.RevisionId + ":" + parent.Id)) continue;
+                    if (parent is null) continue;
                 }
+                var matchedParent = parent;
+                CodeSelection? selection = null;
+                if (parent?.SourceKind is not null && document.CodeUnits is { } units)
+                {
+                    var hit = units.Single(u => u.Id == parent.Id);
+                    selection = CodeHierarchy.Select(hit, units, settings.Management?.Retrieval.CodeResultMaxCharacters ?? 8000);
+                    parent = document.Parents!.Single(p => p.Id == selection.Unit.Id);
+                }
+                if (parent is not null && !seenParents.Add(document.RevisionId + ":" + parent.Id)) continue;
                 if (!await CurrentAsync(document, token).ConfigureAwait(false)) continue;
-                var content = parent?.Text ?? chunk.Text;
+                var content = selection?.Content ?? parent?.Text ?? chunk.Text;
                 var disclosure = await DiscloseAsync(document, parent?.Title is null ? content : $"Section: {parent.Title}\n\n{content}", token).ConfigureAwait(false);
                 if (!await CurrentAsync(document, token).ConfigureAwait(false)) continue;
                 var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
@@ -188,7 +209,11 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     allowed && parent?.SourceKind is null ? parent?.End ?? chunk.End : null,
                     allowed && parent is not null ? document.RevisionId + ":" + parent.Id : null, allowed ? parent?.Title : null,
                     allowed ? parent?.SourceKind : null, allowed ? parent?.StartLine : null, allowed ? parent?.EndLine : null,
-                    allowed && parent?.ContainerId is not null ? document.RevisionId + ":" + parent.ContainerId : null));
+                    allowed && parent?.ContainerId is not null ? document.RevisionId + ":" + parent.ContainerId : null,
+                    allowed ? selection?.Mode : null,
+                    allowed && selection is not null ? document.RevisionId + ":" + matchedParent!.Id : null,
+                    allowed && selection is not null ? matchedParent!.SourceKind : null,
+                    allowed ? chunk.EmbeddingKind : null));
                 if (results.Count == limit) break;
             }
             return results;
