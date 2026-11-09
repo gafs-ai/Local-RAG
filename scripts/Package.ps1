@@ -1,7 +1,10 @@
-param([ValidatePattern('^\d+\.\d{2}\.\d{2,}$')][string]$Version)
+param([ValidatePattern('^\d+\.\d{2}\.\d+$')][string]$Version)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 if (!$Version) { $Version = (Get-Content (Join-Path $repo 'VERSION') -Raw).Trim() }
+if ($Version -notmatch '^\d+\.\d{2}\.\d+$') { throw 'Invalid VERSION: expected major.year.release.' }
+$releaseNotes = "Release-$Version.md"
+if (!(Test-Path -LiteralPath (Join-Path $repo "Documents/$releaseNotes"))) { throw "Release notes missing: $releaseNotes" }
 $semanticVersion = ([version]$Version).ToString()
 Push-Location $repo
 try {
@@ -20,7 +23,7 @@ try {
     Copy-Item LICENSE,COPYRIGHT $stage
     Copy-Item installer/README.md (Join-Path $stage 'README.md')
     $userDocs = New-Item -ItemType Directory -Path (Join-Path $stage 'Documents')
-    foreach ($document in @('QuickStart.md','ThirdPartyLicenses.md','Release-0.26.01.md','SettingsGuide.md','HelpTopics.json','MCPConnection.md','DataSources.md','ConfidentialityPatternScopes.md','IncrementalReprocessing.md')) {
+    foreach ($document in @('QuickStart.md','ThirdPartyLicenses.md',$releaseNotes,'DistributionValidation-2026-11-09.md','SettingsGuide.md','HelpTopics.json','MCPConnection.md','DataSources.md','ConfidentialityPatternScopes.md','IncrementalReprocessing.md','IngestionRetry-2026-11-09.md')) {
         Copy-Item (Join-Path 'Documents' $document) $userDocs.FullName
     }
     Copy-Item ThirdPartyNotices (Join-Path $stage 'ThirdPartyNotices') -Recurse
