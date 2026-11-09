@@ -53,12 +53,14 @@ public class IngestionActivityTests
         var failed = Assert.Single(await repository.HistoryAsync());
         Assert.Equal("failed", failed.Result); Assert.Equal("connection", failed.ErrorDetailCode);
         using var stop = new CancellationTokenSource();
-        using var cancelled = new TextRagService(repository, new FailureAi(stop), settings, Path.Combine(fixture.Root, "data"));
+        using var cancelled = new TextRagService(repository, new FailureAi(stop), settings, Path.Combine(fixture.Root, "data"),
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         var activities = new List<IngestionActivity>(); cancelled.ActivityChanged += activities.Add;
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled.ScanAsync(token: stop.Token));
         Assert.Equal("interrupted", (await repository.HistoryAsync())[0].Result);
         Assert.Null(activities[^1].CurrentFile); Assert.Empty(activities[^1].Waiting);
         Assert.NotNull((await repository.DocumentsAsync(default))[0].Chunks);
+        Assert.Equal(1, (await repository.DocumentsAsync(default))[0].Failure!.TransientFailures);
     }
 
     private sealed class Clock : TimeProvider

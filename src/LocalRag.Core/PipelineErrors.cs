@@ -16,6 +16,7 @@ public static class PipelineErrors
     {
         PipelineValidationException validation => validation.Code,
         JsonException or KeyNotFoundException => "response_schema",
+        HttpRequestException http when http.StatusCode is { } status && (int)status is >= 400 and < 500 and not (408 or 429) => "request_rejected",
         HttpRequestException => "connection",
         OperationCanceledException or TimeoutException => "timeout",
         InvalidDataException => "invalid_data",
@@ -32,6 +33,8 @@ public static class PipelineErrors
         "format_preserved_invalid" => "整形応答が再試行後も不正のため原文を保持",
         "chunk_code_fallback" => "分割応答が再試行後も不正のためコードで分割",
         "category_default_conflict" => "文書の種類が混在するため既定カテゴリを使用",
+        "category_default_unknown" => "分類IDが差し戻し後も不正のため既定カテゴリを使用（除外カテゴリなし）",
+        "category_id_normalized" => "分類IDの表記を登録済みカテゴリへ補正",
         "code_description_structural" => "コード説明の一部は構造情報で代替（動作による検索精度に制限）",
         "code_class_description_skipped" => "クラス説明を作成できず、クラスの埋め込みを省略（関数は個別処理）",
         "code_file_description_skipped" => "ファイル説明を作成できず、ファイル単位の埋め込みを省略",
@@ -41,10 +44,10 @@ public static class PipelineErrors
         _ => "代替処理あり"
     };
 
-    public static string Status(string status, string? withdrawalReason = null) => status switch
+    public static string Status(string status, string? withdrawalReason = null, IngestionFailure? failure = null) => status switch
     {
         "ready" => "ready（検索可能）", "processing" => "processing（処理中）",
-        "failed" => "failed（処理保留・再試行対象）", "excluded" => "excluded（カテゴリによる除外）",
+        "failed" => "failed（" + IngestionRetry.Describe(failure) + "）", "excluded" => "excluded（カテゴリによる除外）",
         "skipped" => "skipped（本文または索引可能な説明なし・更新時に再確認）",
         "deleted" => "deleted（索引対象外・原本は削除しません）" + (withdrawalReason switch
         {
@@ -80,6 +83,7 @@ public static class PipelineErrors
         "chunk_coverage" => "未分割の段落があります",
         "response_schema" => "モデル応答の形式が不正です",
         "category_unknown" => "未定義の分類IDが指定されました",
+        "source_changed" => "処理中に元ファイルが変更されました",
         "category_conflict" => "区間ごとの分類が食い違っています。カテゴリを絞るか分類を省略して指定してください",
         "context_configuration" => "指示文またはカテゴリ一覧が長すぎます。プロンプトを短くするか有効カテゴリを絞ってください",
         "context_capacity" => "指示文と応答の予約を除くと本文を処理する余地がありません",
@@ -90,6 +94,7 @@ public static class PipelineErrors
         "embedding_context" => "Embeddingモデルの入力上限を超える可能性があります。短いチャンクへの分割が必要です",
         "output_incomplete" => "モデル出力が正常に完了しませんでした",
         "connection" => "接続に失敗しました。接続先の稼働状態を確認してください",
+        "request_rejected" => "接続先がリクエストを拒否しました。接続・モデル・認証の設定を確認してください",
         "timeout" => "応答待ちがタイムアウトしました",
         "invalid_data" => "入力または応答が検証を通過しませんでした",
         "document_size" or "file_size" => "文書サイズが上限を超えています。パイプライン設定の文書文字数上限を増やしてください",

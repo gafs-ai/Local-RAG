@@ -42,9 +42,12 @@ public sealed partial class TextRagService
     private async Task<FileDiscovery> DiscoverAsync(CancellationToken token)
     {
         var checkedAt = _clock.GetUtcNow();
-        return await Task.Run(() => FileDiscoveryPolicy.Select(
+        var discovery = await Task.Run(() => FileDiscoveryPolicy.Select(
             TextFiles.Scan(settings.Folders, dataDirectory, token, settings.AllowedTextExtensions(), settings.ExcludeDotHiddenEntries, settings.GlobalIgnorePatterns),
             settings.Folders, checkedAt, settings.UpdateExclusionMinutes), token).ConfigureAwait(false);
+        var failures = await repository.FailuresAsync(token).ConfigureAwait(false);
+        return discovery with { Eligible = discovery.Eligible.Where(file => !failures.TryGetValue(file.Path, out var failure) ||
+            IngestionRetry.CanAttempt(failure, IngestionRetry.ConfigurationId(settings, file.Path), file.LastWriteUtc, file.Length, checkedAt)).ToArray() };
     }
 
     public async Task<TextCycleResult> ScanAsync(IProgress<string>? progress = null, CancellationToken token = default)
@@ -77,7 +80,7 @@ public sealed partial class TextRagService
                     try
                     {
                         var processed = await ProcessFileAsync(file, progress, token, laneHeld: true).ConfigureAwait(false);
-                        remember = processed.Failed == 0 && processed.Deferred == 0;
+                        remember = processed.Failed == 0 && processed.Deferred == 0 && processed.RetrySuppressed == 0;
                         result = Add(result, processed);
                     }
                     finally { queue.Complete(remember); ShowQueue(queue); }
@@ -125,7 +128,7 @@ public sealed partial class TextRagService
                                 try
                                 {
                                     result = await ProcessFileAsync(file, progress, stopping.Token, laneHeld: true).ConfigureAwait(false);
-                                    remember = result.Failed == 0 && result.Deferred == 0;
+                                    remember = result.Failed == 0 && result.Deferred == 0 && result.RetrySuppressed == 0;
                                 }
                                 finally { queue.Complete(remember); ShowQueue(queue); }
                             }
@@ -178,7 +181,7 @@ public sealed partial class TextRagService
                 await repository.DeactivateAsync(old, token).ConfigureAwait(false);
                 reason ??= File.Exists(old.Path) ? "extension_disabled" : "source_missing";
                 await repository.SaveAsync(old with { Status = "deleted", WithdrawalReason = reason,
-                    ErrorCode = null, ErrorStage = null, ErrorDetailCode = null }, token).ConfigureAwait(false);
+                    ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, Failure = null }, token).ConfigureAwait(false);
                 if (old.Status != "deleted")
                 {
                     deleted++;
@@ -194,5 +197,6 @@ public sealed partial class TextRagService
     }
 
     private static TextCycleResult Add(TextCycleResult a, TextCycleResult b) => new(a.Indexed + b.Indexed, a.Excluded + b.Excluded,
-        a.Unchanged + b.Unchanged, a.Failed + b.Failed, a.Deleted + b.Deleted, a.InaccessibleRoots + b.InaccessibleRoots, a.Deferred + b.Deferred);
+        a.Unchanged + b.Unchanged, a.Failed + b.Failed, a.Deleted + b.Deleted, a.InaccessibleRoots + b.InaccessibleRoots, a.Deferred + b.Deferred,
+        a.RetrySuppressed + b.RetrySuppressed);
 }

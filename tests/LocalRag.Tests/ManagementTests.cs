@@ -145,7 +145,8 @@ public class ManagementTests
         Assert.Equal("general", await pipeline.ClassifyAsync("code", default));
         var paragraphs = await pipeline.FormatAsync([new(1, "one"), new(2, "two")], settings.Categories[0], default);
         Assert.Equal("one\n\ntwo", Assert.Single(await pipeline.ChunkAsync(paragraphs, settings.Categories[0], default)).Text);
-        Assert.Equal("custom classifier", Assert.Single(ai.Systems));
+        Assert.StartsWith("custom classifier\n", Assert.Single(ai.Systems));
+        Assert.Contains("Choose exactly one supplied category ID", ai.Systems[0]);
     }
 
     [ServerFact]

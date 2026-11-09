@@ -77,7 +77,8 @@ public class ParentEmbeddingTests
         var partial = Assert.Single(await repo.DocumentsAsync(default));
         Assert.Single(Assert.Single(partial.ParentEmbeddings).Descriptions);
         var resumedAi = new SummaryAi(120);
-        using var resumed = new TextRagService(repo, resumedAi, settings, Path.Combine(fixture.Root, "data"));
+        using var resumed = new TextRagService(repo, resumedAi, settings, Path.Combine(fixture.Root, "data"),
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         Assert.DoesNotContain(resumedAi.Calls, c => c.Stage == "child" && c.Fragment == interrupted.Calls[0].Fragment);
         var ready = Assert.Single(await repo.DocumentsAsync(default));
@@ -137,7 +138,8 @@ public class ParentEmbeddingTests
             Assert.NotNull(checkpoint.ReductionInput);
             Assert.True(checkpoint.Offset > 0);
             var resumeAi = new SummaryAi(120);
-            using var resumed = new TextRagService(repo, resumeAi, settings, Path.Combine(fixture.Root, "data"));
+            using var resumed = new TextRagService(repo, resumeAi, settings, Path.Combine(fixture.Root, "data"),
+                new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
             Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
             Assert.All(resumeAi.Calls, call => Assert.Equal("parent", call.Stage));
             Assert.DoesNotContain(resumeAi.Calls, call => call.Fragment == ai.Calls.Last().Fragment);

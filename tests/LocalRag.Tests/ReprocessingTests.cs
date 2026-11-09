@@ -156,7 +156,9 @@ public class ReprocessingTests
         var state = Assert.Single(await repo.DocumentsAsync(default));
         Assert.Equal(1, state.EmbeddedChunks);
         var resumed = new RecordingAi();
-        Assert.Equal(1, (await Scan(repo, changed, resumed, f.Root)).Indexed);
+        using var resumedService = new TextRagService(repo, resumed, changed, Path.Combine(f.Root, "data"),
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
+        Assert.Equal(1, (await resumedService.ScanAsync()).Indexed);
         Assert.Empty(resumed.Calls);
         Assert.Equal(1, resumed.Embeddings);
     }

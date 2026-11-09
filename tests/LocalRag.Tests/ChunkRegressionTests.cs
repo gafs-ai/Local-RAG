@@ -83,7 +83,8 @@ public class ChunkRegressionTests
         await using var reopened = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         Assert.Equal("connection", Assert.Single(await reopened.DocumentsAsync(default)).ErrorDetailCode);
         var ai = new FakeTextAi();
-        using var resumed = new TextRagService(reopened, ai, settings, fixture.Root);
+        using var resumed = new TextRagService(reopened, ai, settings, fixture.Root,
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         Assert.Equal(0, ai.TransformCalls); // All text checkpoints were reused.
         Assert.Equal(1, ai.EmbeddingCalls);

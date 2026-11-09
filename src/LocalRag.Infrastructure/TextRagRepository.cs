@@ -37,10 +37,10 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
     // each completed file. Fetch only the fields displayed by the list.
     public async Task<IReadOnlyList<TextDocumentState>> DocumentStatusesAsync(CancellationToken token)
     {
-        var result = await _db.RawQuery("SELECT VALUE { State: { Path: Path, DataSourceName: DataSourceName, Status: Status, CategoryId: CategoryId, RevisionId: RevisionId, ConfigurationId: ConfigurationId, ErrorCode: ErrorCode, ErrorStage: ErrorStage, ErrorDetailCode: ErrorDetailCode, WithdrawalReason: WithdrawalReason, ProcessingNotices: ProcessingNotices }, ProfileId: Processing.ProfileId, Version: Processing.Version } FROM (SELECT VALUE encoding::json::decode(payload) FROM text_document WHERE data_source_name=$source);",
+        var result = await _db.RawQuery("SELECT VALUE encoding::json::encode({ State: { Path: Path, DataSourceName: DataSourceName, Status: Status, CategoryId: CategoryId, RevisionId: RevisionId, ConfigurationId: ConfigurationId, ErrorCode: ErrorCode, ErrorStage: ErrorStage, ErrorDetailCode: ErrorDetailCode, Failure: Failure, WithdrawalReason: WithdrawalReason, ProcessingNotices: ProcessingNotices }, ProfileId: Processing.ProfileId, Version: Processing.Version }) FROM (SELECT VALUE encoding::json::decode(payload) FROM text_document WHERE data_source_name=$source);",
             new Dictionary<string, object?> { ["source"] = DataSourceName }, token).ConfigureAwait(false);
         result.EnsureAllOks();
-        return (result.GetValue<ProcessingStatusRow[]>(0) ?? []).Select(r => r.ProfileId is null ? r.State : r.State with
+        return (result.GetValue<string[]>(0) ?? []).Select(json => JsonSerializer.Deserialize<ProcessingStatusRow>(json)!).Select(r => r.ProfileId is null ? r.State : r.State with
             { Processing = new() { ProfileId = r.ProfileId, Version = r.Version ?? 0 } }).ToArray();
     }
 
@@ -106,7 +106,7 @@ public sealed partial class TextRagRepository : IAsyncDisposable, IMonitoringChe
             state.Chunks.Any(c => !state.Parents.Any(p => p.Id == c.ParentId && p.Start <= c.Start && p.End >= c.End))) ||
             state.Parents is null && state.Chunks.Any(c => c.ParentId is not null))
             throw new InvalidDataException("親子チャンクの対応が不正です。");
-        var ready = state with { Status = "ready", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null };
+        var ready = state with { Status = "ready", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, Failure = null };
         var result = await _db.RawQuery($"BEGIN TRANSACTION; UPDATE {Table(state.SpaceId)} SET active=false WHERE document_key=$document; UPDATE {Table(state.SpaceId)} SET active=true WHERE revision=$revision; UPSERT type::record('text_document', $document) SET payload=$payload, data_source_name=$source, source_key_version=1; UPSERT type::record('text_revision', $revision) SET payload=$payload, data_source_name=$source, source_key_version=1; COMMIT TRANSACTION;",
             new Dictionary<string, object?> { ["document"] = state.Key, ["revision"] = state.RevisionId, ["payload"] = JsonSerializer.Serialize(ready), ["source"] = state.DataSourceName }, token).ConfigureAwait(false);
         result.EnsureAllOks();

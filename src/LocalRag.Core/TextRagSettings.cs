@@ -187,6 +187,7 @@ public sealed record TextDocumentState
     public string? ErrorCode { get; init; }
     public string? ErrorStage { get; init; }
     public string? ErrorDetailCode { get; init; }
+    public IngestionFailure? Failure { get; init; }
     public string? WithdrawalReason { get; init; }
     public List<string> ProcessingNotices { get; init; } = [];
     public string? CategoryId { get; init; }
@@ -208,4 +209,4 @@ public sealed record TextSearchResult(Guid DocumentId, DisclosureDecision Decisi
     string? SourceKind = null, int? StartLine = null, int? EndLine = null, string? ContainerId = null,
     string? ContentMode = null, string? MatchedUnitId = null, string? MatchedSourceKind = null, string? MatchedEmbeddingKind = null,
     StructuralSearchScore? Ranking = null, string? ResultUnitId = null, string? ResultUnitKind = null);
-public sealed record TextCycleResult(int Indexed, int Excluded, int Unchanged, int Failed, int Deleted, int InaccessibleRoots, int Deferred = 0);
+public sealed record TextCycleResult(int Indexed, int Excluded, int Unchanged, int Failed, int Deleted, int InaccessibleRoots, int Deferred = 0, int RetrySuppressed = 0);

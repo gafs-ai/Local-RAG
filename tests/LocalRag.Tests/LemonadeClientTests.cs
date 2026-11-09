@@ -39,6 +39,17 @@ public class LemonadeClientTests
         Assert.Equal(1, handler.Posts);
     }
 
+    [Fact]
+    public async Task NullChatContentIsAnLlmFailureWithABoundedRetryBudget()
+    {
+        var handler = new Handler("""{"data":[{"id":"local","recipe":"llamacpp","downloaded":true,"labels":["chat"]}]}""",
+            """{"choices":[{"finish_reason":"stop","message":{"content":null}}]}""");
+        using var client = new LemonadeClient(new(), handler);
+        var error = await Assert.ThrowsAsync<PipelineValidationException>(() => client.CompleteAsync("local", "system", "input"));
+        Assert.Equal("response_schema", error.Code);
+        Assert.Equal("llm", IngestionRetry.Kind(error));
+    }
+
     private sealed class Handler(string models, string chat = "{}") : HttpMessageHandler
     {
         public int Posts { get; private set; }

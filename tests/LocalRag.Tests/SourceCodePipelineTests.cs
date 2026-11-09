@@ -75,7 +75,8 @@ public class SourceCodePipelineTests
         Assert.True(interrupted.DescribedCharacters > 0);
         Assert.Single(interrupted.Descriptions);
         var second = new CodeAi();
-        using var resumed = new TextRagService(repository, second, settings, Path.Combine(fixture.Root, "data"));
+        using var resumed = new TextRagService(repository, second, settings, Path.Combine(fixture.Root, "data"),
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         var ready = Assert.Single(await repository.DocumentsAsync(default));
         var function = ready.CodeUnits!.Single(u => u.Kind == "function");

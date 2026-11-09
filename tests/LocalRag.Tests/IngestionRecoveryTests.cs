@@ -73,7 +73,7 @@ public class IngestionRecoveryTests
     {
         var options = new TextRagSettings { DefaultCategory = excludedDefault ? "excluded" : "procedure" };
         options.Categories.Add(new() { Id = "excluded", Description = "検索対象外", Excluded = true });
-        var ai = new MixedAi(exclusionVote, options.Categories);
+        var ai = new MixedAi(exclusionVote, options.Categories, options.DefaultCategory);
         var pipeline = new TextAiPipeline(ai, options);
         // Two equal windows: no category has a majority.
         var source = new string('x', 1000);
@@ -85,6 +85,8 @@ public class IngestionRecoveryTests
             Assert.Contains("category_default_conflict", pipeline.Notices);
         }
         Assert.Equal(source, string.Concat(ai.Inputs));
+        Assert.Equal(2, ai.Inputs.Count);
+        Assert.All(ai.Inputs, text => Assert.Equal(500, text.Length));
     }
 
     [ServerFact]
@@ -149,13 +151,13 @@ public class IngestionRecoveryTests
         Assert.Null(await service.FetchAsync(document.DocumentId));
     }
 
-    private sealed class MixedAi(bool exclusion, IReadOnlyList<TextCategory> configuredCategories) : ITextRagAi
+    private sealed class MixedAi(bool exclusion, IReadOnlyList<TextCategory> configuredCategories, string defaultCategory) : ITextRagAi
     {
         public List<string> Inputs { get; } = [];
         public Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token)
         {
             var categories = configuredCategories.Select(c => new { c.Id, c.Description });
-            var overhead = TextAiPipeline.InputBytes(new { categories, document = "" });
+            var overhead = TextAiPipeline.InputBytes(new { categories, defaultCategory, document = "" });
             return Task.FromResult(overhead + 500 + 160);
         }
         public Task<string> CompleteAsync(string system, string input, CancellationToken token)

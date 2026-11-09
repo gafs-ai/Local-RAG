@@ -208,7 +208,8 @@ public class TextRagTests
         await fixture.Manager.EnsureRunningAsync(fixture.Settings);
         await using var reopened = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         var resumedAi = new FakeTextAi();
-        using var resumed = new TextRagService(reopened, resumedAi, settings, fixture.Root);
+        using var resumed = new TextRagService(reopened, resumedAi, settings, fixture.Root,
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
         Assert.Equal(0, resumedAi.TransformCalls);
         Assert.Equal(1, resumedAi.EmbeddingCalls);

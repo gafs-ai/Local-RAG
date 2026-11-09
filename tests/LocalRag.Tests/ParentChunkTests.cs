@@ -235,7 +235,8 @@ public class ParentChunkTests
         Assert.Equal(2, checkpoint.Parents!.Count);
         Assert.Equal(1, checkpoint.EmbeddedChunks);
         var resumedAi = new FakeTextAi();
-        using (var resumed = new TextRagService(repo, resumedAi, settings, fixture.Root))
+        using (var resumed = new TextRagService(repo, resumedAi, settings, fixture.Root,
+            new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6))))
         {
             Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
             Assert.Equal(checkpoint.Chunks!.Count - 1, resumedAi.EmbeddingCalls);

@@ -27,6 +27,9 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
 
             var key = DocumentIdentity.Key(settings.DataSourceName, path);
             var previous = await repository.GetAsync(key, token).ConfigureAwait(false);
+            var retryConfiguration = IngestionRetry.ConfigurationId(settings, path);
+            if (previous?.Status == "failed" && !IngestionRetry.CanAttempt(previous.Failure, retryConfiguration,
+                file.LastWriteUtc, file.Length, _clock.GetUtcNow())) return new(0, 0, 0, 0, 0, 0, RetrySuppressed: 1);
             TextDocumentState? state = previous;
             var stage = "read";
             try
@@ -54,7 +57,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     : new TextDocumentState
                     {
                         Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash, DataSourceName = settings.DataSourceName,
-                        ConfigurationId = _configuration, Original = snapshot.Text,
+                        ConfigurationId = _configuration, Original = snapshot.Text, Failure = previous?.Failure,
                         ProcessingNotices = [$"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}"]
                     };
                 state = state with { ConfigurationId = _configuration,
@@ -70,7 +73,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(snapshot.Text))
                 {
-                    await repository.SaveAsync(state with { Status = "skipped", ProcessingNotices =
+                    await repository.SaveAsync(state with { Status = "skipped", Failure = null, ProcessingNotices =
                         state.ProcessingNotices.Append("empty_text").Distinct().ToList() }, token).ConfigureAwait(false);
                     return new(0, 1, 0, 0, 0, 0);
                 }
@@ -90,7 +93,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 var category = pipelineSettings.Categories.Single(c => c.Id == state.CategoryId);
                 if (category.Excluded)
                 {
-                    await repository.SaveAsync(state with { Status = "excluded" }, token).ConfigureAwait(false);
+                    await repository.SaveAsync(state with { Status = "excluded", Failure = null }, token).ConfigureAwait(false);
                     return new(0, 1, 0, 0, 0, 0);
                 }
                 var isCode = plan.IsCode;
@@ -100,7 +103,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     state = await PrepareCodeStagesAsync(state, pipeline, pipelineSettings, plan, progress, token).ConfigureAwait(false);
                     if (state.Chunks is { Count: 0 })
                     {
-                        await repository.SaveAsync(state with { Status = "skipped", ProcessingNotices =
+                        await repository.SaveAsync(state with { Status = "skipped", Failure = null, ProcessingNotices =
                             state.ProcessingNotices.Append("code_no_descriptions").Distinct().ToList() }, token).ConfigureAwait(false);
                         return new(0, 1, 0, 0, 0, 0);
                     }
@@ -133,7 +136,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 }
                 stage = "publish";
                 var current = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode).ConfigureAwait(false);
-                if (current.Hash != state.SourceHash) throw new IOException("処理中に元ファイルが変更されました。");
+                if (current.Hash != state.SourceHash) throw new PipelineValidationException("source_changed", "処理中に元ファイルが変更されました。");
                 if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries))
                     return await WithdrawAsync(state, token).ConfigureAwait(false);
                 await repository.PublishAsync(state, token).ConfigureAwait(false);
@@ -143,6 +146,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             catch (Exception ex)
             {
                 failed++;
+                var failure = IngestionRetry.Record(previous?.Failure, retryConfiguration, file.LastWriteUtc, file.Length,
+                    ex, _clock.GetUtcNow(), settings.MonitoringIntervalMinutes);
                 if (state is not null)
                 {
                     // Nested stages checkpoint after each bounded fragment. Do not overwrite that progress
@@ -151,14 +156,14 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     if (checkpoint?.RevisionId == state.RevisionId) state = checkpoint;
                     await repository.DeactivateAsync(state, token).ConfigureAwait(false);
                     await repository.SaveAsync(state with { Status = "failed", ErrorCode = ex.GetType().Name,
-                        ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex) }, token).ConfigureAwait(false);
+                        ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex), Failure = failure }, token).ConfigureAwait(false);
                 }
                 // Persist first-read failures too, without manufacturing content or a source hash.
                 else await repository.SaveAsync(new TextDocumentState
                 {
                     Key = key, DocumentId = Guid.NewGuid(), Path = path, DataSourceName = settings.DataSourceName, RevisionId = TextRagSettings.Hash(key + _configuration + "unreadable"),
                     ConfigurationId = _configuration, Status = "failed", ErrorCode = ex.GetType().Name,
-                    ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex)
+                    ErrorStage = stage, ErrorDetailCode = PipelineErrors.DetailCode(ex), Failure = failure
                 }, token).ConfigureAwait(false);
             }
 

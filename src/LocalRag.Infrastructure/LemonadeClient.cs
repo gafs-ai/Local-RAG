@@ -81,7 +81,7 @@ public sealed class LemonadeClient : IDisposable
         if (choice.GetProperty("finish_reason").GetString() != "stop")
             throw new PipelineValidationException("output_incomplete", "モデル出力が正常に完了しませんでした。");
         return choice.GetProperty("message").GetProperty("content").GetString()
-            ?? throw new InvalidDataException("モデル応答が空です。");
+            ?? throw new PipelineValidationException("response_schema", "モデル応答が空です。");
     }
 
     private static bool SingleUserTurn(LemonadeModel selected) => selected.Recipe.Equals("ryzenai-llm", StringComparison.OrdinalIgnoreCase) &&

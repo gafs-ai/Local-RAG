@@ -3,15 +3,16 @@ namespace LocalRag.Core;
 /// <summary>Metadata only: never contains source contents, model answers, or exception messages.</summary>
 public sealed record IngestionHistoryEntry(Guid Id, DateTimeOffset StartedAtUtc, DateTimeOffset CompletedAtUtc,
     string Path, string Result, string? ErrorStage = null, string? ErrorDetailCode = null,
-    string? WithdrawalReason = null, string[]? Notices = null, string? ConfigurationId = null)
+    string? WithdrawalReason = null, string[]? Notices = null, string? ConfigurationId = null, IngestionFailure? Failure = null)
 {
     public string FileName => System.IO.Path.GetFileName(Path);
     public string CompletedDisplay => CompletedAtUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss.fff");
     public string ResultDisplay => Result switch
     {
         "unchanged" => "変更なし", "deferred" => "更新中のため延期", "interrupted" => "中断・再開待ち",
-        _ => PipelineErrors.Status(Result, WithdrawalReason)
+        _ => PipelineErrors.Status(Result, WithdrawalReason, Failure)
     };
     public string DetailDisplay => (ErrorDetailCode is null ? "" : PipelineErrors.Describe(ErrorStage, ErrorDetailCode)) +
+        (Failure?.NextAttemptAtUtc is { } next ? " / 次回試行可能時刻：" + next.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") : "") +
         (Notices is { Length: > 0 } ? " / " + string.Join("、", Notices.Select(PipelineErrors.Notice)) : "");
 }
