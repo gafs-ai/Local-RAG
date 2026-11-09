@@ -16,9 +16,15 @@ try {
     dotnet restore src/LocalRag.Desktop -r win-x64 --locked-mode --configfile NuGet.Config
     if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
     & (Join-Path $PSScriptRoot 'Test-LicenseInventory.ps1')
-    foreach ($project in @('src/LocalRag.Desktop','src/LocalRag.Mcp')) {
+    foreach ($project in @('src/LocalRag.Desktop','src/LocalRag.Mcp','src/LocalRag.ServerControl')) {
         dotnet publish $project -c Release -r win-x64 --no-restore --self-contained true "-p:Version=$semanticVersion" "-p:InformationalVersion=$Version" "-p:BaseOutputPath=$buildOutput" -o $stage
         if ($LASTEXITCODE -ne 0) { throw "Publish failed: $project" }
+    }
+    foreach ($application in @('LocalRag.Desktop','LocalRag.Mcp','LocalRag.ServerControl')) {
+        $runtime = Get-Content (Join-Path $stage "$application.runtimeconfig.json") -Raw | ConvertFrom-Json
+        if (!$runtime.runtimeOptions.includedFrameworks -or $runtime.runtimeOptions.framework -or $runtime.runtimeOptions.frameworks) {
+            throw "Application must use the bundled runtime: $application"
+        }
     }
     Copy-Item LICENSE,COPYRIGHT $stage
     Copy-Item installer/README.md (Join-Path $stage 'README.md')
