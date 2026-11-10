@@ -90,7 +90,7 @@ public sealed partial class TextRagService
         }
         var chunks = new List<TextChunk>();
         var parents = new List<TextParentChunk>();
-        var embeddingBudget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
+        var embeddingBudget = await IngestionAi.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         for (var i = 0; i < units.Count; i++)
         {
             var unit = units[i];

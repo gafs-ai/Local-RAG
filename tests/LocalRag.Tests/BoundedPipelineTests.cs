@@ -142,6 +142,20 @@ public class BoundedPipelineTests
         Assert.NotEmpty(await service.SearchAsync("長文"));
     }
 
+    [Fact]
+    public async Task WordRepairDefaultPromptFits2048IncludingTransportAndOutput()
+    {
+        var handler = new BoundedHandler(2048);
+        using var ai = new LemonadeTextAi(Settings(), handler);
+        var options = new TextRagSettings();
+        var blocks = Enumerable.Range(1, 20).Select(i => new WordBlock(i, "見出しと本文を保持するための短い試験段落です。" + i)).ToArray();
+        var result = await WordStructureRepair.RunAsync(new(ai, options), options, blocks, null, _ => Task.CompletedTask, default);
+        Assert.Equal(blocks.Select(WordDocuments.Render), result.Blocks);
+        Assert.Empty(result.Notices);
+        Assert.True(handler.ChatSizes.Count > 1);
+        Assert.All(handler.ChatSizes, size => Assert.True(size <= 2048));
+    }
+
     private static AppSettings Settings() => new() { UpdateExclusionMinutes = 0, Confidentiality = new() { LlmEnabled = true }, Ai = new() { ChatModel = "Gemma-test", EmbeddingModel = "nomic-embed-text-v2-moe-GGUF" } };
 
     private sealed class BoundedHandler(int context) : HttpMessageHandler
@@ -180,7 +194,9 @@ public class BoundedPipelineTests
                     using var input = JsonDocument.Parse(content[begin..content.LastIndexOf("\nEND OF TASK DATA.", StringComparison.Ordinal)]);
                     var data = input.RootElement;
                     object answer;
-                    if (data.TryGetProperty("document", out var doc))
+                    if (data.TryGetProperty("responseExample", out var example) && example.TryGetProperty("headings", out _))
+                        answer = new { headings = Array.Empty<object>(), join = Array.Empty<object>() };
+                    else if (data.TryGetProperty("document", out var doc))
                     { ClassificationInputs.Add(doc.GetString()!); answer = new { category = Category?.Invoke(ClassificationInputs.Count) ?? "general" }; }
                     else if (data.TryGetProperty("fragment", out var fragment))
                     { InspectionInputs.Add(fragment.GetString()!); answer = new { decision = fragment.GetString()!.Contains("RESTRICTED") ? "withhold" : "allow" }; }

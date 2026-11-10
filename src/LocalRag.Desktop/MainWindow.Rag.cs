@@ -101,7 +101,7 @@ public partial class MainWindow
     {
         try
         {
-            await _rag!.RunMonitoringAsync(_persistentMonitor!, null, async result =>
+            await MonitoringRecovery.RunAsync((restart, activeToken) => _rag!.RunMonitoringAsync(_persistentMonitor!, null, async result =>
             {
                 var documents = await _repository!.DocumentStatusesAsync(token).ConfigureAwait(false);
                 await Dispatcher.InvokeAsync(() =>
@@ -112,15 +112,28 @@ public partial class MainWindow
                 });
             }, ex => Dispatcher.InvokeAsync(() =>
             {
-                _operationError = $"ファイル確認に失敗しました（{ex.GetType().Name}）。次回に再試行します。";
+                OperationalDiagnostics.Write(_dataDirectory, "monitor.check", ex);
+                _operationError = $"監視中の確認・表示更新に失敗しました（{ex.GetType().Name}）。監視を継続して次回に再試行します。";
                 UpdateApplicationStatus();
             }).Task, due => Dispatcher.InvokeAsync(() =>
             {
                 UpdateApplicationStatus();
-            }).Task, token, immediate);
+            }).Task, activeToken, immediate || restart), async (ex, wait) =>
+            {
+                OperationalDiagnostics.Write(_dataDirectory, "monitor.restart", ex);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    _operationError = $"接続またはDB処理が一時的に失敗しました。{wait.TotalSeconds:0}秒後に監視を再開します。";
+                    UpdateApplicationStatus();
+                });
+            }, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception ex) { _operationError = $"監視を停止しました（{ex.GetType().Name}）。接続と設定を確認してください。"; }
+        catch (Exception ex)
+        {
+            OperationalDiagnostics.Write(_dataDirectory, "monitor.stopped", ex);
+            _operationError = $"監視を停止しました（{ex.GetType().Name}）。接続と設定を確認してください。";
+        }
         finally { _monitoringEnabled = false; PauseButton.Content = "監視再開"; UpdateApplicationStatus(); }
     }
 
@@ -204,7 +217,7 @@ public partial class MainWindow
         SearchOutput.Clear();
         await (_ragTask = RunUserActionAsync(async () =>
         {
-            SearchStatus.Text = "検索と機密検査を実行しています。取り込み中はその完了を待ちます…";
+            SearchStatus.Text = "検索と機密検査を実行しています。取り込み中は実行中の推論が終わり次第、検索を優先します…";
             var results = await _rag.SearchAsync(query, 5, _ragCancellation!.Token);
             SearchList.ItemsSource = results.Select(r => new SearchRow(r.DocumentId,
                 r.Content is null ? $"{r.SourcePath ?? r.DocumentId.ToString()}（本文非開示：{r.Decision}）" : r.SourcePath!)).ToArray();

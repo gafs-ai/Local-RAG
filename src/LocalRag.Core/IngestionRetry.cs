@@ -13,9 +13,15 @@ public static class IngestionRetry
     public static string ConfigurationId(AppSettings settings, string path) => ProcessingPlan.Hash(new
     {
         policy = "ingestion-retry/v1", classification = "classify/v2",
-        pipeline = settings.PipelineFor(path) with { ConfidentialityPrompt = "" }, settings.TextPipeline.MaxDocumentCharacters,
+        pipeline = RetryPipeline(settings, path), settings.TextPipeline.MaxDocumentCharacters,
         settings.Ai.BaseUrl, settings.Ai.ChatModel, settings.Ai.EmbeddingModel
     });
+
+    private static TextRagSettings RetryPipeline(AppSettings settings, string path)
+    {
+        var pipeline = settings.PipelineFor(path);
+        return pipeline with { ConfidentialityPrompt = "", Word = pipeline.SourceMode == SourceCodeMode.Word ? pipeline.Word : null! };
+    }
 
     public static bool SameInput(IngestionFailure failure, string configuration, DateTime modified, long length) =>
         failure.ConfigurationId == configuration && failure.LastWriteUtc == modified && failure.Length == length;

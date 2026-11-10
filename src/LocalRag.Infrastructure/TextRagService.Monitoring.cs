@@ -103,8 +103,19 @@ public sealed partial class TextRagService
             var queue = new FileWorkQueue();
             var wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
             SetActiveQueue(queue, () => wake.Writer.TryWrite(true));
+            async Task NotifyResult(TextCycleResult result)
+            {
+                try { await onResult(result).ConfigureAwait(false); }
+                catch (Exception ex) when (!stopping.IsCancellationRequested && MonitoringRecovery.IsTransient(ex))
+                {
+                    // Refreshing the UI is independent from processing the next file.
+                    OperationalDiagnostics.Write(dataDirectory, "monitor.result-refresh", ex);
+                    await onFailure(ex).ConfigureAwait(false);
+                }
+            }
             async Task Work()
             {
+                var stage = "monitor.waiting";
                 try
                 {
                     while (await wake.Reader.WaitToReadAsync(stopping.Token).ConfigureAwait(false))
@@ -113,8 +124,9 @@ public sealed partial class TextRagService
                         while (true)
                         {
                             stopping.Token.ThrowIfCancellationRequested();
+                            stage = "monitor.reconcile";
                             var discovery = queue.TakeReconciliation();
-                            if (discovery is not null) await onResult(await ReconcileAsync(discovery, stopping.Token).ConfigureAwait(false)).ConfigureAwait(false);
+                            if (discovery is not null) await NotifyResult(await ReconcileAsync(discovery, stopping.Token).ConfigureAwait(false)).ConfigureAwait(false);
                             // Select only after the AI lane is available, so waiting behind a search
                             // does not prematurely pin a lower-priority file as already running.
                             await _operations.WaitAsync(stopping.Token).ConfigureAwait(false);
@@ -127,17 +139,23 @@ public sealed partial class TextRagService
                                 var remember = false;
                                 try
                                 {
+                                    stage = "monitor.file";
                                     result = await ProcessFileAsync(file, progress, stopping.Token, laneHeld: true).ConfigureAwait(false);
                                     remember = result.Failed == 0 && result.Deferred == 0 && result.RetrySuppressed == 0;
                                 }
                                 finally { queue.Complete(remember); ShowQueue(queue); }
                             }
                             finally { _operations.Release(); }
-                            await onResult(result).ConfigureAwait(false);
+                            stage = "monitor.result";
+                            await NotifyResult(result).ConfigureAwait(false);
                         }
                     }
                 }
-                catch { stopping.Cancel(); throw; }
+                catch (Exception ex)
+                {
+                    if (!stopping.IsCancellationRequested) OperationalDiagnostics.Write(dataDirectory, stage, ex);
+                    stopping.Cancel(); throw;
+                }
             }
             var worker = Work();
             var checks = monitor.RunAsync(async ct =>
@@ -149,7 +167,15 @@ public sealed partial class TextRagService
             await Task.WhenAny(worker, checks).ConfigureAwait(false);
             stopping.Cancel();
             try { await Task.WhenAll(worker, checks).ConfigureAwait(false); }
-            catch { if (checks.IsFaulted) await checks.ConfigureAwait(false); throw; }
+            catch
+            {
+                if (checks.IsFaulted)
+                {
+                    OperationalDiagnostics.Write(dataDirectory, "monitor.discovery", checks.Exception!.GetBaseException());
+                    await checks.ConfigureAwait(false);
+                }
+                throw;
+            }
         }
         finally { SetActiveQueue(null); ChangeActivity(null, "待機中", []); _scans.Release(); }
     }

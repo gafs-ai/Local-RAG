@@ -1,4 +1,4 @@
-# MCP接続手順（バージョン0.26.2）
+# MCP接続手順（バージョン0.26.3）
 
 ## 利用条件
 
@@ -73,7 +73,7 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 公式の[デスクトップ用プラグイン](https://developers.openai.com/plugins/deploy/desktop-only)で説明されるローカルstdio方式を使う。Local RAGを常駐させ、同じPC・Windowsユーザーのローカル実行可能な会話からプラグインを選択する。利用可否はBusinessワークスペースのポリシーとデスクトップ環境で確認する。公開ディレクトリへの審査付き提出と、今回の非公開プラグイン登録は別の作業である。
 
-`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。既定のDesktop形式は`.codex-plugin/plugin.json`、`.mcp.json`、検索用スキルを同梱する。互換マニフェストを維持し、現在の配布物は.NET同梱の`./server/LocalRag.Mcp.exe`をプラグイン基準の`cwd: "."`で実行する。以前の検証版は`dotnet ./server/LocalRag.Mcp.dll`を使用していた。`${PLUGIN_ROOT}`が展開されない環境でも固定ユーザーパスを埋め込まずに動作する。
+`scripts/Package-Plugin.ps1 -DistributionDirectory <展開済み配布フォルダ>`で、実行ファイル・依存DLL・ライセンスを含む`local-rag.zip`とローカルmarketplaceを生成する。既定のDesktop形式は`.codex-plugin/plugin.json`、`.mcp.json`、検索用スキルを同梱する。互換マニフェストを維持し、現在の配布物は.NET同梱の`./server/LocalRag.Mcp.exe`をプラグイン基準の`cwd: "./"`で実行する。`cwd: "."`は現在のホストで不正として拒否されるため使用しない。以前の検証版は`dotnet ./server/LocalRag.Mcp.dll`を使用していた。`${PLUGIN_ROOT}`が展開されない環境でも固定ユーザーパスを埋め込まずに動作する。
 
 `-Format Portable`はAgent Plugins 1.0の`plugin.json`と`mcp.json`を生成するが、今回のホストではMCPが認識されなかったため、デスクトップの動作確認には用いない。設定・認証情報・文書・DBはどちらにも含めない。既定保存先を変更した場合のみ`-DataDirectory <絶対パス>`を指定し、このPC専用のパッケージとして扱う。
 
@@ -81,7 +81,7 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 
 2026-11-02時点: MCP宣言の認識・パス展開・本体停止時の中継終了を修正し、ホスト診断でsearch/fetch両方と起動エラーなしを確認した。`scripts/Test-PluginDiscovery.ps1 -MarketplaceFile <marketplace.json>`で再現できる。更新前から続いていた会話にはツールが現れなかったが、**新しい会話でguide.txtの本文・出典・文書IDが返ったことをユーザー提供の結果で確認**した。個々のsearch/fetch呼び出し履歴はこの会話では未確認。ChatGPT上の機密拒否・検査失敗と実文書での実用性評価は残る。
 
-導入・更新後の試験は新しいローカル実行の会話で行い、`Local RAG local packages`版を選択する。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式のため、今回の成功対象に含めない。この接続試験時点では0.0.0を公開しなかった。現在のリリースは0.26.2。
+導入・更新後の試験は新しいローカル実行の会話で行い、`Local RAG local packages`版を選択する。検証版は合成文書用保存先に接続する。別途作成したワークスペース側の非公開版は以前の形式のため、今回の成功対象に含めない。この接続試験時点では0.0.0を公開しなかった。現在のリリースは0.26.3。
 
 ### ブラウザ版（未実装）
 
@@ -95,3 +95,8 @@ searchは単一のMCP text contentにJSONの`{"results":[...]}`を返す。fetch
 - 合成文書で検索・全文取得、機密文書の存在のみ返却を確認する。
 - アプリ終了後は中継から取得できない。再起動後に再接続できる。
 - ChatGPTで実際のsearch/fetch呼び出しと回答を確認する。未検証を完了扱いにしない。
+
+
+### 取り込み中の検索待ち
+
+0.26.3の修正版では、取り込み中のAI呼び出しが完了すると検索・全文取得を優先し、その後に取り込みを再開します。文書全体の完了待ちは不要ですが、未完成文書は返しません。MCPの待機を含む100秒の期限は維持するため、推論1回や検索自体が長い場合は時間切れになることがあります。[処理順と診断ログ](RetrievalPriority-2026-11-10.md)を参照してください。

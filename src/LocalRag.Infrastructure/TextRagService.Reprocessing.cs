@@ -60,7 +60,7 @@ public sealed partial class TextRagService
     private async Task<TextDocumentState> PrepareTextStagesAsync(TextDocumentState state, TextAiPipeline pipeline,
         TextRagSettings options, TextCategory category, ProcessingPlan plan, IProgress<string>? progress, Action<string> stage, CancellationToken token)
     {
-        var source = TextStructure.Build(state.Original, state.Path, options);
+        var source = TextStructure.Build(options.SourceMode == SourceCodeMode.Word ? state.WordPreparedText ?? state.Original : state.Original, state.Path, options);
         if (!Reusable(state, "format", plan.Format, source.Paragraphs, state.Paragraphs))
         {
             stage("format");
@@ -76,7 +76,7 @@ public sealed partial class TextRagService
             stage("chunk");
             state = WithoutNotices(state, "chunk_");
             progress?.Report("子チャンクを更新しています");
-            state = state with { PreparedChildren = await TextChunking.BuildChildrenAsync(ai, pipeline, options, category, state.Path,
+            state = state with { PreparedChildren = await TextChunking.BuildChildrenAsync(IngestionAi, pipeline, options, category, state.Path,
                 source, state.Paragraphs!, token).ConfigureAwait(false) };
             state = Stamp(state, "children", plan.Children, input, state.PreparedChildren);
             await repository.SaveAsync(state, token).ConfigureAwait(false);
@@ -92,7 +92,7 @@ public sealed partial class TextRagService
             await repository.SaveAsync(state, token).ConfigureAwait(false);
         }
         stage("parent_embedding");
-        var budget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
+        var budget = await IngestionAi.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         var packed = state.HierarchyChildren!.SelectMany(c => TextWindows.Split(c.Text, options.MaxChunkCharacters, budget)
             .Select(part => c with { Text = part })).ToList();
         // Completed summaries can survive an embedding-model change. Partial ones require identical input slices.
@@ -113,6 +113,26 @@ public sealed partial class TextRagService
         if (options.ParentEmbedding != ParentEmbeddingMode.None && (state.Parents ?? []).Any(parent => state.ParentEmbeddings.Any(p => p.ParentId == parent.Id && p.Skipped)))
             state = state with { ProcessingNotices = state.ProcessingNotices.Append("parent_embedding_skipped").ToList() };
         return Stamp(state, "parent-description", plan.ParentDescription, new { state.Parents, budget }, state.ParentEmbeddings);
+    }
+
+    private async Task<TextDocumentState> PrepareWordAsync(TextDocumentState state, TextAiPipeline pipeline,
+        TextRagSettings options, ProcessingPlan plan, WordDocument word, CancellationToken token)
+    {
+        var input = word.Blocks;
+        if (state.WordPreparedText is not null && Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) return state;
+        if (!Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) state = state with { WordRepair = null };
+        state = WithoutNotices(state, "word_repair_");
+        var result = await WordStructureRepair.RunAsync(pipeline, options, input, state.WordRepair, async next =>
+        {
+            state = Stamp(state with { WordRepair = next, WordPreparedText = null }, "word-repair", plan.WordRepair, input, next);
+            await repository.SaveAsync(state, token).ConfigureAwait(false);
+        }, token).ConfigureAwait(false);
+        var prepared = string.Join("\n\n", result.Blocks);
+        if (prepared.Length > options.MaxDocumentCharacters) throw new PipelineValidationException("document_size", "補正後の文書上限を超えています。");
+        state = state with { WordPreparedText = prepared, WordRepair = result,
+            ProcessingNotices = state.ProcessingNotices.Concat(result.Notices).Distinct().ToList() };
+        await repository.SaveAsync(state, token).ConfigureAwait(false);
+        return state;
     }
 
     private async Task<TextDocumentState> PrepareCodeStagesAsync(TextDocumentState state, TextAiPipeline pipeline,

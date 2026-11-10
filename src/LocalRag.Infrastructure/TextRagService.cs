@@ -2,11 +2,13 @@ using LocalRag.Core;
 
 namespace LocalRag.Infrastructure;
 
-/// <summary>A single writer/AI lane. Settings are immutable for this service's lifetime.</summary>
+/// <summary>A single writer/AI lane with cooperative retrieval priority. Settings are immutable.</summary>
 public sealed partial class TextRagService(TextRagRepository repository, ITextRagAi ai, AppSettings settings, string dataDirectory,
     TimeProvider? timeProvider = null) : ITextRetrieval, IDisposable
 {
-    private readonly SemaphoreSlim _operations = new(1, 1);
+    private readonly RetrievalPriorityGate _operations = new();
+    private ITextRagAi? _ingestionAi;
+    private ITextRagAi IngestionAi => _ingestionAi ??= new YieldingTextRagAi(ai, _operations);
     private readonly string _configuration = settings.DataSourceName == repository.DataSourceName ? settings.PipelineConfigurationId()
         : throw new InvalidOperationException("設定とDB接続のデータソース名が一致しません。");
     private readonly TextRagSettings _retrievalPrompts = settings.RetrievalPrompts();
@@ -22,7 +24,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             var path = file.Path;
             int indexed = 0, failed = 0;
             var pipelineSettings = settings.PipelineFor(path);
-            var pipeline = new TextAiPipeline(ai, pipelineSettings);
+            var pipeline = new TextAiPipeline(IngestionAi, pipelineSettings);
             token.ThrowIfCancellationRequested();
 
             var key = DocumentIdentity.Key(settings.DataSourceName, path);
@@ -36,14 +38,15 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
             {
                 if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries))
                     return await WithdrawAsync(previous, token).ConfigureAwait(false);
-                var snapshot = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode, allowEmpty: true).ConfigureAwait(false);
+                var snapshot = await DocumentReader.ReadAsync(path, pipelineSettings, dataDirectory, token, previous,
+                    ProcessingPlan.Create(settings, path, previous?.CategoryId).Read).ConfigureAwait(false);
                 if (!FileDiscoveryPolicy.StillEligible(file, settings.UpdateExclusionMinutes)) return new(0, 0, 0, 0, 0, 0, 1);
                 var plan = ProcessingPlan.Create(settings, path, previous?.CategoryId);
                 var sameSource = previous is not null && previous.SourceHash == snapshot.Hash && previous.Original == snapshot.Text;
                 if (sameSource && previous!.Processing is null && previous.ConfigurationId == _configuration)
                 {
                     previous = AdoptLegacy(previous, pipelineSettings, plan);
-                    previous = Stamp(previous, "read", plan.Read, snapshot.Hash, new { snapshot.Text, snapshot.EncodingMode, snapshot.EncodingAutomatic });
+                    previous = Stamp(previous, "read", plan.Read, snapshot.Hash, snapshot.Text);
                     await repository.BackfillVectorHashesAsync(previous, token).ConfigureAwait(false);
                     await repository.SaveAsync(previous, token).ConfigureAwait(false);
                 }
@@ -58,7 +61,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     {
                         Key = key, DocumentId = previous?.DocumentId ?? Guid.NewGuid(), Path = path, SourceHash = snapshot.Hash, DataSourceName = settings.DataSourceName,
                         ConfigurationId = _configuration, Original = snapshot.Text, Failure = previous?.Failure,
-                        ProcessingNotices = [$"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}"]
+                        ProcessingNotices = snapshot.Notices
                     };
                 state = state with { ConfigurationId = _configuration,
                     RevisionId = resume ? state.RevisionId : Guid.NewGuid().ToString("N"), EmbeddedChunks = resume ? state.EmbeddedChunks : 0,
@@ -67,9 +70,10 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (previous?.SpaceId is null || previous.SpaceId != _retrievalPrompts.SpaceId(settings.Ai, previous.Dimension))
                     state = state with { SpaceId = null, Dimension = 0, EmbeddedChunks = 0 };
                 else state = state with { SpaceId = previous.SpaceId, Dimension = previous.Dimension };
-                state = state with { ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal))
-                    .Append($"encoding_{(snapshot.EncodingAutomatic ? "auto" : "manual")}_{snapshot.EncodingMode}").ToList() };
-                state = Stamp(state, "read", plan.Read, snapshot.Hash, new { snapshot.Text, snapshot.EncodingMode, snapshot.EncodingAutomatic });
+                state = state with { WordDisclosureText = snapshot.Word?.DisclosureText, WordSourceBlocks = snapshot.Word?.Blocks,
+                    ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal))
+                    .Concat(snapshot.Notices).Distinct().ToList() };
+                state = Stamp(state, "read", plan.Read, snapshot.Hash, snapshot.Text);
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(snapshot.Text))
                 {
@@ -78,14 +82,21 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     return new(0, 1, 0, 0, 0, 0);
                 }
                 progress?.Report($"処理中：{System.IO.Path.GetFileName(path)}（実行中のファイルは優先度変更でも中断しません）");
-                if (!Reusable(state, "classify", plan.Classify, state.Original, state.CategoryId))
+                if (snapshot.Word is { } word)
+                {
+                    stage = "word_repair";
+                    progress?.Report("Wordの見出し・段落構造を補正しています");
+                    state = await PrepareWordAsync(state, pipeline, pipelineSettings, plan, word, token).ConfigureAwait(false);
+                }
+                var classificationText = snapshot.Word is not null ? state.WordPreparedText ?? state.Original : state.Original;
+                if (!Reusable(state, "classify", plan.Classify, classificationText, state.CategoryId))
                 {
                     stage = "classify";
                     state = WithoutNotices(state, "category_");
-                    var categoryId = await pipeline.ClassifyAsync(state.Original, token).ConfigureAwait(false);
+                    var categoryId = await pipeline.ClassifyAsync(classificationText, token).ConfigureAwait(false);
                     state = state with { CategoryId = categoryId,
                         ProcessingNotices = state.ProcessingNotices.Concat(pipeline.Notices).Distinct().ToList() };
-                    state = Stamp(state, "classify", plan.Classify, state.Original, state.CategoryId);
+                    state = Stamp(state, "classify", plan.Classify, classificationText, state.CategoryId);
                     await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
                 plan = ProcessingPlan.Create(settings, path, state.CategoryId);
@@ -120,7 +131,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 {
                     stage = "embedding";
                     var reused = state.SpaceId is null ? null : await repository.ReusableVectorAsync(state.SpaceId, state.Key, preparedChunks[ordinal].Text, token).ConfigureAwait(false);
-                    var batch = reused is null ? await ai.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, preparedChunks[ordinal].Text)], token).ConfigureAwait(false)
+                    var batch = reused is null ? await IngestionAi.EmbedAsync([EmbeddingInput.Document(settings.Ai.EmbeddingModel, preparedChunks[ordinal].Text)], token).ConfigureAwait(false)
                         : new VectorBatch(state.Dimension, [reused]);
                     ValidateVectors(batch, 1);
                     if (state.SpaceId is null)
@@ -135,8 +146,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
                 stage = "publish";
-                var current = await TextFiles.ReadAsync(path, settings.TextPipeline.MaxDocumentCharacters, token, pipelineSettings.EncodingMode).ConfigureAwait(false);
-                if (current.Hash != state.SourceHash) throw new PipelineValidationException("source_changed", "処理中に元ファイルが変更されました。");
+                var currentHash = await DocumentReader.HashAsync(path, pipelineSettings, token).ConfigureAwait(false);
+                if (currentHash != state.SourceHash) throw new PipelineValidationException("source_changed", "処理中に元ファイルが変更されました。");
                 if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries))
                     return await WithdrawAsync(state, token).ConfigureAwait(false);
                 await repository.PublishAsync(state, token).ConfigureAwait(false);
@@ -174,8 +185,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
     public async Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Length > 1000 || limit is < 1 or > 20) throw new ArgumentException("検索語は1～1000文字、件数は1～20で指定してください。");
-        await _operations.WaitAsync(token).ConfigureAwait(false);
-        try
+        return await RunRetrievalAsync<IReadOnlyList<TextSearchResult>>("search", async () =>
         {
             RequireModels();
             var input = EmbeddingInput.Query(settings.Ai.EmbeddingModel, query);
@@ -235,27 +245,25 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (results.Count == limit) break;
             }
             return results;
-        }
-        finally { _operations.Release(); }
+        }, token).ConfigureAwait(false);
     }
 
     public async Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default)
     {
-        await _operations.WaitAsync(token).ConfigureAwait(false);
-        try
+        return await RunRetrievalAsync<TextSearchResult?>("fetch", async () =>
         {
             var document = (await repository.DocumentsAsync(token).ConfigureAwait(false)).SingleOrDefault(d => d.DocumentId == documentId);
             if (document is null || !await CurrentAsync(document, token).ConfigureAwait(false)) return null;
-            var disclosure = await DiscloseAsync(document, document.Original, token).ConfigureAwait(false);
+            var content = document.WordPreparedText ?? document.Original;
+            var disclosure = await DiscloseAsync(document, content, token).ConfigureAwait(false);
             if (!await CurrentAsync(document, token).ConfigureAwait(false)) return null;
             var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
-            return new(document.DocumentId, disclosure.Decision, allowed ? document.Original : null, document.Path, null, null);
-        }
-        finally { _operations.Release(); }
+            return new(document.DocumentId, disclosure.Decision, allowed ? content : null, document.Path, null, null);
+        }, token).ConfigureAwait(false);
     }
 
     private Task<DisclosureResult> DiscloseAsync(TextDocumentState document, string candidate, CancellationToken token) =>
-        _gate.EvaluateAsync(document.DocumentId, document.Original, $"Source: {document.Path}\n\n{candidate}", settings.DisclosurePolicy(), token);
+        _gate.EvaluateAsync(document.DocumentId, document.WordDisclosureText ?? document.Original, $"Source: {document.Path}\n\n{candidate}", settings.DisclosurePolicy(), token);
 
     private async Task<bool> CurrentAsync(TextDocumentState document, CancellationToken token)
     {
@@ -267,7 +275,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
         try
         {
             if (new IgnorePolicy(settings.Folders, settings.GlobalIgnorePatterns).IsIgnored(document.Path, directory: false, excludeDotHiddenEntries: settings.ExcludeDotHiddenEntries)) return false;
-            return (await TextFiles.ReadAsync(document.Path, settings.TextPipeline.MaxDocumentCharacters, token, settings.PipelineFor(document.Path).EncodingMode).ConfigureAwait(false)).Hash == document.SourceHash;
+            return await DocumentReader.HashAsync(document.Path, settings.PipelineFor(document.Path), token).ConfigureAwait(false) == document.SourceHash;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.DecoderFallbackException or PipelineValidationException) { return false; }
     }

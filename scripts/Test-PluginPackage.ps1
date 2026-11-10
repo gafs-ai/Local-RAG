@@ -7,6 +7,9 @@ if (!(Test-Path -LiteralPath $manifestPath)) { $manifestPath = Join-Path $plugin
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.description -notmatch '単独では動作しません' -or $manifest.homepage -ne 'https://github.com/gafs-ai/Local-RAG/blob/main/Documents/QuickStart.md') { throw 'Missing standalone requirement or quick-start link.' }
 $config = (Get-Content -LiteralPath $mcpPath -Raw | ConvertFrom-Json).mcpServers.localrag
+if ($config.cwd -notmatch '^(\./|\$\{PLUGIN_(ROOT|DATA)\}($|/))') {
+    throw 'MCP cwd must use a host-supported plugin-relative path (for example ./); a bare dot is rejected.'
+}
 $exe = $config.command.Replace('${PLUGIN_ROOT}',$plugin)
 if (![IO.Path]::IsPathFullyQualified($exe)) { $exe = Join-Path $plugin $exe }
 $repo = Split-Path $PSScriptRoot -Parent

@@ -6,7 +6,7 @@ namespace LocalRag.Core;
 
 [JsonConverter(typeof(JsonStringEnumConverter<PromptPurpose>))]
 // Search is retained only to deserialize older settings; it is removed during migration.
-public enum PromptPurpose { Classification, Format, Chunk, Search, Confidentiality, ParentChunk, CodeDescription, ParentDescription }
+public enum PromptPurpose { Classification, Format, Chunk, Search, Confidentiality, ParentChunk, CodeDescription, ParentDescription, WordRepair }
 
 public sealed record ManagedPrompt(string Id, string Name, PromptPurpose Purpose, string Text);
 public sealed record ManagedCategory(string Id, string Name, string Description = "", bool Excluded = false);
@@ -32,6 +32,10 @@ public sealed record TextRoute
     public ParentChunkMode ParentMode { get; init; }
     public SourceCodeMode SourceMode { get; init; }
     public TextEncodingMode EncodingMode { get; init; } = TextEncodingMode.Auto;
+    public bool WordInferHeadings { get; init; } = true;
+    public bool WordJoinSoftLineBreaks { get; init; } = true;
+    public bool WordRepairWithLlm { get; init; } = true;
+    public string WordRepairPromptId { get; init; } = "system.word-repair";
     public int MarkdownParentMinCharacters { get; init; } = 0;
     public int MarkdownParentMaxCharacters { get; init; } = 262144;
     public List<CategorySteps> CategoryOverrides { get; init; } = [];
@@ -72,6 +76,7 @@ public static class SystemPrompts
         new ManagedPrompt("system.parent", "標準：チャンクをまとめる", PromptPurpose.ParentChunk, TextRagSettings.DefaultParentPrompt),
         new ManagedPrompt("system.code", "標準：ソースコードの説明", PromptPurpose.CodeDescription, TextRagSettings.DefaultCodePrompt),
         new ManagedPrompt("system.parent-description", "標準：文書の親チャンクの説明", PromptPurpose.ParentDescription, TextRagSettings.DefaultParentDescriptionPrompt),
+        new ManagedPrompt("system.word-repair", "標準：Wordの構造補正", PromptPurpose.WordRepair, WordSettings.DefaultRepairPrompt),
         new ManagedPrompt("system.confidentiality", "標準：秘匿判定", PromptPurpose.Confidentiality, new TextRagSettings().ConfidentialityPrompt)
     });
 }
@@ -120,12 +125,18 @@ public sealed record ManagementSettings
         return defaults with { Version = 2, Routes = [
             .. SourceLanguages.All.Select(l => new TextRoute { Name = l.Name + "用", Extensions = [.. l.Extensions], SourceMode = l.Mode,
                 ClassifyEnabled = false, DefaultCategoryId = "source_code" }),
+            CreateWordRoute(),
             new() { Name = "Markdown用", Extensions = [".md", ".markdown"], SourceMode = SourceCodeMode.Text,
                 ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure, FormatPromptId = "",
                 MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000, ParentEmbedding = ParentEmbeddingMode.TextOrSummary },
             new() { Name = "共通設定", Extensions = [".txt"], SourceMode = SourceCodeMode.Text, ChildMode = ChildChunkMode.Llm, FormatPromptId = "",
                 ParentEmbedding = ParentEmbeddingMode.TextOrSummary }] };
     }
+
+    public static TextRoute CreateWordRoute() => new() { Name = "Word用", Extensions = [".docx", ".docm", ".doc"],
+        SourceMode = SourceCodeMode.Word, ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure,
+        FormatPromptId = "", MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000,
+        ParentEmbedding = ParentEmbeddingMode.TextOrSummary };
 
     public TextRagSettings Resolve(TextRagSettings limits, string path)
     {
@@ -143,6 +154,8 @@ public sealed record ManagementSettings
         return ApplyRetrieval(limits) with
         {
             ChildMode = route.ChildMode, ParentMode = route.ParentMode, SourceMode = route.SourceMode, EncodingMode = route.EncodingMode,
+            Word = new() { InferHeadings = route.WordInferHeadings, JoinSoftLineBreaks = route.WordJoinSoftLineBreaks,
+                RepairWithLlm = route.WordRepairWithLlm, RepairPrompt = Prompt(route.WordRepairPromptId) },
             MarkdownParentMinCharacters = route.MarkdownParentMinCharacters, MarkdownParentMaxCharacters = route.MarkdownParentMaxCharacters,
             ParentPrompt = Prompt(route.ParentPromptId), CodePrompt = Prompt(route.CodePromptId),
             ParentEmbedding = route.ParentEmbedding, ParentDescriptionPrompt = Prompt(route.ParentDescriptionPromptId),
@@ -212,9 +225,12 @@ public sealed record ManagementSettings
             if (Version == 2 && (string.IsNullOrWhiteSpace(route.Name) || route.Name.Length > 100 || route.Extensions is null ||
                 route.Extensions.Count is < 1 or > 64 || route.Extensions.Any(ext => !ValidExtension(ext)) ||
                 route.Extensions.Distinct(StringComparer.OrdinalIgnoreCase).Count() != route.Extensions.Count ||
-                route.SourceMode != SourceCodeMode.Text && !SourceLanguages.IsCode(route.SourceMode)))
+                route.SourceMode is not (SourceCodeMode.Text or SourceCodeMode.Word) && !SourceLanguages.IsCode(route.SourceMode)))
                 errors.Add($"{route.Name}: 名前、拡張子、入力の扱いを確認してください。");
             if (!Enum.IsDefined(route.EncodingMode)) errors.Add("文字コードの指定が不正です。");
+            if (!HasPrompt(route.WordRepairPromptId, PromptPurpose.WordRepair)) errors.Add("Word構造補正プロンプトが見つからないか用途が違います。");
+            if (route.SourceMode == SourceCodeMode.Word && route.Extensions?.Any(e => !DocumentInputs.IsWord(e)) == true)
+                errors.Add("Word用の拡張子は.docx・.docm・.docを指定してください。");
             if (!TextRagSettings.ValidMarkdownParentBounds(route.MarkdownParentMinCharacters, route.MarkdownParentMaxCharacters))
                 errors.Add($"{route.Name}: Markdownの親チャンクは最小0文字以上、最大50～262144文字、最小≦最大で指定してください。");
             if (!Enum.IsDefined(route.ParentEmbedding) || !HasPrompt(route.ParentDescriptionPromptId, PromptPurpose.ParentDescription))

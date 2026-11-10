@@ -1,0 +1,13 @@
+Microsoft Word (external software; not redistributed)
+
+Local RAG uses an independently installed Windows desktop edition of Microsoft
+Word only to read legacy .doc files. Microsoft Word is not included in this
+application or its installer. No Office interop assembly is redistributed.
+
+Use of Microsoft Word is governed by the terms applicable to the user's Office
+or Microsoft 365 product and acquisition channel. Consult the installed product
+and the Microsoft licensing terms portal:
+https://www.microsoft.com/useterms
+
+This file is a dependency notice, not a copy of Microsoft's license agreement.
+The Local RAG GPL license does not grant a license to Microsoft Word.

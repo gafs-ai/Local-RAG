@@ -1,11 +1,11 @@
-# Local RAG クイックスタート（バージョン0.26.2）
+# Local RAG クイックスタート（バージョン0.26.3）
 
-Windows 11（64ビット）で、PC内のテキスト・Markdown・ソースコードを検索できるようにします。Word・PDF・音声にはまだ対応していません。
+Windows 11（64ビット）で、PC内のWord・テキスト・Markdown・ソースコードを検索できるようにします。PDF・音声にはまだ対応していません。旧形式の.docだけはMicrosoft Wordが必要です。
 
 ## 1. インストールする
 
 1. [Lemonade Server](https://lemonade-server.ai/docs/guide/install/windows/)をインストールします。
-2. 配布された `LocalRAG-…-win-x64.msi` を開き、画面の案内に従ってインストールします。
+2. [Local RAG 0.26.3のMSI](https://github.com/gafs-ai/Local-RAG/releases/download/0.26.3/LocalRAG-0.26.3-win-x64.msi)をダウンロードして開き、画面の案内に従ってインストールします。
 
 Local RAGのインストーラには.NETランタイムが含まれます。DBは初回起動時に自動で導入します。初回はインターネット接続が必要です。
 
@@ -50,3 +50,7 @@ ChatGPTから使う場合は、Local RAG本体を起動したままプラグイ�
 ## 動作状況を教えてください
 
 環境とモデルの試行データを収集中です。[フィードバック](https://github.com/gafs-ai/Local-RAG/issues/new?template=environment-feedback.yml)に、**CPUモデル、RAM容量、専用GPU（あれば）、使用モデル、動作状況（動かない・遅い・快適など）**をお知らせください。文書の本文や秘密情報は記載しないでください。
+
+## 以前の版から更新した場合
+
+Wordを取り込むには「設定」→「テキスト処理」で「追加する処理」から「Word文書：Markdownへ変換」を選び、追加して保存します。新規インストールでは設定済みです。詳しくは[Word取り込み](WordIngestion.md)を参照してください。

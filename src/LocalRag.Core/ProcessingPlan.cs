@@ -20,11 +20,12 @@ public sealed record ProcessingProvenance
 /// <summary>Effective settings only. Display names, unused prompts and unrelated routes are not dependencies.</summary>
 public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep Read, ProcessingStep Classify,
     ProcessingStep Structure, ProcessingStep Format, ProcessingStep Children, ProcessingStep Parents,
-    ProcessingStep CodeDescription, ProcessingStep ParentDescription, ProcessingStep Embedding)
+    ProcessingStep CodeDescription, ProcessingStep ParentDescription, ProcessingStep Embedding, ProcessingStep WordRepair)
 {
-    public string Id => Hash(new { IsCode, Excluded, Read.Id, Classification = Classify.Id,
+    private string BaseId => Hash(new { IsCode, Excluded, Read.Id, Classification = Classify.Id,
         Structure = Structure.Id, Format = Format.Id, Children = Children.Id, Parents = Parents.Id,
         CodeDescription = CodeDescription.Id, ParentDescription = ParentDescription.Id, Embedding = Embedding.Id });
+    public string Id => WordRepair.Method == "unused/v1" ? BaseId : Hash(new { BaseId, WordRepair = WordRepair.Id });
     public static string Hash(object? value) => TextRagSettings.Hash(JsonSerializer.Serialize(value));
     public static bool Current(AppSettings settings, TextDocumentState document) =>
         settings.AllowedTextExtensions().Contains(Path.GetExtension(document.Path), StringComparer.OrdinalIgnoreCase) &&
@@ -37,7 +38,7 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var extension = Path.GetExtension(path).ToLowerInvariant();
         var code = s.SourceMode == SourceCodeMode.Code || SourceLanguages.IsCode(s.SourceMode) ||
             s.SourceMode == SourceCodeMode.Auto && extension is ".cs" or ".py";
-        var markdown = !code && extension is ".md" or ".markdown";
+        var markdown = !code && DocumentInputs.UsesMarkdown(path, s.SourceMode);
         var category = s.Categories.SingleOrDefault(c => c.Id == (categoryId ?? s.DefaultCategory));
         var excluded = category is null || category.Excluded;
         var off = ProcessingStep.Create("unused/v1", new { });
@@ -66,9 +67,14 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var parentDescription = !parentEnabled ? off : s.ParentEmbedding == ParentEmbeddingMode.TextOrSummary
             ? Chat("parent-description/v1", s.ParentDescriptionPrompt, new { s.ParentEmbedding }, 512)
             : ProcessingStep.Create("parent-embedding/v1", new { s.ParentEmbedding });
-        return new(code, excluded, ProcessingStep.Create("text-reader/v1", new { s.EncodingMode }), classify, structure,
+        var word = s.SourceMode == SourceCodeMode.Word;
+        var read = word ? ProcessingStep.Create("word-reader/v1", new { s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
+            ProcessingStep.Create("text-reader/v1", new { s.EncodingMode });
+        var repair = !word ? off : s.Word.RepairWithLlm ? Chat("word-repair/v1", s.Word.RepairPrompt, new { }, 256) :
+            ProcessingStep.Create("word-repair-off/v1", new { });
+        return new(code, excluded, read, classify, structure,
             format, children, parents, code ? Chat("code-description/v2", s.CodePrompt, new { s.SourceMode }, 512) : off,
             parentDescription, ProcessingStep.Create("document-embedding/v1", new { app.Ai.BaseUrl, app.Ai.EmbeddingModel,
-                app.TextPipeline.EmbeddingRevision, s.MaxChunkCharacters, profile = EmbeddingInput.Profile(app.Ai.EmbeddingModel) }, app.Ai.EmbeddingModel));
+                app.TextPipeline.EmbeddingRevision, s.MaxChunkCharacters, profile = EmbeddingInput.Profile(app.Ai.EmbeddingModel) }, app.Ai.EmbeddingModel), repair);
     }
 }

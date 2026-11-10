@@ -14,7 +14,7 @@ public sealed partial class TextRagService
             await repository.SaveAsync(state, token).ConfigureAwait(false);
             return state;
         }
-        var embeddingBudget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
+        var embeddingBudget = await IngestionAi.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         var checkpoints = state.ParentEmbeddings.ToList();
         foreach (var parent in state.Parents)
         {

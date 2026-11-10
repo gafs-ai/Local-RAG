@@ -51,7 +51,7 @@ if ($Format -eq 'Portable') {
 $bridgeArgs = @()
 if ($DataDirectory) { $bridgeArgs = @('--data-dir',$DataDirectory) }
 $mcp = @{
-    mcpServers=@{localrag=@{type='stdio';command='${PLUGIN_ROOT}/server/LocalRag.Mcp.exe';args=$bridgeArgs;cwd='${PLUGIN_ROOT}'}}
+    mcpServers=@{localrag=@{type='stdio';command='${PLUGIN_ROOT}/server/LocalRag.Mcp.exe';args=$bridgeArgs;cwd='./'}}
 }
 if ($Format -eq 'Portable') {
     $mcp['$schema']='https://agent-plugins.org/schemas/1.0.0/mcp.schema.json'
@@ -62,7 +62,7 @@ if ($Format -eq 'Portable') {
     # expand PLUGIN_ROOT here. Use the bundled apphost with a plugin-relative cwd.
     $mcp.mcpServers.localrag.command = './server/LocalRag.Mcp.exe'
     $mcp.mcpServers.localrag.args = $bridgeArgs
-    $mcp.mcpServers.localrag.cwd = '.'
+    $mcp.mcpServers.localrag.cwd = './'
     $mcp.mcpServers.localrag.tool_timeout_sec = 120
 }
 $mcp | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $plugin $mcpFile) -Encoding utf8

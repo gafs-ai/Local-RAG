@@ -544,6 +544,17 @@
     ]
   },
   {
+    "Name": "Microsoft Word",
+    "Version": "",
+    "License": "導入済みOffice / Microsoft 365の利用条件",
+    "Scope": "旧形式.docの変換時のみ使用・別途インストール",
+    "Description": "本体には同梱しません。表示する通知は依存関係の説明で、Microsoftのライセンス原文ではありません。利用する製品・契約の条件を確認してください。",
+    "Source": "https://www.microsoft.com/useterms",
+    "Files": [
+      "Microsoft-Word-NOTICE.txt"
+    ]
+  },
+  {
     "Name": "Gemma 3 / nomic / その他のモデル",
     "Version": "",
     "License": "モデル別の利用条件",

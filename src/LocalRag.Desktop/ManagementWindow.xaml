@@ -50,8 +50,21 @@
        <TextBlock Text="設定名"/><TextBox x:Name="RouteNameBox" AutomationProperties.Name="設定名"/>
        <TextBlock Text="この設定を適用する拡張子（例：.txt .md）"/><TextBox x:Name="RouteExtensionsBox" TextChanged="UsageChanged" AutomationProperties.Name="設定の拡張子"/>
        <TextBlock Text="入力の扱い"/><ComboBox x:Name="SourceModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="入力の扱い"/>
+       <StackPanel x:Name="EncodingOptions">
        <TextBlock Text="文字コード"/><ComboBox x:Name="EncodingModeBox" DisplayMemberPath="Name" SelectedValuePath="Mode" AutomationProperties.Name="文字コード"/>
        <TextBlock Text="通常は自動判別を使用します。短文などで判別できない場合や文字化けする場合は、この設定の文字コードを指定してください。" TextWrapping="Wrap" Foreground="#526477"/>
+       </StackPanel>
+       <StackPanel x:Name="WordOptions">
+       <TextBlock Text="WordをMarkdownへ変換" FontWeight="Bold"/>
+       <TextBlock Text=".docx / .docmはWordを起動せず変換します。.docにはインストール済みのMicrosoft Wordが必要です。ヘッダー・フッターは本文から除去し、機密ラベルを保持します。画像内文字のOCRは未対応です。" TextWrapping="Wrap"/>
+       <CheckBox x:Name="WordHeadingsBox" Content="短い太字段落を見出しとして補正する"/>
+       <CheckBox x:Name="WordLineBreaksBox" Content="段落内の手動改行を結合する"/>
+       <CheckBox x:Name="WordRepairBox" Content="LLMで見出し・分断された段落を補正する" Checked="UsageChanged" Unchecked="UsageChanged"/>
+       <StackPanel x:Name="WordRepairPromptOptions">
+       <TextBlock Text="Word構造補正プロンプト"/><ComboBox x:Name="WordRepairPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="Word構造補正プロンプト"/>
+       <TextBlock Text="本文の追加・削除は行いません。応答が不正な場合は差し戻し後、変換結果を保持します。詩・住所等の意図的な改行は結合を無効にしてください。" TextWrapping="Wrap" Foreground="#526477"/>
+       </StackPanel>
+       </StackPanel>
        <StackPanel x:Name="CodeOptions">
        <TextBlock Text="コード説明プロンプト"/><ComboBox x:Name="CodePromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="コード説明プロンプト"/>
        <TextBlock Text="選んだ言語の構文で解析し、関数／クラス／ファイルの説明を埋め込みます。コード用の設定には通常の整形・結合を適用しません。Word・PDFなどのバイナリは変換しません。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,10"/>
@@ -74,7 +87,7 @@
        <TextBlock Text="2. チャンクをまとめる（親チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
        <ComboBox x:Name="ParentModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクのまとめ方式"/>
        <StackPanel x:Name="MarkdownBoundsOptions">
-       <TextBlock Text="Markdownの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
+       <TextBlock Text="Markdown・Wordの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
        <UniformGrid Columns="2">
         <StackPanel Margin="0,0,12,0"><TextBlock Text="最小文字数（0なら短い章を結合しない）" TextWrapping="Wrap"/><TextBox x:Name="MarkdownParentMinBox" AutomationProperties.Name="Markdown親チャンクの最小文字数"/></StackPanel>
         <StackPanel><TextBlock Text="最大文字数"/><TextBox x:Name="MarkdownParentMaxBox" AutomationProperties.Name="Markdown親チャンクの最大文字数"/></StackPanel>

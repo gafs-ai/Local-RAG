@@ -20,7 +20,7 @@ public static class TextChunking
     {
         var childMode = settings.EffectiveChildMode;
         if (settings.ChildMode == ChildChunkMode.Inherit && settings.MechanicalMarkdown &&
-            Path.GetExtension(path).ToLowerInvariant() is ".md" or ".markdown") childMode = ChildChunkMode.Mechanical;
+            DocumentInputs.UsesMarkdown(path, settings.SourceMode)) childMode = ChildChunkMode.Mechanical;
         var children = new List<TextChunk>();
         var embeddingBudget = await ai.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         foreach (var section in source.Parents)

@@ -27,6 +27,14 @@ public static class PipelineErrors
 
     public static string Notice(string code) => code switch
     {
+        "word_converted" => "WordをMarkdownに変換（ヘッダー・フッターは秘匿検査用に別途保持）",
+        "word_heading_inferred" => "短い太字段落を見出しとして補正",
+        "word_repair_preserved_long" => "Word補正の入力上限を超える段落は変換結果を保持",
+        "word_repair_preserved_invalid" => "Word補正の応答が不正のため変換結果を保持",
+        "word_images" => "画像は代替テキストで表現（画像内文字のOCRは未対応）",
+        "word_revisions" => "変更履歴は変更後の本文を使用（削除履歴は対象外）",
+        "word_comments" => "Wordのコメントは本文の対象外",
+        "word_table_merged" => "結合セルのある表をテキスト化（元のセル配置は再現しません）",
         _ when code.StartsWith("encoding_auto_", StringComparison.Ordinal) => EncodingNotice(code[14..], true),
         _ when code.StartsWith("encoding_manual_", StringComparison.Ordinal) => EncodingNotice(code[16..], false),
         "format_preserved_long" => "長い段落は整形を省略して原文を保持",
@@ -64,12 +72,20 @@ public static class PipelineErrors
     private static string Stage(string? stage) => stage switch
     {
         "read" => "ファイル読み取り", "prepare" => "処理準備", "classify" => "分類",
+        "word_repair" => "Wordの構造補正",
         "format" => "整形", "chunk" => "チャンクの結合・まとめ", "code" => "コード解析・説明作成", "embedding" => "埋め込み",
         "parent_embedding" => "親チャンクの説明・埋め込み準備", "publish" => "索引の公開", _ => "取り込み"
     };
 
     private static string Detail(string? code) => code switch
     {
+        "word_invalid" => "Wordの構造を読み取れません。破損・暗号化やファイル形式を確認してください",
+        "word_extension" => "Word用の設定には.docx・.docm・.docを指定してください",
+        "word_package_size" => "Wordファイルの安全な変換上限を超えています（ファイル64MiB・展開後128MiB・XML部分16MiB）",
+        "word_not_installed" => "旧形式.docの変換にはMicrosoft Wordが必要です。.docx形式への保存でも取り込めます",
+        "word_conversion" => "旧形式.docをWordで変換できません。Wordの導入・ファイルの保護状態を確認するか.docxで保存してください",
+        "word_conversion_timeout" => "旧形式.docの変換が2分以内に終了しませんでした。.docxで保存してください",
+        "word_content_unsupported" => "埋め込み文書・数式等の未対応要素があります。通常の本文へ変換して保存してください",
         "encoding_uncertain" => "文字コードを判別できません。適用する設定で文字コードを指定してください",
         "encoding_invalid" => "指定の文字コードで読み取れないか、バイナリが含まれています。文字コードと元ファイルを確認してください",
         "encoding_bom_conflict" => "ファイルのBOMと指定した文字コードが一致しません。適用する設定を確認してください",

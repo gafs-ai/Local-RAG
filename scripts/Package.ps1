@@ -17,6 +17,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
     & (Join-Path $PSScriptRoot 'Test-LicenseInventory.ps1')
     foreach ($project in @('src/LocalRag.Desktop','src/LocalRag.Mcp','src/LocalRag.ServerControl')) {
+        # The helper is also built as a framework-dependent project reference. Its
+        # incremental output can otherwise retain that runtimeconfig when publishing.
+        if ($project -eq 'src/LocalRag.ServerControl') {
+            dotnet clean $project -c Release -r win-x64 "-p:BaseOutputPath=$buildOutput" --verbosity quiet
+            if ($LASTEXITCODE -ne 0) { throw "Clean failed: $project" }
+        }
         dotnet publish $project -c Release -r win-x64 --no-restore --self-contained true "-p:Version=$semanticVersion" "-p:InformationalVersion=$Version" "-p:BaseOutputPath=$buildOutput" -o $stage
         if ($LASTEXITCODE -ne 0) { throw "Publish failed: $project" }
     }
@@ -29,7 +35,7 @@ try {
     Copy-Item LICENSE,COPYRIGHT $stage
     Copy-Item installer/README.md (Join-Path $stage 'README.md')
     $userDocs = New-Item -ItemType Directory -Path (Join-Path $stage 'Documents')
-    foreach ($document in @('QuickStart.md','ThirdPartyLicenses.md',$releaseNotes,'DistributionValidation-2026-11-09.md','SettingsGuide.md','HelpTopics.json','MCPConnection.md','DataSources.md','ConfidentialityPatternScopes.md','IncrementalReprocessing.md','IngestionRetry-2026-11-09.md')) {
+    foreach ($document in @('QuickStart.md','ThirdPartyLicenses.md',$releaseNotes,'WordIngestion.md','WordValidation-2026-11-09.md','DistributionValidation-0.26.3-2026-11-09.md','MonitoringRecovery-2026-11-10.md','RetrievalPriority-2026-11-10.md','DistributionValidation-2026-11-09.md','SettingsGuide.md','HelpTopics.json','MCPConnection.md','DataSources.md','ConfidentialityPatternScopes.md','IncrementalReprocessing.md','IngestionRetry-2026-11-09.md')) {
         Copy-Item (Join-Path 'Documents' $document) $userDocs.FullName
     }
     Copy-Item ThirdPartyNotices (Join-Path $stage 'ThirdPartyNotices') -Recurse

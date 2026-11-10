@@ -39,22 +39,35 @@ public sealed partial class TextRagService
             }), token, laneHeld: true).ConfigureAwait(false);
             completed = true;
             if (result.RetrySuppressed > 0) return result; // No new attempt: do not flood history.
-            using var finalization = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var state = await repository.GetAsync(DocumentIdentity.Key(settings.DataSourceName, file.Path), finalization.Token).ConfigureAwait(false);
-            var status = result.Deferred > 0 ? "deferred" : result.Unchanged > 0 ? "unchanged" : state?.Status ?? "skipped";
-            await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, status,
-                status is "failed" ? state?.ErrorStage : null, status is "failed" ? state?.ErrorDetailCode : null,
-                state?.WithdrawalReason, state?.ProcessingNotices.ToArray(), _configuration, state?.Failure), finalization.Token).ConfigureAwait(false);
-            HistoryChanged?.Invoke();
+            try
+            {
+                using var finalization = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var state = await repository.GetAsync(DocumentIdentity.Key(settings.DataSourceName, file.Path), finalization.Token).ConfigureAwait(false);
+                var status = result.Deferred > 0 ? "deferred" : result.Unchanged > 0 ? "unchanged" : state?.Status ?? "skipped";
+                await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, status,
+                    status is "failed" ? state?.ErrorStage : null, status is "failed" ? state?.ErrorDetailCode : null,
+                    state?.WithdrawalReason, state?.ProcessingNotices.ToArray(), _configuration, state?.Failure), finalization.Token).ConfigureAwait(false);
+                HistoryChanged?.Invoke();
+            }
+            catch (Exception ex) when (MonitoringRecovery.IsTransient(ex))
+            {
+                // The document has already completed. A history timeout must not undo it or stop the queue.
+                OperationalDiagnostics.Write(dataDirectory, "ingestion.history-finalization", ex);
+            }
             return result;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested && !completed)
         {
             // Save the attempt, while leaving the resumable document checkpoint untouched.
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, "interrupted",
-                ConfigurationId: _configuration), timeout.Token).ConfigureAwait(false);
-            HistoryChanged?.Invoke();
+            try
+            {
+                await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, "interrupted",
+                    ConfigurationId: _configuration), timeout.Token).ConfigureAwait(false);
+                HistoryChanged?.Invoke();
+            }
+            catch (Exception ex) when (MonitoringRecovery.IsTransient(ex))
+            { OperationalDiagnostics.Write(dataDirectory, "ingestion.interrupted-history", ex); }
             throw;
         }
         finally

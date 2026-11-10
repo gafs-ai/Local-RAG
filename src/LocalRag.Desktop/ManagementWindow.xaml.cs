@@ -31,14 +31,14 @@ public partial class ManagementWindow : Window
         _routes = new(source.OrderedRoutes().Select(r => new RouteDraft(r)));
         PromptPurposeBox.ItemsSource = new[] { new PurposeChoice(PromptPurpose.Classification, "分類用"), new(PromptPurpose.Format, "フォーマット用"),
             new(PromptPurpose.Chunk, "チャンクの結合用"), new(PromptPurpose.ParentChunk, "チャンクをまとめる用"),
-            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.ParentDescription, "文書の親チャンク説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用") };
+            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.ParentDescription, "文書の親チャンク説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用"), new(PromptPurpose.WordRepair, "Word構造補正用") };
         ChildModeBox.ItemsSource = new Choice[] { new("Inherit", "共通動作（Markdownは機械的に結合）"), new("Paragraphs", "結合しない：段落単位"),
             new("Mechanical", "機械的に結合：文字数とモデル上限"), new("Llm", "LLMで結合を判断") };
         ParentModeBox.ItemsSource = new Choice[] { new("Inherit", "共通の親チャンク設定"), new("None", "親を作らない"),
-            new("Structure", "機械的：Markdownは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
+            new("Structure", "機械的：Markdown・Wordは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
         ParentEmbeddingBox.ItemsSource = new Choice[] { new("None", "親を埋め込まない"), new("TextWhenFits", "入力上限に収まる親全文だけ埋め込む"),
             new("TextOrSummary", "親全文を埋め込む：長い場合は子の説明から生成") };
-        Choice[] inputChoices = [new("Text", "通常のテキスト"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
+        Choice[] inputChoices = [new("Text", "通常のテキスト"), new("Word", "Word文書：Markdownへ変換"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
         SourceModeBox.ItemsSource = inputChoices;
         EncodingModeBox.ItemsSource = TextEncodings.All;
         AddSourceModeBox.ItemsSource = inputChoices; AddSourceModeBox.SelectedValue = "Text";
@@ -147,7 +147,7 @@ public partial class ManagementWindow : Window
         if (row.IsSystem) { ManagerStatus.Text = "配布プロンプトは削除できません。"; return; }
         if (Selection(ConfidentialityPromptBox) == row.Id || _routes.Any(r =>
             r.Value.ClassifyPromptId == row.Id || r.Value.FormatPromptId == row.Id || r.Value.ChunkPromptId == row.Id ||
-            r.Value.ParentPromptId == row.Id || r.Value.CodePromptId == row.Id || r.Value.ParentDescriptionPromptId == row.Id ||
+            r.Value.ParentPromptId == row.Id || r.Value.CodePromptId == row.Id || r.Value.ParentDescriptionPromptId == row.Id || r.Value.WordRepairPromptId == row.Id ||
             r.Value.CategoryOverrides.Any(s => s.FormatPromptId == row.Id || s.ChunkPromptId == row.Id || s.ParentPromptId == row.Id)))
         { ManagerStatus.Text = "使用中のプロンプトです。パイプラインの選択を変更してから削除してください。"; return; }
         _prompts.Remove(row); PromptList.SelectedIndex = 0; ManagerStatus.Text = "";
@@ -179,6 +179,8 @@ public partial class ManagementWindow : Window
             ParentEmbedding = Enum.Parse<ParentEmbeddingMode>(Selection(ParentEmbeddingBox)), ParentDescriptionPromptId = Selection(ParentDescriptionBox),
             SourceMode = Enum.Parse<SourceCodeMode>(Selection(SourceModeBox)),
             EncodingMode = (TextEncodingMode)EncodingModeBox.SelectedValue,
+            WordInferHeadings = WordHeadingsBox.IsChecked == true, WordJoinSoftLineBreaks = WordLineBreaksBox.IsChecked == true,
+            WordRepairWithLlm = WordRepairBox.IsChecked == true, WordRepairPromptId = Selection(WordRepairPromptBox),
             MarkdownParentMinCharacters = int.TryParse(MarkdownParentMinBox.Text, out var minimum) ? minimum : -1,
             MarkdownParentMaxCharacters = int.TryParse(MarkdownParentMaxBox.Text, out var maximum) ? maximum : -1,
             ParentPromptId = Selection(DefaultParentBox), CodePromptId = Selection(CodePromptBox),
@@ -201,6 +203,9 @@ public partial class ManagementWindow : Window
             ParentDescriptionBox.ItemsSource = Choices(PromptPurpose.ParentDescription); ParentDescriptionBox.SelectedValue = value.ParentDescriptionPromptId;
             SourceModeBox.SelectedValue = value.SourceMode.ToString();
             EncodingModeBox.SelectedValue = value.EncodingMode;
+            WordHeadingsBox.IsChecked = value.WordInferHeadings; WordLineBreaksBox.IsChecked = value.WordJoinSoftLineBreaks;
+            WordRepairBox.IsChecked = value.WordRepairWithLlm;
+            WordRepairPromptBox.ItemsSource = Choices(PromptPurpose.WordRepair); WordRepairPromptBox.SelectedValue = value.WordRepairPromptId;
             MarkdownParentMinBox.Text = value.MarkdownParentMinCharacters.ToString();
             MarkdownParentMaxBox.Text = value.MarkdownParentMaxCharacters.ToString();
             DefaultParentBox.ItemsSource = Choices(PromptPurpose.ParentChunk); DefaultParentBox.SelectedValue = value.ParentPromptId;
@@ -238,8 +243,11 @@ public partial class ManagementWindow : Window
         var kind = AddSourceModeBox.SelectedValue as string ?? "Text";
         var mode = Enum.Parse<SourceCodeMode>(kind);
         var language = SourceLanguages.Find(mode);
-        var entry = new RouteDraft(_routes[^1].Value with { Name = (language?.Name ?? "テキスト") + "用",
-            Extensions = language is null ? [".txt"] : [.. language.Extensions], SourceMode = mode });
+        var template = mode == SourceCodeMode.Word ? ManagementSettings.CreateWordRoute() with {
+            EnabledCategoryIds = _categories.Select(c => c.Id).ToList(), DefaultCategoryId = _categories[0].Id } :
+            _routes[^1].Value with { Name = (language?.Name ?? "テキスト") + "用",
+            Extensions = language is null ? [".txt"] : [.. language.Extensions], SourceMode = mode };
+        var entry = new RouteDraft(template);
         _routes.Insert(0, entry); RouteList.SelectedItem = entry;
         ManagerStatus.Text = "最優先の位置へ追加しました。名前・拡張子・処理方法を編集し、上下ボタンで順序を調整できます。";
     }
