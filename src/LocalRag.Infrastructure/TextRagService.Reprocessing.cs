@@ -60,7 +60,7 @@ public sealed partial class TextRagService
     private async Task<TextDocumentState> PrepareTextStagesAsync(TextDocumentState state, TextAiPipeline pipeline,
         TextRagSettings options, TextCategory category, ProcessingPlan plan, IProgress<string>? progress, Action<string> stage, CancellationToken token)
     {
-        var source = TextStructure.Build(options.SourceMode == SourceCodeMode.Word ? state.WordPreparedText ?? state.Original : state.Original, state.Path, options);
+        var source = TextStructure.Build(DocumentInputs.IsConverted(options.SourceMode) ? state.WordPreparedText ?? state.Original : state.Original, state.Path, options);
         if (!Reusable(state, "format", plan.Format, source.Paragraphs, state.Paragraphs))
         {
             stage("format");
@@ -121,16 +121,17 @@ public sealed partial class TextRagService
         var input = word.Blocks;
         if (state.WordPreparedText is not null && Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) return state;
         if (!Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) state = state with { WordRepair = null };
-        state = WithoutNotices(state, "word_repair_");
+        state = WithoutNotices(state, options.SourceMode == SourceCodeMode.Pdf ? "pdf_repair_" : "word_repair_");
         var result = await WordStructureRepair.RunAsync(pipeline, options, input, state.WordRepair, async next =>
         {
             state = Stamp(state with { WordRepair = next, WordPreparedText = null }, "word-repair", plan.WordRepair, input, next);
             await repository.SaveAsync(state, token).ConfigureAwait(false);
         }, token).ConfigureAwait(false);
         var prepared = string.Join("\n\n", result.Blocks);
+        if (options.SourceMode == SourceCodeMode.Pdf) result = result with { Notices = result.Notices.Select(n => n.Replace("word_", "pdf_")).Distinct().ToList() };
         if (prepared.Length > options.MaxDocumentCharacters) throw new PipelineValidationException("document_size", "補正後の文書上限を超えています。");
-        state = state with { WordPreparedText = prepared, WordRepair = result,
-            ProcessingNotices = state.ProcessingNotices.Concat(result.Notices).Distinct().ToList() };
+        state = Stamp(state with { WordPreparedText = prepared, WordRepair = result,
+            ProcessingNotices = state.ProcessingNotices.Concat(result.Notices).Distinct().ToList() }, "word-repair", plan.WordRepair, input, result);
         await repository.SaveAsync(state, token).ConfigureAwait(false);
         return state;
     }

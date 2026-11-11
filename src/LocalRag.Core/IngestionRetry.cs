@@ -20,7 +20,7 @@ public static class IngestionRetry
     private static TextRagSettings RetryPipeline(AppSettings settings, string path)
     {
         var pipeline = settings.PipelineFor(path);
-        return pipeline with { ConfidentialityPrompt = "", Word = pipeline.SourceMode == SourceCodeMode.Word ? pipeline.Word : null! };
+        return pipeline with { Pdf = pipeline.SourceMode == SourceCodeMode.Pdf ? pipeline.Pdf : null!, ConfidentialityPrompt = "", Word = DocumentInputs.IsConverted(pipeline.SourceMode) ? pipeline.Word : null! };
     }
 
     public static bool SameInput(IngestionFailure failure, string configuration, DateTime modified, long length) =>

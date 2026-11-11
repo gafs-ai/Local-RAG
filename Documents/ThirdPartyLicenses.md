@@ -64,3 +64,5 @@ UTF.Unknownは配布元が示す選択肢のうちGPL第3版を適用し、元�
 | [tree-sitter-kotlin](https://pypi.org/project/tree-sitter-kotlin/1.1.0/) | 1.1.0 | MIT | 必要時に別途ダウンロード | [原文](../ThirdPartyNotices/tree-sitter-kotlin-1.1.0-LICENSE.txt) |
 | [Lemonade Server](https://github.com/lemonade-sdk/lemonade/blob/main/LICENSE) |  | Apache-2.0 / 同梱第三者通知 | 利用者が別途インストール | [原文](../ThirdPartyNotices/Lemonade-LICENSE.txt) |
 | [Gemma 3 / nomic / その他のモデル](https://ai.google.dev/gemma/terms/) |  | モデル別の利用条件 | 利用者が別途ダウンロード | [原文](../ThirdPartyNotices/Models-NOTICE.txt) |
+
+PDFの読み取りにはPdfPig 0.1.16（Apache-2.0）を同梱します。上流の該当コミットの[LICENSEと第三者通知](../ThirdPartyNotices/PdfPig-0.1.16-LICENSE.txt)を全文収録し、アプリ内の一覧にも追加しています。

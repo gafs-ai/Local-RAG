@@ -224,6 +224,11 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.13"
         }
       },
+      "PdfPig": {
+        "type": "Transitive",
+        "resolved": "0.1.16",
+        "contentHash": "qQcbsNMYVY+K5ELptax2S8thNMk0+rSQq3H/KdYj3LLcko8yTCz8y5KIvsKxIyAuTN0ZYNnfsZkM+0EvxTwHVA=="
+      },
       "Semver": {
         "type": "Transitive",
         "resolved": "3.0.0",
@@ -278,8 +283,9 @@
       "localrag.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "LocalRag.Core": "[0.0.0-rc.3, )",
+          "LocalRag.Core": "[0.26.3, )",
           "Microsoft.CodeAnalysis.CSharp": "[5.9.0, )",
+          "PdfPig": "[0.1.16, )",
           "SurrealDb.Net": "[1.0.0, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.0, )",
           "UTF.Unknown": "[2.7.0, )"
@@ -288,7 +294,7 @@
       "localrag.mcp": {
         "type": "Project",
         "dependencies": {
-          "LocalRag.Infrastructure": "[0.0.0-rc.3, )",
+          "LocalRag.Infrastructure": "[0.26.3, )",
           "ModelContextProtocol.AspNetCore": "[2.3.0, )"
         }
       }

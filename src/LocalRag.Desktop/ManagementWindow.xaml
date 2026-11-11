@@ -54,14 +54,21 @@
        <TextBlock Text="文字コード"/><ComboBox x:Name="EncodingModeBox" DisplayMemberPath="Name" SelectedValuePath="Mode" AutomationProperties.Name="文字コード"/>
        <TextBlock Text="通常は自動判別を使用します。短文などで判別できない場合や文字化けする場合は、この設定の文字コードを指定してください。" TextWrapping="Wrap" Foreground="#526477"/>
        </StackPanel>
+       <StackPanel x:Name="PdfOptions">
+       <TextBlock Text="PDFの取り込み判定" FontWeight="Bold"/>
+       <ComboBox x:Name="PdfPolicyBox" DisplayMemberPath="Label" SelectedValuePath="Key" SelectionChanged="UsageChanged" AutomationProperties.Name="PDFの取り込み判定"/>
+       <StackPanel x:Name="PdfSamplingOptions"><TextBlock Text="自動判定で調べる最大ページ数（3～63）"/><TextBox x:Name="PdfSamplesBox" AutomationProperties.Name="PDFの最大サンプルページ数"/></StackPanel>
+       <CheckBox x:Name="PdfHeadersBox" Content="繰り返すヘッダー・フッターとページ番号を除去する"/>
+       <TextBlock Text="自動では中央寄りのページから文字量と画像・図形の面積を調べます。文字情報が乏しいPDFは省略します。画像や図表の意味、画像内の文字は解析しません。内容の確認には原本を開いてください。" TextWrapping="Wrap"/>
+       </StackPanel>
        <StackPanel x:Name="WordOptions">
-       <TextBlock Text="WordをMarkdownへ変換" FontWeight="Bold"/>
-       <TextBlock Text=".docx / .docmはWordを起動せず変換します。.docにはインストール済みのMicrosoft Wordが必要です。ヘッダー・フッターは本文から除去し、機密ラベルを保持します。画像内文字のOCRは未対応です。" TextWrapping="Wrap"/>
-       <CheckBox x:Name="WordHeadingsBox" Content="短い太字段落を見出しとして補正する"/>
+       <TextBlock Text="Markdownへ変換・構造補正" FontWeight="Bold"/>
+       <TextBlock x:Name="WordDescription" Text=".docx / .docmはWordを起動せず変換します。.docにはインストール済みのMicrosoft Wordが必要です。ヘッダー・フッターは本文から除去し、機密ラベルを保持します。画像内文字のOCRは未対応です。" TextWrapping="Wrap"/>
+       <CheckBox x:Name="WordHeadingsBox" Content="見た目から短い見出しを補正する"/>
        <CheckBox x:Name="WordLineBreaksBox" Content="段落内の手動改行を結合する"/>
        <CheckBox x:Name="WordRepairBox" Content="LLMで見出し・分断された段落を補正する" Checked="UsageChanged" Unchecked="UsageChanged"/>
        <StackPanel x:Name="WordRepairPromptOptions">
-       <TextBlock Text="Word構造補正プロンプト"/><ComboBox x:Name="WordRepairPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="Word構造補正プロンプト"/>
+       <TextBlock Text="構造補正プロンプト"/><ComboBox x:Name="WordRepairPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="文書の構造補正プロンプト"/>
        <TextBlock Text="本文の追加・削除は行いません。応答が不正な場合は差し戻し後、変換結果を保持します。詩・住所等の意図的な改行は結合を無効にしてください。" TextWrapping="Wrap" Foreground="#526477"/>
        </StackPanel>
        </StackPanel>
@@ -73,7 +80,7 @@
        <StackPanel x:Name="ClassifyOptions">
        <TextBlock Text="分類プロンプト"/><ComboBox x:Name="ClassifyPromptBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="分類プロンプト"/>
        </StackPanel>
-       <TextBlock Text="既定カテゴリ（分類を省略した場合・分類結果が割れた場合に使用）" TextWrapping="Wrap"/><ComboBox x:Name="DefaultCategoryBox" SelectionChanged="UsageChanged" DisplayMemberPath="Name" SelectedValuePath="Id" AutomationProperties.Name="既定カテゴリ"/>
+       <TextBlock x:Name="DefaultCategoryLabel" Text="既定カテゴリ（分類を省略した場合・分類結果が割れた場合に使用）" TextWrapping="Wrap"/><ComboBox x:Name="DefaultCategoryBox" SelectionChanged="UsageChanged" DisplayMemberPath="Name" SelectedValuePath="Id" AutomationProperties.Name="既定カテゴリ"/>
        <StackPanel x:Name="TextOptions">
        <StackPanel x:Name="DefaultFormatOptions">
        <TextBlock Text="整形の既定処理"/><ComboBox x:Name="DefaultFormatBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="既定の整形"/>
@@ -87,7 +94,7 @@
        <TextBlock Text="2. チャンクをまとめる（親チャンク）" FontWeight="SemiBold" Margin="0,10,0,0"/>
        <ComboBox x:Name="ParentModeBox" SelectionChanged="UsageChanged" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="親チャンクのまとめ方式"/>
        <StackPanel x:Name="MarkdownBoundsOptions">
-       <TextBlock Text="Markdown・Wordの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
+       <TextBlock Text="Markdown・Word・PDFの親チャンクの長さ（文書構造でまとめる場合）" TextWrapping="Wrap" Margin="0,8,0,0"/>
        <UniformGrid Columns="2">
         <StackPanel Margin="0,0,12,0"><TextBlock Text="最小文字数（0なら短い章を結合しない）" TextWrapping="Wrap"/><TextBox x:Name="MarkdownParentMinBox" AutomationProperties.Name="Markdown親チャンクの最小文字数"/></StackPanel>
         <StackPanel><TextBlock Text="最大文字数"/><TextBox x:Name="MarkdownParentMaxBox" AutomationProperties.Name="Markdown親チャンクの最大文字数"/></StackPanel>

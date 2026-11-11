@@ -9,7 +9,7 @@ using LocalRag.Core;
 namespace LocalRag.Infrastructure;
 
 public sealed record WordDocument(string Markdown, string DisclosureText, List<WordBlock> Blocks, List<string> Notices);
-public sealed record DocumentSnapshot(string Hash, string Text, List<string> Notices, WordDocument? Word = null);
+public sealed record DocumentSnapshot(string Hash, string Text, List<string> Notices, WordDocument? Word = null, PdfAssessment? Pdf = null);
 
 /// <summary>Read-only OOXML conversion. No macros, fields, external relationships or embedded objects are executed.</summary>
 public static class WordDocuments
@@ -256,22 +256,26 @@ public static class DocumentReader
     public static async Task<DocumentSnapshot> ReadAsync(string path, TextRagSettings settings, string dataDirectory, CancellationToken token,
         TextDocumentState? previous = null, ProcessingStep? readStep = null)
     {
-        if (settings.SourceMode != SourceCodeMode.Word)
+        if (!DocumentInputs.IsConverted(settings.SourceMode))
         {
             var text = await TextFiles.ReadAsync(path, settings.MaxDocumentCharacters, token, settings.EncodingMode, allowEmpty: true).ConfigureAwait(false);
             return new(text.Hash, text.Text, [$"encoding_{(text.EncodingAutomatic ? "auto" : "manual")}_{text.EncodingMode}"]);
         }
-        if (!DocumentInputs.IsWord(path)) throw new PipelineValidationException("word_extension", "Wordの拡張子を指定してください。");
-        var bytes = await WordDocuments.ReadBytesAsync(path, token).ConfigureAwait(false);
+        if (settings.SourceMode == SourceCodeMode.Pdf && !DocumentInputs.IsPdf(path)) throw new PipelineValidationException("pdf_extension", "PDFの拡張子を指定してください。");
+        if (settings.SourceMode == SourceCodeMode.Word && !DocumentInputs.IsWord(path)) throw new PipelineValidationException("word_extension", "Wordの拡張子を指定してください。");
+        var bytes = settings.SourceMode == SourceCodeMode.Pdf ? await PdfDocuments.ReadBytesAsync(path, token).ConfigureAwait(false)
+            : await WordDocuments.ReadBytesAsync(path, token).ConfigureAwait(false);
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         if (previous is { WordDisclosureText: not null, WordSourceBlocks: not null } && previous.SourceHash == hash &&
             previous.Processing?.Stages.TryGetValue("read", out var receipt) == true && receipt.Step.Id == readStep?.Id &&
             previous.Original.Length <= settings.MaxDocumentCharacters && previous.WordDisclosureText.Length <= settings.MaxDocumentCharacters)
         {
             var cached = new WordDocument(previous.Original, previous.WordDisclosureText, previous.WordSourceBlocks,
-                previous.ProcessingNotices.Where(n => n.StartsWith("word_", StringComparison.Ordinal) && !n.StartsWith("word_repair_", StringComparison.Ordinal)).ToList());
-            return new(hash, cached.Markdown, cached.Notices, cached);
+                previous.ProcessingNotices.Where(n => n.StartsWith(settings.SourceMode == SourceCodeMode.Pdf ? "pdf_" : "word_", StringComparison.Ordinal) &&
+                    !n.Contains("_repair_", StringComparison.Ordinal)).ToList());
+            return new(hash, cached.Markdown, cached.Notices, cached, previous.PdfAssessment);
         }
+        if (settings.SourceMode == SourceCodeMode.Pdf) return PdfDocuments.Convert(bytes, settings, token);
         var converted = Path.GetExtension(path).Equals(".doc", StringComparison.OrdinalIgnoreCase)
             ? await LegacyWordConversion.ConvertAsync(bytes, dataDirectory, token).ConfigureAwait(false) : bytes;
         var word = WordDocuments.Convert(converted, settings.Word, settings.MaxDocumentCharacters, token);
@@ -280,8 +284,10 @@ public static class DocumentReader
 
     public static async Task<string> HashAsync(string path, TextRagSettings settings, CancellationToken token)
     {
-        if (settings.SourceMode != SourceCodeMode.Word)
+        if (!DocumentInputs.IsConverted(settings.SourceMode))
             return (await TextFiles.ReadAsync(path, settings.MaxDocumentCharacters, token, settings.EncodingMode, allowEmpty: true).ConfigureAwait(false)).Hash;
-        return Convert.ToHexString(SHA256.HashData(await WordDocuments.ReadBytesAsync(path, token).ConfigureAwait(false))).ToLowerInvariant();
+        var bytes = settings.SourceMode == SourceCodeMode.Pdf ? await PdfDocuments.ReadBytesAsync(path, token).ConfigureAwait(false)
+            : await WordDocuments.ReadBytesAsync(path, token).ConfigureAwait(false);
+        return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
     }
 }

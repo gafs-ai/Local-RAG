@@ -244,7 +244,8 @@ public partial class MainWindow
             (result.StartParagraph is null ? "\n" : $" ／ 段落 {result.StartParagraph}～{result.EndParagraph}\n") +
             (result.ParentChunkId is null ? "" : $"親チャンク: {result.SectionTitle ?? "文書全体"}\n") +
             (result.Ranking is null ? "" : $"構造検索スコア: {result.Ranking.Combined:F3} ／ 返却単位: {result.ResultUnitKind}" +
-                (result.Ranking.ExpansionLimited ? "（近傍の一部のみ評価）" : "") + "\n") + result.Content;
+                (result.Ranking.ExpansionLimited ? "（近傍の一部のみ評価）" : "") + "\n") +
+            (DocumentInputs.ExtractionNotice(result.SourcePath) is { } notice ? notice + "\n\n" : "") + result.Content;
 
     private async Task RunUserActionAsync(Func<Task> action)
     {

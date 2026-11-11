@@ -276,7 +276,9 @@ public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)
             var remove = Property(root, "remove", JsonValueKind.Array).EnumerateArray().Select(ParagraphId).Distinct().ToArray();
             if (remove.Any(id => !paragraphs.Any(p => p.Id == id)))
                 throw new PipelineValidationException("format_ids", "整形対象の段落IDが不正です。");
-            var remaining = paragraphs.Where(p => !remove.Contains(p.Id)).ToList();
+            var remaining = paragraphs.Where(p => !remove.Contains(p.Id) ||
+                settings.SourceMode == SourceCodeMode.Pdf && (WordDocuments.HasLabel(p.Text) ||
+                System.Text.RegularExpressions.Regex.IsMatch(p.Text, @"^# PDFページ \d+$"))).ToList();
             // Preserve original separately, and hold unusually destructive formatting for user review.
             if (remaining.Count == 0 || remaining.Sum(p => p.Text.Length) < paragraphs.Sum(p => p.Text.Length) * 0.5)
                 throw new PipelineValidationException("format_destructive", "整形による削除量が大きいため保留しました。");

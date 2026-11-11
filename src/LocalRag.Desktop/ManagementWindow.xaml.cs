@@ -31,15 +31,16 @@ public partial class ManagementWindow : Window
         _routes = new(source.OrderedRoutes().Select(r => new RouteDraft(r)));
         PromptPurposeBox.ItemsSource = new[] { new PurposeChoice(PromptPurpose.Classification, "分類用"), new(PromptPurpose.Format, "フォーマット用"),
             new(PromptPurpose.Chunk, "チャンクの結合用"), new(PromptPurpose.ParentChunk, "チャンクをまとめる用"),
-            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.ParentDescription, "文書の親チャンク説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用"), new(PromptPurpose.WordRepair, "Word構造補正用") };
+            new(PromptPurpose.CodeDescription, "コード説明用"), new(PromptPurpose.ParentDescription, "文書の親チャンク説明用"), new(PromptPurpose.Confidentiality, "秘匿判定用"), new(PromptPurpose.WordRepair, "Word・PDF構造補正用") };
         ChildModeBox.ItemsSource = new Choice[] { new("Inherit", "共通動作（Markdownは機械的に結合）"), new("Paragraphs", "結合しない：段落単位"),
             new("Mechanical", "機械的に結合：文字数とモデル上限"), new("Llm", "LLMで結合を判断") };
         ParentModeBox.ItemsSource = new Choice[] { new("Inherit", "共通の親チャンク設定"), new("None", "親を作らない"),
-            new("Structure", "機械的：Markdown・Wordは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
+            new("Structure", "機械的：Markdown・Word・PDFは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
         ParentEmbeddingBox.ItemsSource = new Choice[] { new("None", "親を埋め込まない"), new("TextWhenFits", "入力上限に収まる親全文だけ埋め込む"),
             new("TextOrSummary", "親全文を埋め込む：長い場合は子の説明から生成") };
-        Choice[] inputChoices = [new("Text", "通常のテキスト"), new("Word", "Word文書：Markdownへ変換"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
+        Choice[] inputChoices = [new("Text", "通常のテキスト"), new("Word", "Word文書：Markdownへ変換"), new("Pdf", "PDF文書：判定してMarkdownへ変換"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
         SourceModeBox.ItemsSource = inputChoices;
+        PdfPolicyBox.ItemsSource = new Choice[] { new("Automatic", "自動：文字主体のPDFを取り込む"), new("ExtractText", "判定せず抽出可能な文字を取り込む"), new("Skip", "取り込まない") };
         EncodingModeBox.ItemsSource = TextEncodings.All;
         AddSourceModeBox.ItemsSource = inputChoices; AddSourceModeBox.SelectedValue = "Text";
         PromptList.ItemsSource = _prompts;
@@ -179,6 +180,7 @@ public partial class ManagementWindow : Window
             ParentEmbedding = Enum.Parse<ParentEmbeddingMode>(Selection(ParentEmbeddingBox)), ParentDescriptionPromptId = Selection(ParentDescriptionBox),
             SourceMode = Enum.Parse<SourceCodeMode>(Selection(SourceModeBox)),
             EncodingMode = (TextEncodingMode)EncodingModeBox.SelectedValue,
+            Pdf = new() { Policy = Enum.Parse<PdfInputPolicy>(Selection(PdfPolicyBox)), MaxSamplePages = int.TryParse(PdfSamplesBox.Text, out var samplePages) ? samplePages : -1, RemoveHeadersFooters = PdfHeadersBox.IsChecked == true },
             WordInferHeadings = WordHeadingsBox.IsChecked == true, WordJoinSoftLineBreaks = WordLineBreaksBox.IsChecked == true,
             WordRepairWithLlm = WordRepairBox.IsChecked == true, WordRepairPromptId = Selection(WordRepairPromptBox),
             MarkdownParentMinCharacters = int.TryParse(MarkdownParentMinBox.Text, out var minimum) ? minimum : -1,
@@ -203,6 +205,7 @@ public partial class ManagementWindow : Window
             ParentDescriptionBox.ItemsSource = Choices(PromptPurpose.ParentDescription); ParentDescriptionBox.SelectedValue = value.ParentDescriptionPromptId;
             SourceModeBox.SelectedValue = value.SourceMode.ToString();
             EncodingModeBox.SelectedValue = value.EncodingMode;
+            PdfPolicyBox.SelectedValue = value.Pdf.Policy.ToString(); PdfSamplesBox.Text = value.Pdf.MaxSamplePages.ToString(); PdfHeadersBox.IsChecked = value.Pdf.RemoveHeadersFooters;
             WordHeadingsBox.IsChecked = value.WordInferHeadings; WordLineBreaksBox.IsChecked = value.WordJoinSoftLineBreaks;
             WordRepairBox.IsChecked = value.WordRepairWithLlm;
             WordRepairPromptBox.ItemsSource = Choices(PromptPurpose.WordRepair); WordRepairPromptBox.SelectedValue = value.WordRepairPromptId;
@@ -243,7 +246,7 @@ public partial class ManagementWindow : Window
         var kind = AddSourceModeBox.SelectedValue as string ?? "Text";
         var mode = Enum.Parse<SourceCodeMode>(kind);
         var language = SourceLanguages.Find(mode);
-        var template = mode == SourceCodeMode.Word ? ManagementSettings.CreateWordRoute() with {
+        var template = DocumentInputs.IsConverted(mode) ? (mode == SourceCodeMode.Pdf ? ManagementSettings.CreatePdfRoute() : ManagementSettings.CreateWordRoute()) with {
             EnabledCategoryIds = _categories.Select(c => c.Id).ToList(), DefaultCategoryId = _categories[0].Id } :
             _routes[^1].Value with { Name = (language?.Name ?? "テキスト") + "用",
             Extensions = language is null ? [".txt"] : [.. language.Extensions], SourceMode = mode };

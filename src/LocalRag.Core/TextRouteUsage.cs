@@ -7,10 +7,10 @@ public sealed record TextRouteUsage(bool Text, bool Markdown, bool LlmChildren, 
 {
     public static TextRouteUsage For(TextRoute route, TextRagSettings limits)
     {
-        var text = route.SourceMode is SourceCodeMode.Text or SourceCodeMode.Word;
+        var text = route.SourceMode is SourceCodeMode.Text or SourceCodeMode.Word or SourceCodeMode.Pdf;
         var extensions = route.Extensions ?? [route.Extension];
-        var markdown = route.SourceMode == SourceCodeMode.Word || extensions.Any(IsMarkdown);
-        var other = route.SourceMode != SourceCodeMode.Word && extensions.Any(e => !IsMarkdown(e));
+        var markdown = DocumentInputs.IsConverted(route.SourceMode) || extensions.Any(IsMarkdown);
+        var other = !DocumentInputs.IsConverted(route.SourceMode) && extensions.Any(e => !IsMarkdown(e));
         var inherited = route.ChildMode == ChildChunkMode.Inherit;
         var llm = route.ChildMode == ChildChunkMode.Llm || inherited && !limits.ParagraphChildren && (other || !limits.MechanicalMarkdown);
         var mechanical = route.ChildMode == ChildChunkMode.Mechanical || inherited && markdown && limits.MechanicalMarkdown;

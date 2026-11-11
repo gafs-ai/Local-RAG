@@ -203,6 +203,13 @@
     "Source": "https://github.com/WalkerCodeRanger/semver"
   },
   {
+    "Package": "PdfPig/0.1.16",
+    "License": "Apache-2.0",
+    "Authors": "UglyToad",
+    "Copyright": "Copyright PdfPig contributors; includes third-party notices in LICENSE.",
+    "Source": "https://github.com/UglyToad/PdfPig/tree/a7bb35662bbbf405efddad50aedc9bcdcf515afc"
+  },
+  {
     "Package": "SurrealDb.Net/1.0.0",
     "License": "LICENSE",
     "Authors": "surrealdb",

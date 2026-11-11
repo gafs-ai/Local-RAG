@@ -330,6 +330,17 @@
     ]
   },
   {
+    "Name": "PdfPig",
+    "Version": "0.1.16",
+    "License": "Apache-2.0",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright PdfPig contributors; includes third-party notices in LICENSE.\nAuthors: UglyToad",
+    "Source": "https://github.com/UglyToad/PdfPig/tree/a7bb35662bbbf405efddad50aedc9bcdcf515afc",
+    "Files": [
+      "PdfPig-0.1.16-LICENSE.txt"
+    ]
+  },
+  {
     "Name": "SurrealDb.Net",
     "Version": "1.0.0",
     "License": "Apache-2.0",

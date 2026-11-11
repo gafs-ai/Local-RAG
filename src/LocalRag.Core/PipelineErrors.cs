@@ -27,6 +27,17 @@ public static class PipelineErrors
 
     public static string Notice(string code) => code switch
     {
+        "pdf_converted" => "PDFの抽出文字をMarkdownへ変換（元ページ番号を保持）",
+        "pdf_visual_content_unparsed" => "PDFの画像・図・配置の意味は未解析です。詳細は原本で確認してください",
+        "pdf_headers_removed" => "PDFの繰り返しヘッダー・フッター・ページ番号を除去（機密ラベルを保持）",
+        "pdf_pages_without_text" => "文字を抽出できないページがあります（画像内文字のOCRは未対応）",
+        "pdf_visual" => "PDFは画像・図形主体と判定したためスキップ",
+        "pdf_no_text" => "検索用の文字情報が不足していると判定したためPDFをスキップ（原本や取り込み判定の設定を確認してください）",
+        "pdf_uncertain" => "PDFのサンプリングで文字主体か判断できないためスキップ（設定で文字抽出を指定できます）",
+        "pdf_policy_skip" => "PDFの設定により取り込みをスキップ",
+        "pdf_forced_text" => "PDFの自動判定を省略して文字を抽出",
+        "pdf_repair_preserved_long" => "PDF補正の入力上限を超える段落は変換結果を保持",
+        "pdf_repair_preserved_invalid" => "PDF補正の応答が不正のため変換結果を保持",
         "word_converted" => "WordをMarkdownに変換（ヘッダー・フッターは秘匿検査用に別途保持）",
         "word_heading_inferred" => "短い太字段落を見出しとして補正",
         "word_repair_preserved_long" => "Word補正の入力上限を超える段落は変換結果を保持",
@@ -56,7 +67,7 @@ public static class PipelineErrors
     {
         "ready" => "ready（検索可能）", "processing" => "processing（処理中）",
         "failed" => "failed（" + IngestionRetry.Describe(failure) + "）", "excluded" => "excluded（カテゴリによる除外）",
-        "skipped" => "skipped（本文または索引可能な説明なし・更新時に再確認）",
+        "skipped" => "skipped（判定または設定による省略・本文／説明なし）",
         "deleted" => "deleted（索引対象外・原本は削除しません）" + (withdrawalReason switch
         {
             "ignored" => "：除外ルールに一致", "outside_roots" => "：監視フォルダの対象外",
@@ -72,13 +83,17 @@ public static class PipelineErrors
     private static string Stage(string? stage) => stage switch
     {
         "read" => "ファイル読み取り", "prepare" => "処理準備", "classify" => "分類",
-        "word_repair" => "Wordの構造補正",
+        "word_repair" => "Wordの構造補正", "pdf_repair" => "PDFの構造補正",
         "format" => "整形", "chunk" => "チャンクの結合・まとめ", "code" => "コード解析・説明作成", "embedding" => "埋め込み",
         "parent_embedding" => "親チャンクの説明・埋め込み準備", "publish" => "索引の公開", _ => "取り込み"
     };
 
     private static string Detail(string? code) => code switch
     {
+        "pdf_invalid" => "PDFを解析できません。破損・暗号化・形式を確認してください",
+        "pdf_size" => "PDFの変換上限を超えています（64MiB・2,000ページ）",
+        "pdf_complexity" => "PDFの1ページの構造が複雑すぎるため保留しました",
+        "pdf_extension" => "PDF用の拡張子は.pdfを指定してください",
         "word_invalid" => "Wordの構造を読み取れません。破損・暗号化やファイル形式を確認してください",
         "word_extension" => "Word用の設定には.docx・.docm・.docを指定してください",
         "word_package_size" => "Wordファイルの安全な変換上限を超えています（ファイル64MiB・展開後128MiB・XML部分16MiB）",

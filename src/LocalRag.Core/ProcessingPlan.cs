@@ -67,8 +67,9 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var parentDescription = !parentEnabled ? off : s.ParentEmbedding == ParentEmbeddingMode.TextOrSummary
             ? Chat("parent-description/v1", s.ParentDescriptionPrompt, new { s.ParentEmbedding }, 512)
             : ProcessingStep.Create("parent-embedding/v1", new { s.ParentEmbedding });
-        var word = s.SourceMode == SourceCodeMode.Word;
-        var read = word ? ProcessingStep.Create("word-reader/v1", new { s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
+        var word = DocumentInputs.IsConverted(s.SourceMode);
+        var read = s.SourceMode == SourceCodeMode.Pdf ? ProcessingStep.Create("pdf-reader/v1", new { s.Pdf, s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
+            word ? ProcessingStep.Create("word-reader/v1", new { s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
             ProcessingStep.Create("text-reader/v1", new { s.EncodingMode });
         var repair = !word ? off : s.Word.RepairWithLlm ? Chat("word-repair/v1", s.Word.RepairPrompt, new { }, 256) :
             ProcessingStep.Create("word-repair-off/v1", new { });

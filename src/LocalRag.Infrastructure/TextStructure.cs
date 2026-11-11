@@ -9,7 +9,7 @@ public sealed record StructuredText(List<TextParentChunk> Parents, List<TextPara
 public static class TextStructure
 {
     public static StructuredText Build(string text, string path, TextRagSettings settings) =>
-        Build(text, settings.SourceMode == SourceCodeMode.Word ? "converted.md" : path, settings.ParentHeadingLevel,
+        Build(text, DocumentInputs.IsConverted(settings.SourceMode) ? "converted.md" : path, settings.ParentHeadingLevel,
             settings.EffectiveParentMode == ParentChunkMode.Structure ? settings.MarkdownParentMinCharacters : 0,
             settings.EffectiveParentMode == ParentChunkMode.Structure ? settings.MarkdownParentMaxCharacters : 262144);
 

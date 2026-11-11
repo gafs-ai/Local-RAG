@@ -17,8 +17,12 @@ public sealed record WordSettings
 public static class DocumentInputs
 {
     public static bool IsWord(string path) => Path.GetExtension(path).ToLowerInvariant() is ".docx" or ".docm" or ".doc";
+    public static bool IsPdf(string path) => Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+    public static bool IsConverted(SourceCodeMode mode) => mode is SourceCodeMode.Word or SourceCodeMode.Pdf;
     public static bool IsMarkdown(string path) => Path.GetExtension(path).ToLowerInvariant() is ".md" or ".markdown";
-    public static bool UsesMarkdown(string path, SourceCodeMode mode) => mode == SourceCodeMode.Word || IsMarkdown(path);
+    public static bool UsesMarkdown(string path, SourceCodeMode mode) => IsConverted(mode) || IsMarkdown(path);
+    public static string? ExtractionNotice(string? path) => path is not null && (IsWord(path) || IsPdf(path))
+        ? "抽出テキストです。画像・図表・レイアウトの情報は完全には保持されません。重要な内容は原本を確認してください。" : null;
 }
 
 public sealed record WordBlock(int Id, string Text, int HeadingLevel = 0, bool Bold = false, bool Protected = false);

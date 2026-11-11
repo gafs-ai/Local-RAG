@@ -67,6 +67,7 @@ public sealed class LocalRetrievalCalls(ITextRetrieval retrieval, CancellationTo
         {
             output["title"] = result.SourcePath is null ? result.DocumentId.ToString("D") : Path.GetFileName(result.SourcePath);
             output["text"] = result.Content;
+            if (DocumentInputs.ExtractionNotice(result.SourcePath) is { } notice) output["extraction_notice"] = notice;
             output["url"] = $"localrag://document/{result.DocumentId:D}";
             output["source"] = result.SourcePath;
             if (result.ParentChunkId is not null) output["parent_chunk_id"] = result.ParentChunkId;

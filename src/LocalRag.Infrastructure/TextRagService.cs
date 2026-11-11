@@ -70,22 +70,22 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (previous?.SpaceId is null || previous.SpaceId != _retrievalPrompts.SpaceId(settings.Ai, previous.Dimension))
                     state = state with { SpaceId = null, Dimension = 0, EmbeddedChunks = 0 };
                 else state = state with { SpaceId = previous.SpaceId, Dimension = previous.Dimension };
-                state = state with { WordDisclosureText = snapshot.Word?.DisclosureText, WordSourceBlocks = snapshot.Word?.Blocks,
-                    ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal))
+                state = state with { Original = snapshot.Text, PdfAssessment = snapshot.Pdf, WordDisclosureText = snapshot.Word?.DisclosureText, WordSourceBlocks = snapshot.Word?.Blocks,
+                    ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal) && !(n.StartsWith("pdf_", StringComparison.Ordinal) && !n.StartsWith("pdf_repair_", StringComparison.Ordinal)))
                     .Concat(snapshot.Notices).Distinct().ToList() };
                 state = Stamp(state, "read", plan.Read, snapshot.Hash, snapshot.Text);
                 await repository.SaveAsync(state, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(snapshot.Text))
                 {
                     await repository.SaveAsync(state with { Status = "skipped", Failure = null, ProcessingNotices =
-                        state.ProcessingNotices.Append("empty_text").Distinct().ToList() }, token).ConfigureAwait(false);
+                        state.ProcessingNotices.Concat(snapshot.Pdf is not null ? [] : new[] { "empty_text" }).Distinct().ToList() }, token).ConfigureAwait(false);
                     return new(0, 1, 0, 0, 0, 0);
                 }
                 progress?.Report($"処理中：{System.IO.Path.GetFileName(path)}（実行中のファイルは優先度変更でも中断しません）");
                 if (snapshot.Word is { } word)
                 {
-                    stage = "word_repair";
-                    progress?.Report("Wordの見出し・段落構造を補正しています");
+                    stage = snapshot.Pdf is null ? "word_repair" : "pdf_repair";
+                    progress?.Report(snapshot.Pdf is null ? "Wordの見出し・段落構造を補正しています" : "PDFの見出し・段落構造を補正しています");
                     state = await PrepareWordAsync(state, pipeline, pipelineSettings, plan, word, token).ConfigureAwait(false);
                 }
                 var classificationText = snapshot.Word is not null ? state.WordPreparedText ?? state.Original : state.Original;

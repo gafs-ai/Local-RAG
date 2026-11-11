@@ -12,6 +12,17 @@ namespace LocalRag.Tests;
 
 public class McpTests
 {
+    [Theory]
+    [InlineData(DisclosureDecision.Allowed, true)]
+    [InlineData(DisclosureDecision.Withheld, false)]
+    public async Task PdfExtractionNoticeAppearsOnlyForDisclosedContent(DisclosureDecision decision, bool expected)
+    {
+        var stub = new Stub { Decision = decision, SourcePath = @"C:\documents\sample.pdf" };
+        using var calls = new LocalRetrievalCalls(stub);
+        var fetch = Body(await calls.CallAsync("fetch", null, 0, stub.Id.ToString("D"), default));
+        Assert.Equal(expected, fetch.TryGetProperty("extraction_notice", out _));
+    }
+
     internal static int FreePort()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
