@@ -5,7 +5,7 @@ Windows 11（64ビット）で、PC内のPDF・Word・テキスト・Markdown・
 ## 1. インストールする
 
 1. [Lemonade Server](https://lemonade-server.ai/docs/guide/install/windows/)をインストールします。
-2. Local RAG 0.26.4のMSIを開き、画面の案内に従ってインストールします。現在は更新検証用です。公開済みの配布物は[リリース一覧](https://github.com/gafs-ai/Local-RAG/releases)で確認できます。
+2. [Local RAG 0.26.4のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.4)から`LocalRAG-0.26.4-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
 
 Local RAGのインストーラには.NETランタイムが含まれます。DBは初回起動時に自動で導入します。初回はインターネット接続が必要です。
 

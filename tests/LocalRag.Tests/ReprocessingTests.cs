@@ -119,6 +119,36 @@ public class ReprocessingTests
     }
 
     [ServerFact]
+    public async Task OldParentDescriptionRecipeRebuildsOnlyDescriptionsAndDiscardsOldPartialProgress()
+    {
+        await using var f = await ServerFixture.StartAsync();
+        var input = Path.Combine(f.Root, "input"); Directory.CreateDirectory(input);
+        await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), Text);
+        var settings = Settings(input, ParentEmbeddingMode.TextOrSummary);
+        await using var repo = await TextRagRepository.OpenAsync(f.Manager.Connection!);
+        Assert.Equal(1, (await Scan(repo, settings, new() { Budget = 60 }, f.Root)).Indexed);
+        var original = Assert.Single(await repo.DocumentsAsync(default));
+        var stages = new Dictionary<string, ProcessingReceipt>(original.Processing!.Stages);
+        var receipt = stages["parent-description"];
+        var oldStep = receipt.Step with { Method = "parent-description/v1" };
+        stages["parent-description"] = receipt with { Step = oldStep };
+        await repo.SaveAsync(original with {
+            Processing = original.Processing with { ProfileId = "old-parent-description", Stages = stages },
+            ParentEmbeddings = original.ParentEmbeddings.Select(p => p with { RecipeId = oldStep.Id,
+                Completed = false, Offset = 999999, ReductionInput = "obsolete", Reduced = ["obsolete"] }).ToList()
+        }, default);
+        var ai = new RecordingAi { Budget = 60 };
+        Assert.Equal(1, (await Scan(repo, settings, ai, f.Root)).Indexed);
+        Assert.Equal(["description"], ai.Calls);
+        Assert.Equal(0, ai.Embeddings); // Identical final summary and children keep their vectors.
+        var current = Assert.Single(await repo.DocumentsAsync(default));
+        Assert.Equal(original.PreparedChildren, current.PreparedChildren);
+        Assert.Equal(original.Parents, current.Parents);
+        Assert.Equal("parent-description/v2", current.Processing!.Stages["parent-description"].Step.Method);
+        Assert.True(Assert.Single(current.ParentEmbeddings).Completed);
+    }
+
+    [ServerFact]
     public async Task CodeEmbeddingAndLanguageModelChangesHaveSeparateDependencies()
     {
         await using var f = await ServerFixture.StartAsync();

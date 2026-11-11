@@ -50,7 +50,7 @@ public class LemonadeClientTests
         Assert.Equal("llm", IngestionRetry.Kind(error));
     }
 
-    private sealed class Handler(string models, string chat = "{}") : HttpMessageHandler
+    private sealed class Handler(string models, string chat = "{}", string? modelsAfterLoad = null) : HttpMessageHandler
     {
         public int Posts { get; private set; }
         public string? LastBody { get; private set; }
@@ -60,7 +60,7 @@ public class LemonadeClientTests
             if (request.Content is not null) LastBody = await request.Content.ReadAsStringAsync(cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(request.Method == HttpMethod.Post ? chat : models, Encoding.UTF8, "application/json")
+                Content = new StringContent(request.Method == HttpMethod.Post ? chat : Posts > 0 ? modelsAfterLoad ?? models : models, Encoding.UTF8, "application/json")
             };
         }
     }
@@ -84,6 +84,40 @@ public class LemonadeClientTests
     }
 
     private const string EmbeddingModels = """{"data":[{"id":"local","recipe":"llamacpp","downloaded":true,"context_length":8192,"labels":["embeddings"]}]}""";
+
+    [Theory]
+    [InlineData(2048)]
+    [InlineData(4096)]
+    [InlineData(8192)]
+    public async Task ChatBudgetFollowsReportedContextRatherThanArchitecturalMaximum(int context)
+    {
+        var handler = new Handler(JsonSerializer.Serialize(new { data = new[] {
+            new { id = "local", recipe = "llamacpp", downloaded = true, labels = new[] { "chat" },
+                context_length = context, max_context_window = 131072 } } }));
+        using var client = new LemonadeClient(new(), handler);
+        Assert.Equal(context - Encoding.UTF8.GetByteCount("説明を作成") - 512 - 256,
+            await client.ChatInputBudgetAsync("local", "説明を作成", 512, default));
+        Assert.Equal(0, handler.Posts);
+    }
+
+    [Fact]
+    public async Task MissingChatContextDoesNotFallBackToArchitecturalMaximum()
+    {
+        var handler = new Handler("""{"data":[{"id":"local","recipe":"llamacpp","downloaded":true,"max_context_window":131072,"labels":["chat"]}]}""");
+        using var client = new LemonadeClient(new(), handler);
+        await Assert.ThrowsAsync<InvalidDataException>(() => client.ChatInputBudgetAsync("local", "system", 512, default));
+        Assert.Equal(1, handler.Posts); // Load and re-query metadata, never send document data with an assumed limit.
+    }
+
+    [Fact]
+    public async Task ChatContextIsReadAgainAfterLoadingWhenInitiallyUnknown()
+    {
+        const string models = """{"data":[{"id":"local","recipe":"llamacpp","downloaded":true,"labels":["chat"]}]}""";
+        var handler = new Handler(models, modelsAfterLoad: models.Replace("\"labels\"", "\"context_length\":2048,\"labels\""));
+        using var client = new LemonadeClient(new(), handler);
+        Assert.Equal(2048 - 6 - 512 - 256, await client.ChatInputBudgetAsync("local", "system", 512, default));
+        Assert.Equal(1, handler.Posts);
+    }
 
     [Fact]
     public async Task OversizeEmbeddingIsHeldBeforeSendingText()

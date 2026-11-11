@@ -95,14 +95,13 @@ public sealed partial class TextRagService
         var budget = await IngestionAi.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         var packed = state.HierarchyChildren!.SelectMany(c => TextWindows.Split(c.Text, options.MaxChunkCharacters, budget)
             .Select(part => c with { Text = part })).ToList();
-        // Completed summaries can survive an embedding-model change. Partial ones require identical input slices.
-        var sameSlices = ProcessingPlan.Hash(state.Chunks?.Where(c => c.EmbeddingKind == "child").ToList()) == ProcessingPlan.Hash(packed);
+        // Both complete and partial descriptions depend on parent text, not embedding-model-specific slices.
         var checkpoints = new List<ParentEmbeddingProgress>();
         foreach (var parent in state.Parents ?? [])
         {
             var hash = ProcessingPlan.Hash(parent.Text);
             var previous = state.ParentEmbeddings.FirstOrDefault(p => p.InputHash == hash && p.RecipeId == plan.ParentDescription.Id &&
-                (p.Completed || sameSlices && p.ParentId == parent.Id));
+                (p.Completed || p.ParentId == parent.Id));
             checkpoints.Add(previous is null ? new(parent.Id) { InputHash = hash, RecipeId = plan.ParentDescription.Id }
                 : previous with { ParentId = parent.Id });
         }

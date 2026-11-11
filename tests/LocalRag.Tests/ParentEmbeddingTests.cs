@@ -49,8 +49,9 @@ public class ParentEmbeddingTests
         if (kind == "parent_text") Assert.Empty(ai.Calls);
         else
         {
-            Assert.Contains(ai.Calls, c => c.Stage == "child");
-            Assert.Contains(ai.Calls, c => c.Stage == "parent" && c.Fragment.Contains("Child explanation"));
+            var call = Assert.Single(ai.Calls);
+            Assert.Equal("parent", call.Stage);
+            Assert.Equal(text, call.Fragment);
         }
         using var calls = new LocalRetrievalCalls(service);
         var result = McpTests.Body(await calls.CallAsync("search", "chapter", 10, null, default)).GetProperty("results");
@@ -63,24 +64,30 @@ public class ParentEmbeddingTests
         Assert.Null(Assert.Single(await blocked.SearchAsync("chapter", 10)).Content);
     }
 
-    [ServerFact]
-    public async Task ParentSummaryCheckpointsResumeWithoutRepeatingCompletedChildDescriptions()
+    [ServerTheory]
+    [InlineData(500)]
+    [InlineData(1800)]
+    public async Task ParentSummaryCheckpointsResumeAcrossEmbeddingAndChatBudgetChanges(int resumedBudget)
     {
         await using var fixture = await ServerFixture.StartAsync();
         var input = Path.Combine(fixture.Root, "input"); Directory.CreateDirectory(input);
-        await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), string.Join("\n\n", Enumerable.Range(0, 5).Select(n => new string((char)('a' + n), 65))));
+        await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), string.Join("\n\n", Enumerable.Range(0, 20).Select(n => new string((char)('a' + n), 65))));
         var settings = Settings(input, ".txt");
         await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
         var interrupted = new SummaryAi(120) { FailCall = 2 };
         using (var first = new TextRagService(repo, interrupted, settings, Path.Combine(fixture.Root, "data")))
             Assert.Equal(1, (await first.ScanAsync()).Failed);
         var partial = Assert.Single(await repo.DocumentsAsync(default));
-        Assert.Single(Assert.Single(partial.ParentEmbeddings).Descriptions);
-        var resumedAi = new SummaryAi(120);
+        Assert.Single(Assert.Single(partial.ParentEmbeddings).Reduced);
+        Assert.Equal(interrupted.Calls[0].Fragment.Length, Assert.Single(partial.ParentEmbeddings).Offset);
+        var resumedAi = new SummaryAi(90) { ChatBudget = resumedBudget };
         using var resumed = new TextRagService(repo, resumedAi, settings, Path.Combine(fixture.Root, "data"),
             new RetryTestClock(DateTimeOffset.UtcNow.AddMinutes(6)));
         Assert.Equal(1, (await resumed.ScanAsync()).Indexed);
-        Assert.DoesNotContain(resumedAi.Calls, c => c.Stage == "child" && c.Fragment == interrupted.Calls[0].Fragment);
+        Assert.DoesNotContain(resumedAi.Calls, c => c.Fragment == interrupted.Calls[0].Fragment);
+        Assert.Equal(Assert.Single(partial.Parents!).Text,
+            interrupted.Calls[0].Fragment + string.Concat(resumedAi.Calls
+                .TakeWhile(c => !c.Fragment.Contains("Parent explanation topic", StringComparison.Ordinal)).Select(c => c.Fragment)));
         var ready = Assert.Single(await repo.DocumentsAsync(default));
         Assert.True(ready.ParentEmbeddingsCompleted);
         Assert.Single(ready.Chunks!, c => c.EmbeddingKind == "parent_summary");
@@ -118,7 +125,7 @@ public class ParentEmbeddingTests
         await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), string.Join("\n\n", Enumerable.Range(0, 40).Select(n => $"{n}:" + new string('x', 60))));
         var settings = Settings(input, ".txt");
         await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
-        var ai = new SummaryAi(120) { Echo = echo, FailCall = echo ? 0 : 42 };
+        var ai = new SummaryAi(120) { Echo = echo, FailCall = echo ? 0 : 2 };
         using (var first = new TextRagService(repo, ai, settings, Path.Combine(fixture.Root, "data")))
         {
             var cycle = await first.ScanAsync();
@@ -147,6 +154,30 @@ public class ParentEmbeddingTests
         }
     }
 
+    [ServerTheory]
+    [InlineData(900)]
+    [InlineData(2048)]
+    [InlineData(4096)]
+    public async Task DescriptionWindowsUseChatBudgetAndCoverWholeParent(int chatBudget)
+    {
+        await using var fixture = await ServerFixture.StartAsync();
+        var input = Path.Combine(fixture.Root, "input"); Directory.CreateDirectory(input);
+        var text = string.Join("\n\n", Enumerable.Range(0, 40).Select(n => $"段落{n}:" + new string('あ', 24) + "😀"));
+        await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), text);
+        await using var repo = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
+        var ai = new SummaryAi(120) { ChatBudget = chatBudget };
+        using var service = new TextRagService(repo, ai, Settings(input, ".txt"), Path.Combine(fixture.Root, "data"));
+        Assert.Equal(1, (await service.ScanAsync()).Indexed);
+        var document = Assert.Single(await repo.DocumentsAsync(default));
+        var parent = Assert.Single(document.Parents!);
+        var expected = TextWindows.Split(parent.Text, s => TextAiPipeline.InputBytes(new { stage = "parent", fragment = s }) <= chatBudget - 160).ToArray();
+        Assert.Equal(expected, ai.Calls.Take(expected.Length).Select(c => c.Fragment));
+        Assert.Equal(parent.Text, string.Concat(ai.Calls.Take(expected.Length).Select(c => c.Fragment)));
+        Assert.True(ai.Calls.Count < document.Chunks!.Count(c => c.EmbeddingKind == "child"));
+        Assert.All(ai.Calls, c => Assert.Equal("parent", c.Stage));
+        Assert.Single(document.Chunks!, c => c.EmbeddingKind == "parent_summary");
+    }
+
     private static AppSettings Settings(string input, string extension) => TextRagTests.Settings(input) with
     {
         TextPipeline = new() { MaxChunkCharacters = 80 },
@@ -161,15 +192,16 @@ public class ParentEmbeddingTests
         public int FailCall { get; init; }
         public bool Malformed { get; init; }
         public bool Echo { get; init; }
+        public int ChatBudget { get; init; } = 900;
         public List<(string Stage, string Fragment)> Calls { get; } = [];
         private int _calls;
-        public Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token) => Task.FromResult(900);
+        public Task<int> ChatInputBudgetAsync(string system, int outputTokens, CancellationToken token) => Task.FromResult(ChatBudget);
         public Task<int> DocumentEmbeddingBudgetAsync(CancellationToken token) => Task.FromResult(embeddingBudget);
         public Task<string> CompleteAsync(string system, string input, CancellationToken token)
         {
             if (++_calls == FailCall) throw new HttpRequestException("test interruption");
             using var parsed = JsonDocument.Parse(input);
-            Assert.True(TextAiPipeline.InputBytes(parsed.RootElement) <= 740);
+            Assert.True(TextAiPipeline.InputBytes(parsed.RootElement) <= ChatBudget - 160);
             var stage = parsed.RootElement.GetProperty("stage").GetString()!;
             Calls.Add((stage, parsed.RootElement.GetProperty("fragment").GetString()!));
             return Task.FromResult(Malformed ? "{\"description\":42}" : JsonSerializer.Serialize(new { description =

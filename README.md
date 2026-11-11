@@ -6,7 +6,7 @@ Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、Lem
 
 **初めて使う方は[クイックスタート](Documents/QuickStart.md)から始めてください。** 必要なインストール、メモリ・NPUに合わせたモデル選択、最小限の設定を説明しています。設定の詳細は、アプリ内の「ヘルプ」または各設定項目でF1を押すとオフラインで読めます。
 
-**バージョン0.26.4**（更新検証用・GitHub未公開）。配布物は.NET同梱のWindows用MSIとZIPです。[リリース一覧](https://github.com/gafs-ai/Local-RAG/releases)／[0.26.4リリースノート](Documents/Release-0.26.4.md)／[配布手順](Documents/Distribution.md)。
+**バージョン0.26.4**。配布物は.NET同梱のWindows用MSIとZIPです。[0.26.4をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.4)／[0.26.4リリースノート](Documents/Release-0.26.4.md)／[配布手順](Documents/Distribution.md)。
 
 推奨モデルは、言語モデルが **Gemma**、Embeddingモデルが **nomic** です。Lemonade Serverに用意したモデルを、管理画面の「設定」で選択してください。
 

@@ -53,30 +53,19 @@ public sealed partial class TextRagService
                             return value;
                         }, token, outputTokens).ConfigureAwait(false);
                     }
-                    var children = state.Chunks!.Where(c => c.ParentId == parent.Id && c.EmbeddingKind == "child").ToArray();
                     if (checkpoint.ReductionInput is null)
                     {
-                        for (var i = checkpoint.ChildIndex; i < children.Length; i++)
-                        {
-                            var child = children[i];
-                            foreach (var part in TextWindows.Split(child.Text[checkpoint.Offset..], s => TextAiPipeline.InputBytes(Input(s, "child")) <= budget))
-                            {
-                                var description = await Summarize(part, "child");
-                                checkpoint = checkpoint with { Offset = checkpoint.Offset + part.Length, Descriptions = [.. checkpoint.Descriptions, description] };
-                                await Save();
-                            }
-                            checkpoint = checkpoint with { ChildIndex = i + 1, Offset = 0 };
-                            await Save();
-                        }
-                        checkpoint = checkpoint with { ReductionInput = string.Join("\n\n", checkpoint.Descriptions), Offset = 0 };
+                        // Description inputs follow the chat model's budget, independently of embedding slices.
+                        // A parent that fits is described directly; larger parents enter the same lossless reducer.
+                        checkpoint = checkpoint with { ReductionInput = parent.Text, Offset = 0 };
                         await Save();
                     }
-                    // Reduce all child descriptions in bounded groups; never drop a tail to fit.
+                    // Reduce the complete parent in bounded groups; never drop a tail to fit.
                     while (checkpoint.EmbeddingText is null && !checkpoint.Skipped)
                     {
                         var input = checkpoint.ReductionInput!;
                         if (string.IsNullOrWhiteSpace(input)) { checkpoint = checkpoint with { Skipped = true }; break; }
-                        if (TextAiPipeline.InputBytes(Input(input, "parent")) <= budget)
+                        if (checkpoint.Offset == 0 && TextAiPipeline.InputBytes(Input(input, "parent")) <= budget)
                         {
                             checkpoint = checkpoint with { EmbeddingText = await Summarize(input, "parent") };
                             break;

@@ -65,7 +65,7 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
             : ProcessingStep.Create("parent-structure/v1", new { mode = s.EffectiveParentMode });
         var parentEnabled = !code && s.EffectiveParentMode != ParentChunkMode.None;
         var parentDescription = !parentEnabled ? off : s.ParentEmbedding == ParentEmbeddingMode.TextOrSummary
-            ? Chat("parent-description/v1", s.ParentDescriptionPrompt, new { s.ParentEmbedding }, 512)
+            ? Chat("parent-description/v2", s.ParentDescriptionPrompt, new { s.ParentEmbedding }, 512)
             : ProcessingStep.Create("parent-embedding/v1", new { s.ParentEmbedding });
         var word = DocumentInputs.IsConverted(s.SourceMode);
         var read = s.SourceMode == SourceCodeMode.Pdf ? ProcessingStep.Create("pdf-reader/v1", new { s.Pdf, s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :

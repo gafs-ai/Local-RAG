@@ -37,7 +37,7 @@ public partial class ManagementWindow : Window
         ParentModeBox.ItemsSource = new Choice[] { new("Inherit", "共通の親チャンク設定"), new("None", "親を作らない"),
             new("Structure", "機械的：Markdown・Word・PDFは章、ほかは全文"), new("Llm", "LLMで親へのまとめを判断") };
         ParentEmbeddingBox.ItemsSource = new Choice[] { new("None", "親を埋め込まない"), new("TextWhenFits", "入力上限に収まる親全文だけ埋め込む"),
-            new("TextOrSummary", "親全文を埋め込む：長い場合は子の説明から生成") };
+            new("TextOrSummary", "親全文を埋め込む：長い場合は説明を生成") };
         Choice[] inputChoices = [new("Text", "通常のテキスト"), new("Word", "Word文書：Markdownへ変換"), new("Pdf", "PDF文書：判定してMarkdownへ変換"), .. SourceLanguages.All.Select(l => new Choice(l.Mode.ToString(), l.Name + "：コード説明を検索"))];
         SourceModeBox.ItemsSource = inputChoices;
         PdfPolicyBox.ItemsSource = new Choice[] { new("Automatic", "自動：文字主体のPDFを取り込む"), new("ExtractText", "判定せず抽出可能な文字を取り込む"), new("Skip", "取り込まない") };
