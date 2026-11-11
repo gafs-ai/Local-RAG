@@ -12,7 +12,7 @@
 
 ## 作成
 
-Windows上で.NET SDK（`global.json`指定版）、PowerShell 7、WiX Toolset 5.0.2を使用します。日本語UI拡張も5.0.2に固定します。
+Windows上で.NET SDK（`global.json`指定版）、PowerShell 7、WiX Toolset 5.0.2を使用します。日本語UI拡張も5.0.2に固定します。配布用ランタイムは検証・ライセンス確認済みの.NET 10.0.14に`Package.ps1`で固定し、SDKのパッチ更新による暗黙の切り替えを防ぎます。ランタイムを更新する場合は動作確認と第三者通知の更新を併せて行ってください。
 
 ```powershell
 New-Item -ItemType Directory -Force .local | Out-Null

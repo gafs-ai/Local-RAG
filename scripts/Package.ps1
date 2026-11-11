@@ -6,6 +6,9 @@ if ($Version -notmatch '^\d+\.\d{2}\.\d+$') { throw 'Invalid VERSION: expected m
 $releaseNotes = "Release-$Version.md"
 if (!(Test-Path -LiteralPath (Join-Path $repo "Documents/$releaseNotes"))) { throw "Release notes missing: $releaseNotes" }
 $semanticVersion = ([version]$Version).ToString()
+# Keep releases on the runtime verified on the host and covered by ThirdPartyNotices.
+# SDK patch roll-forward must not silently change the redistributed runtime.
+$runtimeVersion = '10.0.14'
 Push-Location $repo
 try {
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -13,17 +16,17 @@ try {
     $stage = Join-Path $outputRoot "LocalRAG-$Version-win-x64"
     New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
     $buildOutput = Join-Path $repo '.local/package-build/'
-    dotnet restore src/LocalRag.Desktop -r win-x64 --locked-mode --configfile NuGet.Config
+    dotnet restore src/LocalRag.Desktop -r win-x64 --locked-mode --configfile NuGet.Config "-p:RuntimeFrameworkVersion=$runtimeVersion"
     if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
     & (Join-Path $PSScriptRoot 'Test-LicenseInventory.ps1')
     foreach ($project in @('src/LocalRag.Desktop','src/LocalRag.Mcp','src/LocalRag.ServerControl')) {
         # The helper is also built as a framework-dependent project reference. Its
         # incremental output can otherwise retain that runtimeconfig when publishing.
         if ($project -eq 'src/LocalRag.ServerControl') {
-            dotnet clean $project -c Release -r win-x64 "-p:BaseOutputPath=$buildOutput" --verbosity quiet
+            dotnet clean $project -c Release -r win-x64 "-p:BaseOutputPath=$buildOutput" "-p:RuntimeFrameworkVersion=$runtimeVersion" --verbosity quiet
             if ($LASTEXITCODE -ne 0) { throw "Clean failed: $project" }
         }
-        dotnet publish $project -c Release -r win-x64 --no-restore --self-contained true "-p:Version=$semanticVersion" "-p:InformationalVersion=$Version" "-p:BaseOutputPath=$buildOutput" -o $stage
+        dotnet publish $project -c Release -r win-x64 --no-restore --self-contained true "-p:Version=$semanticVersion" "-p:InformationalVersion=$Version" "-p:BaseOutputPath=$buildOutput" "-p:RuntimeFrameworkVersion=$runtimeVersion" -o $stage
         if ($LASTEXITCODE -ne 0) { throw "Publish failed: $project" }
     }
     foreach ($application in @('LocalRag.Desktop','LocalRag.Mcp','LocalRag.ServerControl')) {
