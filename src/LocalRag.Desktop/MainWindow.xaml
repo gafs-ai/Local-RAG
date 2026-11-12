@@ -137,6 +137,12 @@
                         <TextBlock Text="各フォルダの.gitignore / .dockerignore / .npmignore にも従います。本アプリケーション用の .ragignore を設置できます（記述方法はgitignoreと同様）。" TextWrapping="Wrap" Foreground="#526477" />
                         <TextBlock Text="例外設定（!）は、優先されます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,16" />
                         <TextBlock Text="アプリケーション設定" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,8" />
+                        <TextBlock Text="利用統計" FontSize="16" FontWeight="SemiBold" />
+                        <CheckBox x:Name="UsageStatisticsBox" Content="開発のために利用統計を送信する" Margin="0,8" Checked="UsageStatisticsChanged" Unchecked="UsageStatisticsChanged" />
+                        <TextBlock Text="Local RAGの開発・改善に、機器の種類、モデル、バージョン、拡張子別の処理件数・平均時間、設定変更の有無を利用します。原文・ファイル名・パス・フォルダ設定・氏名・ユーザー名・プロンプト本文は送信しません。CPU・GPU・AIモデルは既知の名称に分類し、それ以外は「その他」にまとめます。NPUはWindowsから取得した名称をそのまま送信し、搭載されていない場合は「なし」とします。" TextWrapping="Wrap" Foreground="#526477" />
+                        <TextBlock Text="OFFにすると収集・送信を停止し、未送信の統計を削除します。この変更はすぐに保存されます。通信先には接続元IPが技術的に伝わりますが、統計データには記録しません。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,8" />
+                        <Button Content="送信対象の統計を確認" Click="PreviewUsageStatistics" HorizontalAlignment="Left" Margin="0,0,0,6" />
+                        <TextBlock x:Name="UsageStatisticsStatus" Text="利用統計：未確認" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,14" />
                         <TextBlock Text="データソース名" />
                         <TextBox x:Name="DataSourceNameBox" MaxLength="200" AutomationProperties.Name="データソース名" />
                         <TextBlock Text="初期値：Local-ユーザー名-ランダム4文字。別の名前への変更は別データソースへの切り替えになります。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12" />
@@ -191,6 +197,7 @@
         </TabControl>
         <DockPanel Grid.Row="2" Margin="0,16,0,0">
             <Button DockPanel.Dock="Right" Content="アプリを完全終了" Click="ExitClick" Margin="10,0,0,0" />
+            <Button x:Name="FeedbackButton" DockPanel.Dock="Right" Content="フィードバック" Click="OpenFeedback" Margin="10,0,0,0" />
             <TextBlock x:Name="ApplicationStatus" Text="起動中" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#526477" AutomationProperties.Name="アプリケーションの状態" />
         </DockPanel>
     </Grid>

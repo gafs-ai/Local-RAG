@@ -15,4 +15,7 @@
     <Using Remove="System.Drawing" />
     <Using Include="System.IO" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UsageStatisticsTransportFile)' != ''">
+    <EmbeddedResource Include="$(UsageStatisticsTransportFile)" LogicalName="LocalRag.UsageStatisticsTransport.json" />
+  </ItemGroup>
 </Project>

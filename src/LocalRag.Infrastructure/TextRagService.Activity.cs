@@ -10,6 +10,14 @@ public sealed partial class TextRagService
     private IngestionActivity _activity = new(0, null, "待機中", []);
     public event Action<IngestionActivity>? ActivityChanged;
     public event Action? HistoryChanged;
+    public event Action<IngestionHistoryEntry>? HistoryRecorded;
+    private void NotifyHistoryRecorded(IngestionHistoryEntry entry)
+    {
+        // Optional observers must never change the result of ingestion or its retry behavior.
+        if (HistoryRecorded is not { } handlers) return;
+        foreach (Action<IngestionHistoryEntry> handler in handlers.GetInvocationList())
+            try { handler(entry); } catch { }
+    }
     private void ChangeActivity(string? path, string stage, IReadOnlyList<FileWorkItem>? waiting = null, bool queueOnly = false)
     {
         IngestionActivity snapshot;
@@ -44,9 +52,11 @@ public sealed partial class TextRagService
                 using var finalization = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 var state = await repository.GetAsync(DocumentIdentity.Key(settings.DataSourceName, file.Path), finalization.Token).ConfigureAwait(false);
                 var status = result.Deferred > 0 ? "deferred" : result.Unchanged > 0 ? "unchanged" : state?.Status ?? "skipped";
-                await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, status,
+                var entry = new IngestionHistoryEntry(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, status,
                     status is "failed" ? state?.ErrorStage : null, status is "failed" ? state?.ErrorDetailCode : null,
-                    state?.WithdrawalReason, state?.ProcessingNotices.ToArray(), _configuration, state?.Failure), finalization.Token).ConfigureAwait(false);
+                    state?.WithdrawalReason, state?.ProcessingNotices.ToArray(), _configuration, state?.Failure);
+                await repository.RecordHistoryAsync(entry, finalization.Token).ConfigureAwait(false);
+                NotifyHistoryRecorded(entry);
                 HistoryChanged?.Invoke();
             }
             catch (Exception ex) when (MonitoringRecovery.IsTransient(ex))
@@ -62,8 +72,10 @@ public sealed partial class TextRagService
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             try
             {
-                await repository.RecordHistoryAsync(new(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, "interrupted",
-                    ConfigurationId: _configuration), timeout.Token).ConfigureAwait(false);
+                var entry = new IngestionHistoryEntry(Guid.NewGuid(), started, _clock.GetUtcNow(), file.Path, "interrupted",
+                    ConfigurationId: _configuration);
+                await repository.RecordHistoryAsync(entry, timeout.Token).ConfigureAwait(false);
+                NotifyHistoryRecorded(entry);
                 HistoryChanged?.Invoke();
             }
             catch (Exception ex) when (MonitoringRecovery.IsTransient(ex))

@@ -30,6 +30,8 @@ public partial class MainWindow
                 new QueueRow(i + 1, f.Priority, f.LastWriteUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss"), f.Path)).ToArray();
         });
         service.HistoryChanged += () => Dispatcher.BeginInvoke(async () => await RefreshHistoryAsync(service));
+        service.HistoryRecorded += entry =>
+            _usageStatistics.Record(System.IO.Path.GetExtension(entry.Path), entry.Result, entry.CompletedAtUtc - entry.StartedAtUtc);
     }
 
     private async Task RefreshHistoryAsync(TextRagService service)

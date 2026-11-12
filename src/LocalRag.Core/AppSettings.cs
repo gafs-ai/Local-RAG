@@ -15,6 +15,7 @@ public sealed record AppSettings
     public AiConnectionSettings Ai { get; init; } = new();
     public DatabaseSettings Database { get; init; } = new();
     public McpSettings Mcp { get; init; } = new();
+    public UsageStatisticsSettings UsageStatistics { get; init; } = new();
     public TextRagSettings TextPipeline { get; init; } = new();
     public ConfidentialityPolicy Confidentiality { get; init; } = new();
     public ManagementSettings? Management { get; init; }
@@ -50,6 +51,7 @@ public sealed record AppSettings
             errors.AddRange(Mcp.Validate());
             if (Database is { UsesExternalEndpoint: false } && Mcp.Port == Database.Port) errors.Add("MCPとDBには異なるポートを指定してください。");
         }
+        if (UsageStatistics is null) errors.Add("利用統計設定がありません。");
         if (TextPipeline is null) errors.Add("テキスト処理設定がありません。");
         else errors.AddRange(TextPipeline.Validate());
         if (Management is not null) errors.AddRange(Management.Validate());

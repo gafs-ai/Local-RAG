@@ -100,6 +100,7 @@ public partial class MainWindow : Window, IDisposable
             StopDbBox.IsChecked = settings.Database.StopOnExit;
             McpEnabledBox.IsChecked = settings.Mcp.Enabled;
             McpPortBox.Text = settings.Mcp.Port.ToString();
+            await InitializeUsageStatisticsAsync();
             _settingsLoaded = true;
             SettingsStatus.Text = "";
         }
@@ -257,6 +258,7 @@ public partial class MainWindow : Window, IDisposable
         try
         {
             var settings = _loadedSettings with { SchemaVersion = 2, Management = management, TextPipeline = limits };
+            await PrepareUsageStatisticsForSettingsAsync(settings);
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
             await ReconfigureRagAsync();
@@ -264,7 +266,11 @@ public partial class MainWindow : Window, IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
-        finally { SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown; }
+        finally
+        {
+            if (!_shuttingDown) RefreshUsageStatisticsConfiguration();
+            SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown;
+        }
     }
 
     private async Task SaveSettingsAsync()
@@ -292,6 +298,7 @@ public partial class MainWindow : Window, IDisposable
                 DbPasswordBox.Clear();
             }
             var reconnect = credentialsChanged || settings.Database.ExternalEndpoint != _loadedSettings.Database.ExternalEndpoint || _server.Connection is null;
+            await PrepareUsageStatisticsForSettingsAsync(settings);
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
             await ReconfigureRagAsync(refreshAi: true, reconnectDatabase: reconnect);
@@ -299,7 +306,11 @@ public partial class MainWindow : Window, IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { SettingsStatus.Text = SafeMessage(ex); }
-        finally { SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown; }
+        finally
+        {
+            if (!_shuttingDown) RefreshUsageStatisticsConfiguration();
+            SaveButton.IsEnabled = SettingsPanel.IsEnabled = !_shuttingDown;
+        }
     }
 
     private async void CheckAi(object sender, RoutedEventArgs e)
@@ -413,6 +424,7 @@ public partial class MainWindow : Window, IDisposable
     internal async Task PrepareShutdownAsync()
     {
         _shuttingDown = true;
+        StopUsageStatistics();
         RagPanel.IsEnabled = SearchPanel.IsEnabled = SaveButton.IsEnabled = false;
         UpdateApplicationStatus();
         SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = false;
@@ -422,7 +434,9 @@ public partial class MainWindow : Window, IDisposable
         try
         {
             await Task.WhenAll(_startupTask, _databaseTask, _saveTask, _aiTask, _resetTask);
+            await CompleteFeedbackShutdownAsync();
             await StopRagAsync();
+            await CompleteUsageStatisticsShutdownAsync();
             await _lemonade.ShutdownAsync(_loadedSettings.Ai.StopServerOnExit);
             await _server.ShutdownAsync(_loadedSettings.Database.StopOnExit);
         }
@@ -431,6 +445,7 @@ public partial class MainWindow : Window, IDisposable
             _lifetime.Dispose();
             _lifetime = new CancellationTokenSource();
             _shuttingDown = false;
+            RefreshUsageStatisticsConfiguration();
             SaveButton.IsEnabled = SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = _settingsLoaded;
             UpdateApplicationStatus();
             throw;
@@ -441,11 +456,14 @@ public partial class MainWindow : Window, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        StopUsageStatistics();
         _lifetime.Cancel();
         _tray.Visible = false;
         _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
         _trayIcon.Dispose();
+        _usageStatisticsCancellation?.Dispose();
+        _usageStatisticsSender?.Dispose();
         _lifetime.Dispose();
         _monitorCancellation?.Dispose();
         _server.DisposeAsync().GetAwaiter().GetResult();

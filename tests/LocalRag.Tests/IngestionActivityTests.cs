@@ -6,6 +6,33 @@ namespace LocalRag.Tests;
 public class IngestionActivityTests
 {
     [ServerFact]
+    public async Task StatisticsObserverCountsNewCompletionsAndCannotBreakIngestion()
+    {
+        await using var fixture = await ServerFixture.StartAsync();
+        var input = Path.Combine(fixture.Root, "input"); Directory.CreateDirectory(input);
+        await File.WriteAllTextAsync(Path.Combine(input, "private-person-name.txt"), "private document body");
+        var settings = TextRagTests.Settings(input) with { UsageStatistics = new() { Enabled = true, NoticeAcknowledged = true } };
+        await using var repository = await TextRagRepository.OpenAsync(fixture.Manager.Connection!);
+        using var service = new TextRagService(repository, new FakeTextAi(), settings, Path.Combine(fixture.Root, "data"));
+        var statistics = new UsageStatisticsAccumulator(); statistics.Configure(settings.UsageStatistics);
+        service.HistoryRecorded += _ => throw new InvalidOperationException("Observer must not affect ingestion.");
+        service.HistoryRecorded += entry => statistics.Record(Path.GetExtension(entry.Path), entry.Result,
+            entry.CompletedAtUtc - entry.StartedAtUtc);
+        await service.ScanAsync();
+        await service.ScanAsync(); // unchanged is not a new processing sample
+        var report = statistics.Preview(settings, "0.26.6");
+        var processing = Assert.Single(report!.Processing);
+        Assert.Equal(".txt", processing.Extension);
+        Assert.Equal(1, processing.Completed);
+        Assert.Equal(0, processing.Failed);
+        var json = System.Text.Json.JsonSerializer.Serialize(report);
+        Assert.DoesNotContain("private-person-name", json);
+        Assert.DoesNotContain("private document body", json);
+        Assert.Equal(2, (await repository.HistoryAsync()).Count);
+        Assert.Equal("ready", Assert.Single(await repository.DocumentsAsync(default)).Status);
+    }
+
+    [ServerFact]
     public async Task HistoryRecordsRealCompletionOrderAndSurvivesReopeningWithoutSourceContents()
     {
         await using var fixture = await ServerFixture.StartAsync();

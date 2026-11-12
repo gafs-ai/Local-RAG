@@ -1,4 +1,4 @@
-# Local RAG バージョン0.26.5
+# Local RAG バージョン0.26.6
 
 PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索するWindows 11 x64向けアプリです。
 
@@ -6,6 +6,8 @@ PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコード�
 
 - [詳しい設定方法](Documents/SettingsGuide.md) — アプリの「ヘルプ」や各設定項目のF1でも読めます。
 - [ChatGPT・MCPからの利用](Documents/MCPConnection.md) — プラグイン単独では動作しません。本体アプリを起動しておきます。
+- [利用統計](Documents/UsageStatistics.md) — 初回案内で確認でき、後から設定で停止できます。
+- [フィードバック](Documents/Feedback.md) — 画面下部から改善要望・不具合等を送信できます。入力したメッセージはそのまま送られます。
 - [プロジェクト・ソースコード](https://github.com/gafs-ai/Local-RAG)
 
 更新・アンインストール前には「アプリを完全終了」を選んでください。アンインストールしても設定・索引・元文書・モデルは残ります。

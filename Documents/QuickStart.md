@@ -1,11 +1,11 @@
-# Local RAG クイックスタート（バージョン0.26.5）
+# Local RAG クイックスタート（バージョン0.26.6）
 
 Windows 11（64ビット）で、PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索できるようにします。音声は未対応です。旧形式の.docにはMicrosoft Word、.xls・.xlsbにはMicrosoft Excelが必要です。
 
 ## 1. インストールする
 
 1. [Lemonade Server](https://lemonade-server.ai/docs/guide/install/windows/)をインストールします。
-2. [Local RAG 0.26.5のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.5)から`LocalRAG-0.26.5-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
+2. [Local RAG 0.26.6のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.6)から`LocalRAG-0.26.6-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
 
 Local RAGのインストーラには.NETランタイムが含まれます。DBは初回起動時に自動で導入します。初回はインターネット接続が必要です。
 
@@ -49,7 +49,9 @@ ChatGPTから使う場合は、Local RAG本体を起動したままプラグイ�
 
 ## 動作状況を教えてください
 
-環境とモデルの試行データを収集中です。[フィードバック](https://github.com/gafs-ai/Local-RAG/issues/new?template=environment-feedback.yml)に、**CPUモデル、RAM容量、専用GPU（あれば）、使用モデル、動作状況（動かない・遅い・快適など）**をお知らせください。文書の本文や秘密情報は記載しないでください。
+環境とモデルの試行データを収集中です。アプリの「フィードバック」から、改善要望や動作状況を送信できます。「利用統計を送信する」にチェックすると環境・モデル・処理件数などを添付します。文書の本文や秘密情報は記載しないでください。詳しくは[フィードバック](Feedback.md)を参照してください。
+
+初回起動時に、自動の利用統計送信について案内します。開発・改善のための集計で、処理した文書の内容は送信しません。「設定」でいつでも停止できます。送信項目は[利用統計](UsageStatistics.md)で確認できます。
 
 ## 以前の版から更新した場合
 
