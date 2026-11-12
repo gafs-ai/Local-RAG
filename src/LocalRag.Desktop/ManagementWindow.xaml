@@ -54,6 +54,31 @@
        <TextBlock Text="文字コード"/><ComboBox x:Name="EncodingModeBox" DisplayMemberPath="Name" SelectedValuePath="Mode" AutomationProperties.Name="文字コード"/>
        <TextBlock Text="通常は自動判別を使用します。短文などで判別できない場合や文字化けする場合は、この設定の文字コードを指定してください。" TextWrapping="Wrap" Foreground="#526477"/>
        </StackPanel>
+       <StackPanel x:Name="SpreadsheetOptions">
+       <TextBlock Text="Excel・CSVの領域処理" FontWeight="Bold"/>
+       <ComboBox x:Name="SpreadsheetModeBox" DisplayMemberPath="Label" SelectedValuePath="Key" SelectionChanged="UsageChanged" AutomationProperties.Name="Excel・CSVの領域処理方式"/>
+       <StackPanel x:Name="SpreadsheetDetails">
+       <TextBlock Text="画像化せずセルを解析します。数値表は列名などの説明を検索し、値・数式・セル位置を別途保持します。数式の再計算や画像・図形の解析は行いません。" TextWrapping="Wrap"/>
+       <TextBlock x:Name="SpreadsheetExcelNotice" Text=".xlsx・.xlsmは直接読み取ります（VBAは無視）。.xls・.xlsbは導入済みMicrosoft Excelで一時コピーを.xlsxへ変換します。原本は変更しません。保存済み設定では必要な拡張子を追加してください。" TextWrapping="Wrap"/>
+       <StackPanel x:Name="SpreadsheetHeaderOptions"><TextBlock Text="見出し行数（-1: 自動、0: 見出しなし）"/><TextBox x:Name="SpreadsheetHeaderBox" AutomationProperties.Name="Excel・CSVの見出し行数"/></StackPanel>
+       <StackPanel x:Name="CsvOptions"><TextBlock Text="CSVの区切り文字"/><ComboBox x:Name="CsvDelimiterBox" DisplayMemberPath="Label" SelectedValuePath="Key" AutomationProperties.Name="CSVの区切り文字"/></StackPanel>
+       <CheckBox x:Name="SpreadsheetHiddenBox" Content="非表示シート・行・列も取り込む"/>
+       <TextBlock Text="取り込みセル数の上限（1～1000000）"/><TextBox x:Name="SpreadsheetCellLimitBox" AutomationProperties.Name="Excel・CSVのセル数上限"/>
+       <TextBlock Text="シート・範囲ごとの指定" FontWeight="SemiBold" Margin="0,10,0,0"/>
+       <TextBlock Text="シート名を指定します（* は全シート）。範囲は A1:D20 の形式で、空欄はシート全体です。範囲の重複は避けてください。見出し行数 -1 は自動判定です。" TextWrapping="Wrap"/>
+       <StackPanel Orientation="Horizontal"><Button Content="追加" Click="AddSpreadsheetOverride"/><Button Content="削除" Click="RemoveSpreadsheetOverride"/></StackPanel>
+       <DataGrid x:Name="SpreadsheetOverrideGrid" AutoGenerateColumns="False" CanUserAddRows="False" MinHeight="110" MaxHeight="260" AutomationProperties.Name="シート・範囲ごとの処理指定">
+        <DataGrid.Columns>
+         <DataGridTextColumn Header="シート名" Binding="{Binding Sheet, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+         <DataGridTextColumn Header="範囲" Binding="{Binding Range, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+         <DataGridComboBoxColumn x:Name="SpreadsheetOverrideModeColumn" Header="処理方式" SelectedValueBinding="{Binding Mode, UpdateSourceTrigger=PropertyChanged}" DisplayMemberPath="Label" SelectedValuePath="Key" Width="170"/>
+         <DataGridTemplateColumn Header="見出し行数" Width="90"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+          <TextBox Text="{Binding HeaderRows, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding HeaderVisibility}" AutomationProperties.Name="範囲指定の見出し行数"/>
+         </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+        </DataGrid.Columns>
+       </DataGrid>
+       </StackPanel>
+       </StackPanel>
        <StackPanel x:Name="PdfOptions">
        <TextBlock Text="PDFの取り込み判定" FontWeight="Bold"/>
        <ComboBox x:Name="PdfPolicyBox" DisplayMemberPath="Label" SelectedValuePath="Key" SelectionChanged="UsageChanged" AutomationProperties.Name="PDFの取り込み判定"/>

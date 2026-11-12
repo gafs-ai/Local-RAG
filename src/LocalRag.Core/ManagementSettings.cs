@@ -33,6 +33,7 @@ public sealed record TextRoute
     public SourceCodeMode SourceMode { get; init; }
     public TextEncodingMode EncodingMode { get; init; } = TextEncodingMode.Auto;
     public PdfSettings Pdf { get; init; } = new();
+    public SpreadsheetSettings Spreadsheet { get; init; } = new();
     public bool WordInferHeadings { get; init; } = true;
     public bool WordJoinSoftLineBreaks { get; init; } = true;
     public bool WordRepairWithLlm { get; init; } = true;
@@ -129,6 +130,8 @@ public sealed record ManagementSettings
                 ClassifyEnabled = false, DefaultCategoryId = "source_code" }),
             CreateWordRoute(),
             CreatePdfRoute(),
+            CreateSpreadsheetRoute(SourceCodeMode.Excel),
+            CreateSpreadsheetRoute(SourceCodeMode.Csv),
             new() { Name = "Markdown用", Extensions = [".md", ".markdown"], SourceMode = SourceCodeMode.Text,
                 ChildMode = ChildChunkMode.Mechanical, ParentMode = ParentChunkMode.Structure, FormatPromptId = "",
                 MarkdownParentMinCharacters = 500, MarkdownParentMaxCharacters = 4000, ParentEmbedding = ParentEmbeddingMode.TextOrSummary },
@@ -143,6 +146,12 @@ public sealed record ManagementSettings
 
     public static TextRoute CreatePdfRoute() => CreateWordRoute() with { Name = "PDF用", Extensions = [".pdf"],
         SourceMode = SourceCodeMode.Pdf, WordRepairPromptId = "system.pdf-repair" };
+
+    public static TextRoute CreateSpreadsheetRoute(SourceCodeMode mode) => new() {
+        Name = mode == SourceCodeMode.Excel ? "Excel用" : "CSV用",
+        Extensions = mode == SourceCodeMode.Excel ? [".xlsx", ".xlsm", ".xlsb", ".xls"] : [".csv"], SourceMode = mode,
+        ClassifyEnabled = false, FormatPromptId = "", ChildMode = ChildChunkMode.Mechanical,
+        ParentMode = ParentChunkMode.Structure, ParentEmbedding = ParentEmbeddingMode.None };
 
     public TextRagSettings Resolve(TextRagSettings limits, string path)
     {
@@ -160,7 +169,7 @@ public sealed record ManagementSettings
         return ApplyRetrieval(limits) with
         {
             ChildMode = route.ChildMode, ParentMode = route.ParentMode, SourceMode = route.SourceMode, EncodingMode = route.EncodingMode,
-            Pdf = route.Pdf,
+            Pdf = route.Pdf, Spreadsheet = route.Spreadsheet,
             Word = new() { InferHeadings = route.WordInferHeadings, JoinSoftLineBreaks = route.WordJoinSoftLineBreaks,
                 RepairWithLlm = route.WordRepairWithLlm, RepairPrompt = Prompt(route.WordRepairPromptId) },
             MarkdownParentMinCharacters = route.MarkdownParentMinCharacters, MarkdownParentMaxCharacters = route.MarkdownParentMaxCharacters,
@@ -232,10 +241,15 @@ public sealed record ManagementSettings
             if (Version == 2 && (string.IsNullOrWhiteSpace(route.Name) || route.Name.Length > 100 || route.Extensions is null ||
                 route.Extensions.Count is < 1 or > 64 || route.Extensions.Any(ext => !ValidExtension(ext)) ||
                 route.Extensions.Distinct(StringComparer.OrdinalIgnoreCase).Count() != route.Extensions.Count ||
-                route.SourceMode is not (SourceCodeMode.Text or SourceCodeMode.Word or SourceCodeMode.Pdf) && !SourceLanguages.IsCode(route.SourceMode)))
+                route.SourceMode is not (SourceCodeMode.Text or SourceCodeMode.Word or SourceCodeMode.Pdf or SourceCodeMode.Excel or SourceCodeMode.Csv) && !SourceLanguages.IsCode(route.SourceMode)))
                 errors.Add($"{route.Name}: 名前、拡張子、入力の扱いを確認してください。");
             if (!Enum.IsDefined(route.EncodingMode)) errors.Add("文字コードの指定が不正です。");
             if (route.Pdf is null) errors.Add("PDF設定がありません。"); else errors.AddRange(route.Pdf.Validate());
+            if (route.Spreadsheet is null) errors.Add("Excel・CSV設定がありません。"); else errors.AddRange(route.Spreadsheet.Validate());
+            if (route.SourceMode == SourceCodeMode.Excel && route.Extensions?.Any(e => !DocumentInputs.IsExcel(e)) == true)
+                errors.Add("Excel用の拡張子は.xlsx・.xlsm・.xlsb・.xlsを指定してください。");
+            if (route.SourceMode == SourceCodeMode.Csv && route.Extensions?.Any(e => !e.Equals(".csv", StringComparison.OrdinalIgnoreCase) && !e.Equals(".tsv", StringComparison.OrdinalIgnoreCase)) == true)
+                errors.Add("CSV用の拡張子は.csv・.tsvを指定してください。");
             if (route.SourceMode == SourceCodeMode.Pdf && route.Extensions?.Any(e => !DocumentInputs.IsPdf(e)) == true)
                 errors.Add("PDF用の拡張子は.pdfを指定してください。");
             if (!HasPrompt(route.WordRepairPromptId, PromptPurpose.WordRepair)) errors.Add("Word構造補正プロンプトが見つからないか用途が違います。");

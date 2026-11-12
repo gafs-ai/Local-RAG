@@ -27,7 +27,9 @@ catch (Exception) { Console.Error.WriteLine("Local RAG MCP is unavailable. Start
 
 internal sealed class ForwardCalls(string data) : IRetrievalCalls
 {
-    public async Task<CallToolResult> CallAsync(string name, string? query, int limit, string? id, CancellationToken token)
+    public Task<CallToolResult> CallAsync(string name, string? query, int limit, string? id, CancellationToken token) => ForwardAsync(name, query, limit, id, token);
+    public Task<CallToolResult> FetchRangeAsync(string id, string sheet, string range, CancellationToken token) => ForwardAsync("fetch", null, 0, id, token, sheet, range);
+    private async Task<CallToolResult> ForwardAsync(string name, string? query, int limit, string? id, CancellationToken token, string? sheet = null, string? range = null)
     {
         try
         {
@@ -46,9 +48,11 @@ internal sealed class ForwardCalls(string data) : IRetrievalCalls
                 AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
             }, http);
             await using var client = await McpClient.CreateAsync(transport, cancellationToken: bounded.Token).ConfigureAwait(false);
-            return await client.CallToolAsync(name, name == "search"
+            var arguments = name == "search"
                 ? new Dictionary<string, object?> { ["query"] = query, ["limit"] = limit }
-                : new Dictionary<string, object?> { ["id"] = id }, cancellationToken: bounded.Token).ConfigureAwait(false);
+                : new Dictionary<string, object?> { ["id"] = id };
+            if (sheet is not null) { arguments["sheet"] = sheet; arguments["range"] = range; }
+            return await client.CallToolAsync(name, arguments, cancellationToken: bounded.Token).ConfigureAwait(false);
         }
         catch (Exception) { return LocalRetrievalCalls.Error("retrieval_unavailable"); }
     }

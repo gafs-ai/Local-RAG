@@ -18,10 +18,15 @@ public static class DocumentInputs
 {
     public static bool IsWord(string path) => Path.GetExtension(path).ToLowerInvariant() is ".docx" or ".docm" or ".doc";
     public static bool IsPdf(string path) => Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+    public static bool IsSpreadsheet(SourceCodeMode mode) => mode is SourceCodeMode.Excel or SourceCodeMode.Csv;
+    public static bool IsExcel(string path) => Path.GetExtension(path).ToLowerInvariant() is ".xlsx" or ".xlsm" or ".xlsb" or ".xls";
+    public static bool RequiresExcelConversion(string path) => Path.GetExtension(path).ToLowerInvariant() is ".xls" or ".xlsb";
     public static bool IsConverted(SourceCodeMode mode) => mode is SourceCodeMode.Word or SourceCodeMode.Pdf;
     public static bool IsMarkdown(string path) => Path.GetExtension(path).ToLowerInvariant() is ".md" or ".markdown";
     public static bool UsesMarkdown(string path, SourceCodeMode mode) => IsConverted(mode) || IsMarkdown(path);
-    public static string? ExtractionNotice(string? path) => path is not null && (IsWord(path) || IsPdf(path))
+    public static string? ExtractionNotice(string? path) => path is not null && (IsExcel(path) || Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+        ? "セルから抽出した情報です。数式は再計算せず保存済み結果を使います。画像・図形の意味は保持されません。数値表の検索は表の発見用で、集計ではありません。"
+        : path is not null && (IsWord(path) || IsPdf(path))
         ? "抽出テキストです。画像・図表・レイアウトの情報は完全には保持されません。重要な内容は原本を確認してください。" : null;
 }
 

@@ -1,0 +1,14 @@
+Microsoft Excel (external software; not redistributed)
+
+Local RAG uses an independently installed Windows desktop edition of Microsoft
+Excel only to convert Excel 97-2003 .xls and binary .xlsb workbooks into temporary .xlsx
+files for ingestion. Microsoft Excel is not included in this application or
+its installer. No Office interop assembly is redistributed.
+
+Use of Microsoft Excel is governed by the terms applicable to the user's Office
+or Microsoft 365 product and acquisition channel. Consult the installed product
+and the Microsoft licensing terms portal:
+https://www.microsoft.com/useterms
+
+This file is a dependency notice, not a copy of Microsoft's license agreement.
+The Local RAG GPL license does not grant a license to Microsoft Excel.

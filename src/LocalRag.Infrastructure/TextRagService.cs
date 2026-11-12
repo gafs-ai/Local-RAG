@@ -70,7 +70,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (previous?.SpaceId is null || previous.SpaceId != _retrievalPrompts.SpaceId(settings.Ai, previous.Dimension))
                     state = state with { SpaceId = null, Dimension = 0, EmbeddedChunks = 0 };
                 else state = state with { SpaceId = previous.SpaceId, Dimension = previous.Dimension };
-                state = state with { Original = snapshot.Text, PdfAssessment = snapshot.Pdf, WordDisclosureText = snapshot.Word?.DisclosureText, WordSourceBlocks = snapshot.Word?.Blocks,
+                state = state with { Original = snapshot.Text, Spreadsheet = snapshot.Spreadsheet, PdfAssessment = snapshot.Pdf,
+                    WordDisclosureText = snapshot.Spreadsheet is not null ? SpreadsheetDocuments.Render(snapshot.Spreadsheet) : snapshot.Word?.DisclosureText, WordSourceBlocks = snapshot.Word?.Blocks,
                     ProcessingNotices = state.ProcessingNotices.Where(n => !n.StartsWith("encoding_", StringComparison.Ordinal) && !(n.StartsWith("pdf_", StringComparison.Ordinal) && !n.StartsWith("pdf_repair_", StringComparison.Ordinal)))
                     .Concat(snapshot.Notices).Distinct().ToList() };
                 state = Stamp(state, "read", plan.Read, snapshot.Hash, snapshot.Text);
@@ -78,7 +79,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 if (string.IsNullOrWhiteSpace(snapshot.Text))
                 {
                     await repository.SaveAsync(state with { Status = "skipped", Failure = null, ProcessingNotices =
-                        state.ProcessingNotices.Concat(snapshot.Pdf is not null ? [] : new[] { "empty_text" }).Distinct().ToList() }, token).ConfigureAwait(false);
+                        state.ProcessingNotices.Concat(snapshot.Pdf is not null || snapshot.Spreadsheet is not null ? [] : new[] { "empty_text" }).Distinct().ToList() }, token).ConfigureAwait(false);
                     return new(0, 1, 0, 0, 0, 0);
                 }
                 progress?.Report($"処理中：{System.IO.Path.GetFileName(path)}（実行中のファイルは優先度変更でも中断しません）");
@@ -119,7 +120,18 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                         return new(0, 1, 0, 0, 0, 0);
                     }
                 }
-                if (!isCode) state = await PrepareTextStagesAsync(state, pipeline, pipelineSettings, category, plan, progress, s => stage = s, token).ConfigureAwait(false);
+                if (DocumentInputs.IsSpreadsheet(pipelineSettings.SourceMode))
+                {
+                    stage = "spreadsheet";
+                    state = await PrepareSpreadsheetAsync(state, pipelineSettings, plan, token).ConfigureAwait(false);
+                    if (state.Chunks is { Count: 0 })
+                    {
+                        await repository.SaveAsync(state with { Status = "skipped", Failure = null,
+                            ProcessingNotices = state.ProcessingNotices.Append("spreadsheet_no_regions").Distinct().ToList() }, token).ConfigureAwait(false);
+                        return new(0, 1, 0, 0, 0, 0);
+                    }
+                }
+                else if (!isCode) state = await PrepareTextStagesAsync(state, pipeline, pipelineSettings, category, plan, progress, s => stage = s, token).ConfigureAwait(false);
                 var preparedChunks = state.Chunks ?? throw new InvalidDataException("埋め込み用チャンクがありません。");
                 if (!Reusable(state, "embedding", plan.Embedding, preparedChunks, preparedChunks)) state = state with { EmbeddedChunks = 0 };
                 state = Stamp(state, "embedding", plan.Embedding, preparedChunks, preparedChunks);
@@ -227,7 +239,7 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                 }
                 if (parent is not null && !seenParents.Add(document.RevisionId + ":" + parent.Id)) continue;
                 if (!await CurrentAsync(document, token).ConfigureAwait(false)) continue;
-                var content = selection?.Content ?? parent?.Text ?? chunk.Text;
+                var content = SpreadsheetSearchContent(document, parent?.Id, selection?.Content ?? parent?.Text ?? chunk.Text);
                 var disclosure = await DiscloseAsync(document, parent?.Title is null ? content : $"Section: {parent.Title}\n\n{content}", token).ConfigureAwait(false);
                 if (!await CurrentAsync(document, token).ConfigureAwait(false)) continue;
                 var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
@@ -241,7 +253,9 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                     allowed ? selection?.Mode : null,
                     allowed && selection is not null ? document.RevisionId + ":" + matchedParent!.Id : null,
                     allowed && selection is not null ? matchedParent!.SourceKind : null,
-                    allowed ? chunk.EmbeddingKind : null));
+                    allowed ? chunk.EmbeddingKind : null,
+                    Sheet: allowed ? document.SpreadsheetRegions?.FirstOrDefault(r => r.Id == parent?.Id)?.Sheet : null,
+                    CellRange: allowed ? document.SpreadsheetRegions?.FirstOrDefault(r => r.Id == parent?.Id)?.Range : null));
                 if (results.Count == limit) break;
             }
             return results;
@@ -262,8 +276,33 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
         }, token).ConfigureAwait(false);
     }
 
-    private Task<DisclosureResult> DiscloseAsync(TextDocumentState document, string candidate, CancellationToken token) =>
-        _gate.EvaluateAsync(document.DocumentId, document.WordDisclosureText ?? document.Original, $"Source: {document.Path}\n\n{candidate}", settings.DisclosurePolicy(), token);
+    private async Task<DisclosureResult> DiscloseAsync(TextDocumentState document, string candidate, CancellationToken token)
+    {
+        var policy = settings.DisclosurePolicy();
+        if (document.Spreadsheet is { } book && policy.Enabled && policy.BoundaryPatternsEnabled && policy.BoundaryPatterns.Count > 0 &&
+            (policy.LeadingLines > 0 || policy.TrailingLines > 0))
+        {
+            // A workbook's header/footer policy applies to every sheet, including hidden source sheets.
+            foreach (var sheet in book.Sheets)
+            {
+                var rows = sheet.Cells.GroupBy(c => c.Row).OrderBy(r => r.Key).ToArray();
+                var cells = rows.Take(policy.LeadingLines).Concat(rows.TakeLast(policy.TrailingLines))
+                    .DistinctBy(r => r.Key).SelectMany(r => r).ToList();
+                var result = await _gate.EvaluateAsync(document.DocumentId, SpreadsheetDocuments.Render(new([sheet with { Cells = cells }], [])),
+                    "", policy with { LlmEnabled = false, BoundaryPatternsEnabled = false, PatternsEnabled = true, Patterns = policy.BoundaryPatterns }, token).ConfigureAwait(false);
+                if (result.Decision is DisclosureDecision.Withheld or DisclosureDecision.Pending) return result;
+            }
+        }
+        // Spreadsheet boundaries were checked by worksheet rows above; do not interpret rendered cell lines as rows again.
+        if (document.Spreadsheet is not null && policy.Enabled && policy.BoundaryPatternsEnabled &&
+            (policy.LeadingLines > 0 || policy.TrailingLines > 0) && policy.BoundaryPatterns.Count > 0)
+        {
+            if (!policy.PatternsEnabled && !policy.LlmEnabled) return new(document.DocumentId, true, DisclosureDecision.Allowed, candidate);
+            policy = policy with { BoundaryPatternsEnabled = false };
+        }
+        return await _gate.EvaluateAsync(document.DocumentId, document.WordDisclosureText ?? document.Original,
+            $"Source: {document.Path}\n\n{candidate}", policy, token).ConfigureAwait(false);
+    }
 
     private async Task<bool> CurrentAsync(TextDocumentState document, CancellationToken token)
     {

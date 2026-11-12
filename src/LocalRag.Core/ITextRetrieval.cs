@@ -5,6 +5,8 @@ public interface ITextRetrieval
 {
     Task<IReadOnlyList<TextSearchResult>> SearchAsync(string query, int limit = 5, CancellationToken token = default);
     Task<TextSearchResult?> FetchAsync(Guid documentId, CancellationToken token = default);
+    Task<TextSearchResult?> FetchRangeAsync(Guid documentId, string sheet, string range, CancellationToken token = default) =>
+        Task.FromException<TextSearchResult?>(new ArgumentException("範囲取得に対応していません。"));
 }
 
 public sealed record McpSettings

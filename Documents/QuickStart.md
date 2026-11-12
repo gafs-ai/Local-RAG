@@ -1,11 +1,11 @@
-# Local RAG クイックスタート（バージョン0.26.4）
+# Local RAG クイックスタート（バージョン0.26.5）
 
-Windows 11（64ビット）で、PC内のPDF・Word・テキスト・Markdown・ソースコードを検索できるようにします。音声は未対応です。PDFは文字主体の文書を自動判定して取り込みます。旧形式の.docだけはMicrosoft Wordが必要です。
+Windows 11（64ビット）で、PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索できるようにします。音声は未対応です。旧形式の.docにはMicrosoft Word、.xls・.xlsbにはMicrosoft Excelが必要です。
 
 ## 1. インストールする
 
 1. [Lemonade Server](https://lemonade-server.ai/docs/guide/install/windows/)をインストールします。
-2. [Local RAG 0.26.4のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.4)から`LocalRAG-0.26.4-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
+2. [Local RAG 0.26.5のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.5)から`LocalRAG-0.26.5-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
 
 Local RAGのインストーラには.NETランタイムが含まれます。DBは初回起動時に自動で導入します。初回はインターネット接続が必要です。
 

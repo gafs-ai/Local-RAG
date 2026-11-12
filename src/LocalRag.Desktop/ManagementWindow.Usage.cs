@@ -43,7 +43,8 @@ public partial class ManagementWindow
             if (!classify && _routeRows.SingleOrDefault(r => r.Id == category) is { } selected) selected.Enabled = true;
             foreach (var row in _routeRows) row.ProcessingActive = !row.Excluded && (classify ? row.Enabled : row.Id == category);
             var active = _routeRows.Where(r => r.ProcessingActive).ToArray();
-            var skipPdf = source == SourceCodeMode.Pdf && Selection(PdfPolicyBox) == "Skip";
+            var spreadsheet = source is SourceCodeMode.Excel or SourceCodeMode.Csv;
+            var skipPdf = source == SourceCodeMode.Pdf && Selection(PdfPolicyBox) == "Skip" || spreadsheet && Selection(SpreadsheetModeBox) == "Skip";
             var process = active.Length > 0 && !skipPdf;
             WordOptions.Visibility = Visible(DocumentInputs.IsConverted(source) && !skipPdf);
             WordDescription.Visibility = Visible(source == SourceCodeMode.Word);
@@ -51,8 +52,14 @@ public partial class ManagementWindow
             PdfSamplingOptions.Visibility = Visible(Selection(PdfPolicyBox) == "Automatic");
             PdfHeadersBox.Visibility = Visible(!skipPdf);
             WordRepairPromptOptions.Visibility = Visible(WordRepairBox.IsChecked == true);
-            EncodingOptions.Visibility = Visible(!DocumentInputs.IsConverted(source));
-            CodeOptions.Visibility = Visible(!usage.Text && process);
+            EncodingOptions.Visibility = Visible(!DocumentInputs.IsConverted(source) && source != SourceCodeMode.Excel && !skipPdf);
+            SpreadsheetOptions.Visibility = Visible(spreadsheet);
+            SpreadsheetDetails.Visibility = Visible(!skipPdf);
+            CsvOptions.Visibility = Visible(source == SourceCodeMode.Csv);
+            SpreadsheetHiddenBox.Visibility = Visible(source == SourceCodeMode.Excel);
+            SpreadsheetExcelNotice.Visibility = Visible(source == SourceCodeMode.Excel);
+            SpreadsheetHeaderOptions.Visibility = Visible(Selection(SpreadsheetModeBox) is "Automatic" or "Records" or "NumericTable");
+            CodeOptions.Visibility = Visible(!usage.Text && !spreadsheet && process);
             ClassifyBox.Visibility = DefaultCategoryLabel.Visibility = DefaultCategoryBox.Visibility =
                 CategoryOptionsTitle.Visibility = RouteCategoryGrid.Visibility = Visible(!skipPdf);
             ClassifyOptions.Visibility = Visible(classify && !skipPdf);
@@ -82,7 +89,7 @@ public partial class ManagementWindow
             ChunkLimitOptions.Visibility = Visible(process);
             var format = active.Any(r => (r.FormatKey == Inherit ? Selection(DefaultFormatBox) : r.FormatKey) != Skip);
             var merge = active.Any(r => (r.ChunkKey == Inherit ? Selection(DefaultChunkBox) : r.ChunkKey) != Skip);
-            OutputLimitOptions.Visibility = Visible(!skipPdf && (classify || DocumentInputs.IsConverted(source) && WordRepairBox.IsChecked == true || process && (!usage.Text || format || usage.LlmChildren && merge || usage.LlmParents || usage.ParentDescription)));
+            OutputLimitOptions.Visibility = Visible(!skipPdf && (classify || DocumentInputs.IsConverted(source) && WordRepairBox.IsChecked == true || process && (!usage.Text && !spreadsheet || usage.Text && format || usage.LlmChildren && merge || usage.LlmParents || usage.ParentDescription)));
         }
         finally { _updatingUsage = false; }
     }

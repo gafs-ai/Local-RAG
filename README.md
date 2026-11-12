@@ -1,12 +1,14 @@
 # Local RAG System
 
+**0.26.5ではExcel・CSVの取り込みを追加しました。** `.xlsx`・`.xlsm`は直接読み取り、`.xls`・`.xlsb`は導入済みMicrosoft Excelで変換します。[設定と仕様](Documents/SpreadsheetIngestion.md)を確認し、既存設定にはExcel用・CSV用の処理を追加してください。
+
 > 0.26.4の追加機能：文字主体の[PDF取り込み](Documents/PdfIngestion.md)。既存設定ではPDF用の処理を追加してください。Word・PDFとも画像・図表等の情報は欠落し得るため、重要な内容は原本を確認してください。既存設定は自動変更しません。
 
 Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、Lemonade Server、別プロセスのSurrealDB、DiskANNを使用します。
 
 **初めて使う方は[クイックスタート](Documents/QuickStart.md)から始めてください。** 必要なインストール、メモリ・NPUに合わせたモデル選択、最小限の設定を説明しています。設定の詳細は、アプリ内の「ヘルプ」または各設定項目でF1を押すとオフラインで読めます。
 
-**バージョン0.26.4**。配布物は.NET同梱のWindows用MSIとZIPです。[0.26.4をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.4)／[0.26.4リリースノート](Documents/Release-0.26.4.md)／[配布手順](Documents/Distribution.md)。
+**バージョン0.26.5**。配布物は.NET同梱のWindows用MSIとZIPです。[0.26.5をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.5)／[0.26.5リリースノート](Documents/Release-0.26.5.md)／[配布手順](Documents/Distribution.md)。
 
 推奨モデルは、言語モデルが **Gemma**、Embeddingモデルが **nomic** です。Lemonade Serverに用意したモデルを、管理画面の「設定」で選択してください。
 
@@ -24,9 +26,9 @@ Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**。依存ソフトウェア
 
 ## 現在の実装範囲
 
-**0.26.4では文字主体のPDF取り込みを追加しています。音声は未対応です。**
+**0.26.5ではExcel・CSVの取り込みに対応しています。音声は未対応です。**
 
-PDF・Word・テキスト・Markdown・ソースコードの取り込みと検索に対応しています。音声は後続工程です。`main`はリリース用、`dev`は開発用とします。版番号は「メジャーバージョン.年.年内のリリース回数」です。
+Excel・CSV・PDF・Word・テキスト・Markdown・ソースコードの取り込みと検索に対応しています。音声は後続工程です。`main`はリリース用、`dev`は開発用とします。版番号は「メジャーバージョン.年.年内のリリース回数」です。
 
 実装済み:
 

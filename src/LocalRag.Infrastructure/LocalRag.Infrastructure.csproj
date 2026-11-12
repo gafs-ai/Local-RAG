@@ -3,6 +3,7 @@
     <EmbeddedResource Include="TreeSitterPackages.json" />
     <EmbeddedResource Include="TreeSitterParse.py" />
     <EmbeddedResource Include="ConvertWord.ps1" />
+    <EmbeddedResource Include="ConvertExcel.ps1" />
     <ProjectReference Include="../LocalRag.Core/LocalRag.Core.csproj" />
     <ProjectReference Include="../LocalRag.ServerControl/LocalRag.ServerControl.csproj" ReferenceOutputAssembly="false" Private="false" />
     <PackageReference Include="SurrealDb.Net" Version="1.0.0" />

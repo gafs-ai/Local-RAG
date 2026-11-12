@@ -1,4 +1,4 @@
-# 依存ソフトウェアのライセンス（バージョン0.26.3）
+# 依存ソフトウェアのライセンス（バージョン0.26.5）
 
 アプリ上部の「ライセンス」を開くと、名前で検索し、ライセンス原文・著作権表示・参照先をオフラインで確認できます。通常のビルドにも一覧と原文を埋め込み、配布フォルダの `ThirdPartyNotices` にも同梱します。本体はGAFS Inc.のGPL-3.0-or-laterです。依存ソフトウェアの条件は本体と同一とは限りません。
 
@@ -11,6 +11,8 @@ UTF.Unknownは配布元が示す選択肢のうちGPL第3版を適用し、元�
 以下はこの版でレビューした一覧です。ランタイムやNuGet依存の版が変わった場合、配布スクリプトは更新漏れを検出します。
 
 旧形式`.doc`の変換には、別途導入済みのMicrosoft Wordを使用します。Word本体・Office相互運用アセンブリは同梱しません。Wordの利用条件は導入済み製品・契約に従い、[Microsoftのライセンス条項](https://www.microsoft.com/useterms)からも確認できます。アプリのライセンス一覧には[外部依存の通知](../ThirdPartyNotices/Microsoft-Word-NOTICE.txt)を収録しています。
+
+旧形式`.xls`の変換には、別途導入済みのWindowsデスクトップ版Microsoft Excelを使用します。`.xlsx`の直接読み取りにExcelは不要です。Excel本体・Office相互運用アセンブリは同梱しません。Excelの利用条件は導入済み製品・契約に従います。アプリのライセンス一覧には[Microsoft Excelの外部依存通知](../ThirdPartyNotices/Microsoft-Excel-NOTICE.txt)を収録しています。この通知はMicrosoftのライセンス原文ではなく、Local RAGのライセンスがExcelの利用権を与えるものでもありません。
 
 | ソフトウェア | 版 | ライセンス | 利用形態 | 原文 |
 |---|---|---|---|---|
@@ -63,6 +65,8 @@ UTF.Unknownは配布元が示す選択肢のうちGPL第3版を適用し、元�
 | [tree-sitter-java](https://pypi.org/project/tree-sitter-java/0.23.5/) | 0.23.5 | MIT | 必要時に別途ダウンロード | [原文](../ThirdPartyNotices/tree-sitter-java-0.23.5-LICENSE.txt) |
 | [tree-sitter-kotlin](https://pypi.org/project/tree-sitter-kotlin/1.1.0/) | 1.1.0 | MIT | 必要時に別途ダウンロード | [原文](../ThirdPartyNotices/tree-sitter-kotlin-1.1.0-LICENSE.txt) |
 | [Lemonade Server](https://github.com/lemonade-sdk/lemonade/blob/main/LICENSE) |  | Apache-2.0 / 同梱第三者通知 | 利用者が別途インストール | [原文](../ThirdPartyNotices/Lemonade-LICENSE.txt) |
+| [Microsoft Word](https://www.microsoft.com/useterms) |  | 導入済みOffice / Microsoft 365の利用条件 | 旧.doc変換時のみ使用・別途インストール | [外部依存の通知](../ThirdPartyNotices/Microsoft-Word-NOTICE.txt) |
+| [Microsoft Excel](https://www.microsoft.com/useterms) |  | 導入済みOffice / Microsoft 365の利用条件 | Excel .xls・.xlsb変換時のみ使用・別途インストール | [外部依存の通知](../ThirdPartyNotices/Microsoft-Excel-NOTICE.txt) |
 | [Gemma 3 / nomic / その他のモデル](https://ai.google.dev/gemma/terms/) |  | モデル別の利用条件 | 利用者が別途ダウンロード | [原文](../ThirdPartyNotices/Models-NOTICE.txt) |
 
 PDFの読み取りにはPdfPig 0.1.16（Apache-2.0）を同梱します。上流の該当コミットの[LICENSEと第三者通知](../ThirdPartyNotices/PdfPig-0.1.16-LICENSE.txt)を全文収録し、アプリ内の一覧にも追加しています。

@@ -39,6 +39,7 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var code = s.SourceMode == SourceCodeMode.Code || SourceLanguages.IsCode(s.SourceMode) ||
             s.SourceMode == SourceCodeMode.Auto && extension is ".cs" or ".py";
         var markdown = !code && DocumentInputs.UsesMarkdown(path, s.SourceMode);
+        var spreadsheet = DocumentInputs.IsSpreadsheet(s.SourceMode);
         var category = s.Categories.SingleOrDefault(c => c.Id == (categoryId ?? s.DefaultCategory));
         var excluded = category is null || category.Excluded;
         var off = ProcessingStep.Create("unused/v1", new { });
@@ -48,27 +49,31 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var classify = s.ClassifyEnabled ? Chat("classify/v1", s.ClassifyPrompt, new { s.DefaultCategory,
             categories = s.Categories.Select(c => new { c.Id, c.Description, c.Excluded }) }) :
             ProcessingStep.Create("fixed-category/v1", new { s.DefaultCategory });
-        var structure = code ? ProcessingStep.Create("code-parser/v2", new { s.SourceMode, extension }) :
+        var structure = spreadsheet ? ProcessingStep.Create("spreadsheet-structure/v1", new { s.SourceMode }) : code ? ProcessingStep.Create("code-parser/v2", new { s.SourceMode, extension }) :
             ProcessingStep.Create("paragraph-structure/v1", new { markdown,
                 heading = markdown ? s.ParentHeadingLevel : 0,
                 minimum = markdown && s.EffectiveParentMode == ParentChunkMode.Structure ? s.MarkdownParentMinCharacters : 0,
                 maximum = markdown && s.EffectiveParentMode == ParentChunkMode.Structure ? s.MarkdownParentMaxCharacters : 262144 });
-        var format = !code && (category?.FormatEnabled ?? s.FormatEnabled)
+        var format = !code && !spreadsheet && (category?.FormatEnabled ?? s.FormatEnabled)
             ? Chat("remove-paragraphs/v1", category?.FormatPrompt ?? s.FormatPrompt, new { categoryId }) : off;
         var childMode = s.ChildMode == ChildChunkMode.Inherit && markdown && s.MechanicalMarkdown ? ChildChunkMode.Mechanical : s.EffectiveChildMode;
         var join = category?.ChunkEnabled ?? s.ChunkEnabled;
-        var children = code ? off : childMode == ChildChunkMode.Llm && join
+        var children = spreadsheet ? ProcessingStep.Create("spreadsheet-regions/v1", s.Spreadsheet) : code ? off : childMode == ChildChunkMode.Llm && join
             ? Chat("child-llm/v1", category?.ChunkPrompt ?? s.ChunkPrompt, new { categoryId, s.MaxChunkCharacters })
             : ProcessingStep.Create("child-mechanical/v1", new { childMode, join = childMode == ChildChunkMode.Mechanical && join, s.MaxChunkCharacters });
-        var parents = code ? off : s.EffectiveParentMode == ParentChunkMode.Llm
+        var parents = spreadsheet ? off : code ? off : s.EffectiveParentMode == ParentChunkMode.Llm
             ? Chat("parent-llm/v1", category?.ParentPrompt ?? s.ParentPrompt, new { })
             : ProcessingStep.Create("parent-structure/v1", new { mode = s.EffectiveParentMode });
-        var parentEnabled = !code && s.EffectiveParentMode != ParentChunkMode.None;
+        var parentEnabled = !code && !spreadsheet && s.EffectiveParentMode != ParentChunkMode.None;
         var parentDescription = !parentEnabled ? off : s.ParentEmbedding == ParentEmbeddingMode.TextOrSummary
             ? Chat("parent-description/v2", s.ParentDescriptionPrompt, new { s.ParentEmbedding }, 512)
             : ProcessingStep.Create("parent-embedding/v1", new { s.ParentEmbedding });
         var word = DocumentInputs.IsConverted(s.SourceMode);
-        var read = s.SourceMode == SourceCodeMode.Pdf ? ProcessingStep.Create("pdf-reader/v1", new { s.Pdf, s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
+        var read = spreadsheet ? ProcessingStep.Create(s.SourceMode == SourceCodeMode.Excel && extension == ".xlsb" ? "excel-binary-reader/v1" : s.SourceMode == SourceCodeMode.Excel && extension == ".xls" ? "excel-legacy-reader/v1" : "spreadsheet-reader/v1", new { s.SourceMode,
+            encoding = s.SourceMode == SourceCodeMode.Csv ? (TextEncodingMode?)s.EncodingMode : null,
+            delimiter = s.SourceMode == SourceCodeMode.Csv ? s.Spreadsheet.CsvDelimiter : null, s.Spreadsheet.MaxCells,
+            skip = s.Spreadsheet.Mode == SpreadsheetMode.Skip && s.Spreadsheet.Overrides.Count == 0 }) :
+            s.SourceMode == SourceCodeMode.Pdf ? ProcessingStep.Create("pdf-reader/v1", new { s.Pdf, s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
             word ? ProcessingStep.Create("word-reader/v1", new { s.Word.InferHeadings, s.Word.JoinSoftLineBreaks }) :
             ProcessingStep.Create("text-reader/v1", new { s.EncodingMode });
         var repair = !word ? off : s.Word.RepairWithLlm ? Chat("word-repair/v1", s.Word.RepairPrompt, new { }, 256) :

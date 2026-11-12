@@ -152,7 +152,7 @@ public sealed partial class TextRagService
                 .OrderByDescending(n => n.Similarity).ThenBy(n => n.Id, StringComparer.Ordinal).Select(n => n.BestVector).FirstOrDefault();
             if (evidence is null) continue;
             var codeSelection = node.Code is null ? null : CodeHierarchy.Select(node.Code, document.CodeUnits!, options.CodeResultMaxCharacters, preferClass: false);
-            var content = codeSelection?.Content ?? node.Parent?.Text ?? node.Child!.Text;
+            var content = SpreadsheetSearchContent(document, node.Parent?.Id, codeSelection?.Content ?? node.Parent?.Text ?? node.Child!.Text);
             var disclosure = await DiscloseAsync(document, node.Parent?.Title is null ? content : $"Section: {node.Parent.Title}\n\n{content}", token).ConfigureAwait(false);
             if (!await CurrentAsync(document, token).ConfigureAwait(false)) continue;
             var allowed = disclosure.Decision is DisclosureDecision.Allowed or DisclosureDecision.Unchecked;
@@ -170,9 +170,11 @@ public sealed partial class TextRagService
                     parent is null ? null : document.RevisionId + ":" + parent.Id, parent?.Title,
                     node.Code?.Kind, node.Code?.StartLine, node.Code?.EndLine,
                     node.Code?.ContainerId is null ? null : document.RevisionId + ":" + node.Code.ContainerId,
-                    codeSelection?.Mode ?? (node.Child is null ? "full" : "child"),
+                    codeSelection?.Mode ?? (document.Spreadsheet is not null && node.Parent is not null && content != node.Parent.Text ? "outline" : node.Child is null ? "full" : "child"),
                     matchedCode is null ? null : document.RevisionId + ":" + matchedCode.Id, matchedCode?.Kind, evidence.EmbeddingKind,
-                    scores[node.Id], node.Id, node.Code?.Kind ?? (node.Child is null ? "parent" : "child")));
+                    scores[node.Id], node.Id, node.Code?.Kind ?? (node.Child is null ? "parent" : "child"),
+                    Sheet: document.SpreadsheetRegions?.FirstOrDefault(r => r.Id == parent?.Id)?.Sheet,
+                    CellRange: document.SpreadsheetRegions?.FirstOrDefault(r => r.Id == parent?.Id)?.Range));
             }
             if (results.Count == limit) break;
         }

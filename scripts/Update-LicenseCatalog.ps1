@@ -33,6 +33,7 @@ foreach($package in Get-Content (Join-Path $repo 'src/LocalRag.Infrastructure/Tr
 }
 Add-Entry 'Lemonade Server' '' 'Apache-2.0 / 同梱第三者通知' '利用者が別途インストール' '本体には同梱しません。表示する原文は2026-11-06時点の上流LICENSEです。実際に利用する版・推論バックエンドの通知も確認してください。' 'https://github.com/lemonade-sdk/lemonade/blob/main/LICENSE' @('Lemonade-LICENSE.txt')
 Add-Entry 'Microsoft Word' '' '導入済みOffice / Microsoft 365の利用条件' '旧形式.docの変換時のみ使用・別途インストール' '本体には同梱しません。表示する通知は依存関係の説明で、Microsoftのライセンス原文ではありません。利用する製品・契約の条件を確認してください。' 'https://www.microsoft.com/useterms' @('Microsoft-Word-NOTICE.txt')
+Add-Entry 'Microsoft Excel' '' '導入済みOffice / Microsoft 365の利用条件' 'Excel .xls・.xlsbの変換時のみ使用・別途インストール' '本体には同梱しません。表示する通知は依存関係の説明で、Microsoftのライセンス原文ではありません。利用する製品・契約の条件を確認してください。' 'https://www.microsoft.com/useterms' @('Microsoft-Excel-NOTICE.txt')
 Add-Entry 'Gemma 3 / nomic / その他のモデル' '' 'モデル別の利用条件' '利用者が別途ダウンロード' 'モデルのライセンスはアプリ本体とは別です。Gemma 3はGemma利用規約、nomic v2原モデルはApache-2.0です。選択した量子化・変換配布物の条件も確認してください。' 'https://ai.google.dev/gemma/terms/' @('Models-NOTICE.txt')
 $entries.ToArray() | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $root 'index.json') -Encoding utf8
 Write-Output "$($entries.Count) license entries."

@@ -9,7 +9,7 @@ using LocalRag.Core;
 namespace LocalRag.Infrastructure;
 
 public sealed record WordDocument(string Markdown, string DisclosureText, List<WordBlock> Blocks, List<string> Notices);
-public sealed record DocumentSnapshot(string Hash, string Text, List<string> Notices, WordDocument? Word = null, PdfAssessment? Pdf = null);
+public sealed record DocumentSnapshot(string Hash, string Text, List<string> Notices, WordDocument? Word = null, PdfAssessment? Pdf = null, SpreadsheetDocument? Spreadsheet = null);
 
 /// <summary>Read-only OOXML conversion. No macros, fields, external relationships or embedded objects are executed.</summary>
 public static class WordDocuments
@@ -256,6 +256,30 @@ public static class DocumentReader
     public static async Task<DocumentSnapshot> ReadAsync(string path, TextRagSettings settings, string dataDirectory, CancellationToken token,
         TextDocumentState? previous = null, ProcessingStep? readStep = null)
     {
+        if (DocumentInputs.IsSpreadsheet(settings.SourceMode))
+        {
+            if (settings.SourceMode == SourceCodeMode.Excel && !DocumentInputs.IsExcel(path))
+                throw new PipelineValidationException("excel_extension", "Excel用の拡張子には.xlsx・.xlsm・.xlsb・.xlsを指定してください。");
+            var sheetBytes = await SpreadsheetDocuments.ReadBytesAsync(path, token).ConfigureAwait(false);
+            var sheetHash = Convert.ToHexString(SHA256.HashData(sheetBytes)).ToLowerInvariant();
+            if (settings.Spreadsheet.Mode == SpreadsheetMode.Skip && settings.Spreadsheet.Overrides.Count == 0)
+                return new(sheetHash, "", ["spreadsheet_no_regions"], Spreadsheet: new([], ["spreadsheet_no_regions"]));
+            SpreadsheetDocument book;
+            if (previous?.Spreadsheet is { } cached && previous.SourceHash == sheetHash && readStep is not null &&
+                previous.Processing?.Stages.GetValueOrDefault("read")?.Step.Id == readStep.Id)
+                book = cached;
+            else
+            {
+                var legacy = settings.SourceMode == SourceCodeMode.Excel && DocumentInputs.RequiresExcelConversion(path);
+                var package = legacy ? await LegacyExcelConversion.ConvertAsync(sheetBytes, dataDirectory, token, Path.GetExtension(path)).ConfigureAwait(false) : sheetBytes;
+                book = SpreadsheetDocuments.Convert(package, path, settings, token);
+                if (legacy) book = book with { Notices = [.. book.Notices, Path.GetExtension(path).Equals(".xlsb", StringComparison.OrdinalIgnoreCase) ? "spreadsheet_binary_converted" : "spreadsheet_legacy_converted"] };
+            }
+            var text = SpreadsheetDocuments.Render(book, settings.Spreadsheet.IncludeHidden);
+            if (text.Length > settings.MaxDocumentCharacters || SpreadsheetDocuments.Render(book).Length > settings.MaxDocumentCharacters)
+                throw new PipelineValidationException("document_size", "Excel・CSVの抽出結果が文書文字数上限を超えています。");
+            return new(sheetHash, text, book.Notices, Spreadsheet: book);
+        }
         if (!DocumentInputs.IsConverted(settings.SourceMode))
         {
             var text = await TextFiles.ReadAsync(path, settings.MaxDocumentCharacters, token, settings.EncodingMode, allowEmpty: true).ConfigureAwait(false);
@@ -284,6 +308,8 @@ public static class DocumentReader
 
     public static async Task<string> HashAsync(string path, TextRagSettings settings, CancellationToken token)
     {
+        if (DocumentInputs.IsSpreadsheet(settings.SourceMode))
+            return Convert.ToHexString(SHA256.HashData(await SpreadsheetDocuments.ReadBytesAsync(path, token).ConfigureAwait(false))).ToLowerInvariant();
         if (!DocumentInputs.IsConverted(settings.SourceMode))
             return (await TextFiles.ReadAsync(path, settings.MaxDocumentCharacters, token, settings.EncodingMode, allowEmpty: true).ConfigureAwait(false)).Hash;
         var bytes = settings.SourceMode == SourceCodeMode.Pdf ? await PdfDocuments.ReadBytesAsync(path, token).ConfigureAwait(false)

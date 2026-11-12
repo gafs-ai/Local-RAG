@@ -10,7 +10,7 @@ public enum ParentChunkMode { Inherit, None, Structure, Llm }
 public enum ParentEmbeddingMode { None, TextWhenFits, TextOrSummary }
 [JsonConverter(typeof(JsonStringEnumConverter<SourceCodeMode>))]
 // Auto/Code are accepted only for migration of older settings.
-public enum SourceCodeMode { Auto, Text, Code, CSharp, Python, TypeScript, JavaScript, Cpp, C, Rust, Java, Kotlin, Word, Pdf }
+public enum SourceCodeMode { Auto, Text, Code, CSharp, Python, TypeScript, JavaScript, Cpp, C, Rust, Java, Kotlin, Word, Pdf, Excel, Csv }
 
 public sealed record SourceLanguage(SourceCodeMode Mode, string Name, string[] Extensions, string? Grammar = null);
 

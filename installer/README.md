@@ -1,6 +1,6 @@
-# Local RAG バージョン0.26.4
+# Local RAG バージョン0.26.5
 
-PC内のPDF・Word・テキスト・Markdown・ソースコードを検索するWindows 11 x64向けアプリです。
+PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索するWindows 11 x64向けアプリです。
 
 まずは[クイックスタート](Documents/QuickStart.md)に従って、Lemonade Serverとモデルを準備してください。Local RAGでは、監視フォルダ、言語モデル、Embeddingモデルを設定すれば始められます。.NETランタイムは同梱しています。
 
@@ -13,3 +13,5 @@ PC内のPDF・Word・テキスト・Markdown・ソースコードを検索する
 Copyright (C) 2026 GAFS Inc. [GPL-3.0-or-later](LICENSE)。依存ソフトウェアの一覧と原文は、アプリ上部の「ライセンス」または[ライセンス一覧](Documents/ThirdPartyLicenses.md)から確認できます。
 
 PDFの取り込みには[PDF用の処理設定](Documents/PdfIngestion.md)を追加してください。既存の設定は自動変更しません。画像・図表の情報は不完全になり得るため、詳細は原本で確認してください。
+
+Excel・CSVは「設定」→「テキスト処理」で処理設定を追加してください。`.xlsx`・`.xlsm`は直接読み取り、`.xls`・`.xlsb`は導入済みMicrosoft Excelで変換します。詳しくは[Excel・CSVの取り込み](Documents/SpreadsheetIngestion.md)を参照してください。
