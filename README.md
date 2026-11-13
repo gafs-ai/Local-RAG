@@ -1,6 +1,8 @@
 # Local RAG System
 
-**バージョン0.26.7**では、Lemonade Serverに加え、OpenVINO Model ServerとLM Studioに対応しました。複数のモデルサーバーを登録し、言語モデルとEmbeddingモデルに別々の接続先を指定できます。[リリースノート](Documents/Release-0.26.7.md)。
+**バージョン0.26.8**では、[アプリの更新通知](Documents/UpdateNotifications.md)を追加しました。新しい正式版を24時間ごとに確認し、管理画面下部とWindows通知で案内します。[リリースノート](Documents/Release-0.26.8.md)。
+
+0.26.7から、Lemonade Serverに加え、OpenVINO Model ServerとLM Studioに対応しています。複数のモデルサーバーを登録し、言語モデルとEmbeddingモデルに別々の接続先を指定できます。[AI接続先の設定](Documents/AiConnections.md)。
 
 Excel・CSVの取り込みは0.26.5から対応しています。`.xlsx`・`.xlsm`は直接読み取り、`.xls`・`.xlsb`は導入済みMicrosoft Excelで変換します。[設定と仕様](Documents/SpreadsheetIngestion.md)を確認し、既存設定にはExcel用・CSV用の処理を追加してください。
 
@@ -10,7 +12,7 @@ Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、AI�
 
 **初めて使う方は[クイックスタート](Documents/QuickStart.md)から始めてください。** 必要なインストール、メモリ・NPUに合わせたモデル選択、最小限の設定を説明しています。設定の詳細は、アプリ内の「ヘルプ」または各設定項目でF1を押すとオフラインで読めます。
 
-配布物は.NET同梱のWindows用MSIとZIPです。[0.26.7をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.7)／[配布手順](Documents/Distribution.md)。
+配布物は.NET同梱のWindows用MSIとZIPです。[0.26.8をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.8)／[配布手順](Documents/Distribution.md)。
 
 モデルサーバーは **Lemonade Serverを推奨**します。**IntelのNPUを使用したい場合はOpenVINO Model Server**を利用でき、**LM Studio**にも対応しています。**複数サーバーの併用**も可能です。[サーバーの選び方・設定手順](Documents/AiConnections.md)を参照してください。
 

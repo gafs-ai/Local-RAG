@@ -137,6 +137,11 @@
                         <TextBlock Text="各フォルダの.gitignore / .dockerignore / .npmignore にも従います。本アプリケーション用の .ragignore を設置できます（記述方法はgitignoreと同様）。" TextWrapping="Wrap" Foreground="#526477" />
                         <TextBlock Text="例外設定（!）は、優先されます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,16" />
                         <TextBlock Text="アプリケーション設定" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,8" />
+                        <TextBlock Text="アプリの更新" FontSize="16" FontWeight="SemiBold" />
+                        <CheckBox x:Name="AutomaticUpdatesBox" Content="新しいバージョンを自動確認する" Margin="0,8" />
+                        <TextBlock Text="24時間ごとにGitHubの正式リリースを確認し、更新があれば画面下部とWindowsの通知で案内します。文書や設定は送信しません。" TextWrapping="Wrap" Foreground="#526477" />
+                        <Button x:Name="CheckUpdatesButton" Content="今すぐ更新を確認" Click="CheckForUpdates" HorizontalAlignment="Left" Margin="0,6" IsEnabled="False" />
+                        <TextBlock x:Name="UpdateCheckStatus" Text="更新情報：未確認" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,14" />
                         <TextBlock Text="利用統計" FontSize="16" FontWeight="SemiBold" />
                         <CheckBox x:Name="UsageStatisticsBox" Content="開発のために利用統計を送信する" Margin="0,8" Checked="UsageStatisticsChanged" Unchecked="UsageStatisticsChanged" />
                         <TextBlock Text="Local RAGの開発・改善に、機器の種類、モデル、バージョン、拡張子別の処理件数・平均時間、設定変更の有無を利用します。原文・ファイル名・パス・フォルダ設定・氏名・ユーザー名・プロンプト本文は送信しません。CPU・GPU・AIモデルは既知の名称に分類し、それ以外は「その他」にまとめます。NPUはWindowsから取得した名称をそのまま送信し、搭載されていない場合は「なし」とします。" TextWrapping="Wrap" Foreground="#526477" />
@@ -199,10 +204,21 @@
                 </DockPanel>
             </TabItem>
         </TabControl>
-        <DockPanel Grid.Row="2" Margin="0,16,0,0">
+        <StackPanel Grid.Row="2" Margin="0,12,0,0">
+        <Border x:Name="UpdateBanner" Visibility="Collapsed" Background="#E1EAF5" BorderBrush="#C3D5E6" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="更新ページを開く" Click="OpenUpdatePage" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Local RAGの更新ページを開く" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="UpdateBannerText" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="#173F66" />
+                    <TextBlock Text="インストーラと更新内容を確認できます。" TextWrapping="Wrap" Foreground="#526477" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <DockPanel>
             <Button DockPanel.Dock="Right" Content="アプリを完全終了" Click="ExitClick" Margin="10,0,0,0" />
             <Button x:Name="FeedbackButton" DockPanel.Dock="Right" Content="フィードバック" Click="OpenFeedback" Margin="10,0,0,0" />
             <TextBlock x:Name="ApplicationStatus" Text="起動中" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#526477" AutomationProperties.Name="アプリケーションの状態" />
         </DockPanel>
+        </StackPanel>
     </Grid>
 </Window>

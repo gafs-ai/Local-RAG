@@ -39,12 +39,15 @@ public partial class MainWindow : Window, IDisposable
     private int _localDbPort;
     private AppSettings _loadedSettings = new();
 
-    public MainWindow(string dataDirectory)
+    public MainWindow(string dataDirectory) : this(dataDirectory, null) { }
+
+    public MainWindow(string dataDirectory, IReleaseUpdateSource? releaseUpdateSource)
     {
         InitializeComponent();
         VersionBadge.Text = ProductInfo.VersionLabel;
         SettingHelp.Attach(this);
         _dataDirectory = dataDirectory;
+        _releaseUpdates = new(releaseUpdateSource ?? _releaseUpdateClient, new ReleaseUpdateStateStore(dataDirectory), ProductInfo.Version);
         _settingsStore = new SettingsStore(dataDirectory);
         _server = new SurrealServerManager(dataDirectory);
         using (var stream = System.Windows.Application.GetResourceStream(
@@ -61,6 +64,7 @@ public partial class MainWindow : Window, IDisposable
         _tray.ContextMenuStrip.Items.Add("管理画面を開く", null, (_, _) => Dispatcher.Invoke(ShowManager));
         _tray.ContextMenuStrip.Items.Add("終了", null, (_, _) => Dispatcher.Invoke(() => ((App)System.Windows.Application.Current).ExitApplication()));
         _tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowManager);
+        _tray.BalloonTipClicked += (_, _) => Dispatcher.Invoke(ShowManager);
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e) => await (_startupTask = InitializeAsync());
@@ -86,6 +90,7 @@ public partial class MainWindow : Window, IDisposable
             ExcludeDotHiddenBox.IsChecked = settings.ExcludeDotHiddenEntries;
             GlobalIgnoreBox.Text = string.Join(Environment.NewLine, settings.GlobalIgnorePatterns);
             AutomaticMonitoringBox.IsChecked = settings.AutomaticMonitoring;
+            AutomaticUpdatesBox.IsChecked = settings.AutomaticUpdateChecks;
             InitializeAiConnections(settings.Ai);
             ChatModelBox.Text = settings.Ai.ChatModel;
             EmbeddingModelBox.Text = settings.Ai.EmbeddingModel;
@@ -99,6 +104,7 @@ public partial class MainWindow : Window, IDisposable
             McpPortBox.Text = settings.Mcp.Port.ToString();
             await InitializeUsageStatisticsAsync();
             _settingsLoaded = true;
+            await ConfigureUpdateMonitoringAsync();
             SettingsStatus.Text = "";
         }
         catch (OperationCanceledException) { }
@@ -217,6 +223,7 @@ public partial class MainWindow : Window, IDisposable
             ExcludeDotHiddenEntries = ExcludeDotHiddenBox.IsChecked == true,
             GlobalIgnorePatterns = GlobalIgnoreBox.Text.Split('\n').Select(line => line.TrimEnd('\r')).ToList(),
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
+            AutomaticUpdateChecks = AutomaticUpdatesBox.IsChecked == true,
             Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
             Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true,
                 AutoStartServer = AutoStartDbBox.IsChecked == true, ExternalEndpoint = DbEndpointBox.Text.Trim() },
@@ -293,6 +300,7 @@ public partial class MainWindow : Window, IDisposable
             await PrepareUsageStatisticsForSettingsAsync(settings);
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
+            await ConfigureUpdateMonitoringAsync();
             await ReconfigureRagAsync(refreshAi: true, reconnectDatabase: reconnect);
             SettingsStatus.Text = "設定を保存しました。" + (settings.Database.Port != _localDbPort ? "DBポート変更は再起動後に反映します。" : "");
         }
@@ -424,6 +432,8 @@ public partial class MainWindow : Window, IDisposable
     {
         _shuttingDown = true;
         StopUsageStatistics();
+        StopUpdateMonitoring();
+        CheckUpdatesButton.IsEnabled = false;
         RagPanel.IsEnabled = SearchPanel.IsEnabled = SaveButton.IsEnabled = false;
         UpdateApplicationStatus();
         SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = false;
@@ -433,6 +443,7 @@ public partial class MainWindow : Window, IDisposable
         try
         {
             await Task.WhenAll(_startupTask, _databaseTask, _saveTask, _aiTask, _resetTask);
+            await Task.WhenAll(_updateMonitoringTask, _updateManualTask);
             await CompleteFeedbackShutdownAsync();
             await StopRagAsync();
             await CompleteUsageStatisticsShutdownAsync();
@@ -445,6 +456,7 @@ public partial class MainWindow : Window, IDisposable
             _lifetime = new CancellationTokenSource();
             _shuttingDown = false;
             RefreshUsageStatisticsConfiguration();
+            await ConfigureUpdateMonitoringAsync();
             SaveButton.IsEnabled = SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = _settingsLoaded;
             UpdateApplicationStatus();
             throw;
@@ -456,6 +468,7 @@ public partial class MainWindow : Window, IDisposable
         if (_disposed) return;
         _disposed = true;
         StopUsageStatistics();
+        StopUpdateMonitoring();
         _lifetime.Cancel();
         _tray.Visible = false;
         _tray.ContextMenuStrip?.Dispose();
@@ -463,6 +476,8 @@ public partial class MainWindow : Window, IDisposable
         _trayIcon.Dispose();
         _usageStatisticsCancellation?.Dispose();
         _usageStatisticsSender?.Dispose();
+        _updateMonitoringCancellation?.Dispose();
+        _releaseUpdateClient.Dispose();
         _lifetime.Dispose();
         _monitorCancellation?.Dispose();
         _server.DisposeAsync().GetAwaiter().GetResult();

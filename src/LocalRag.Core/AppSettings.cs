@@ -11,6 +11,7 @@ public sealed record AppSettings
     public bool ExcludeDotHiddenEntries { get; init; } = true;
     public List<string> GlobalIgnorePatterns { get; init; } = [];
     public bool AutomaticMonitoring { get; init; } = true;
+    public bool AutomaticUpdateChecks { get; init; } = true;
     public List<WatchedFolder> Folders { get; init; } = [];
     public AiConnectionSettings Ai { get; init; } = new();
     public DatabaseSettings Database { get; init; } = new();
