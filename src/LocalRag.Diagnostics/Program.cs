@@ -9,6 +9,8 @@ try
 {
     switch (args.FirstOrDefault())
     {
+        case "endpoint-smoke" when args.Length is 3 or 4:
+            return await EndpointSmoke.RunAsync(args[1], args[2], args.ElementAtOrDefault(3), cancellation.Token);
         case "code-description-evaluate" when args.Length == 4:
             return await CodeDescriptionEvaluation.RunAsync(args[1], args[2], args[3], cancellation.Token);
         case "corpus-evaluate" when args.Length is 4 or 5 or 6:
@@ -83,6 +85,7 @@ try
             return 0;
         }
         default:
+            Console.WriteLine("Isolated real-provider test: endpoint-smoke <AI-connections.json> <new-run-directory> [tools-directory] (synthetic documents only, no production settings)");
             Console.WriteLine("Code description comparison: code-description-evaluate <explicit-samples.json> <new-output.jsonl> <AI-settings-directory> (local model must be running; inputs/outputs are saved for human review)");
             Console.WriteLine("Explicit public corpus evaluation: corpus-evaluate <manifest.json> <dedicated-run-directory> <AI-settings-directory> [tools-directory] [report-path] (writes corpus/model traces locally)");
             Console.WriteLine("Retrieval weight comparison: corpus-compare <manifest.json> <dedicated-run-directory> <AI-settings-directory> [tools-directory] (reuses the corpus index; caches identical query vectors across variants)");

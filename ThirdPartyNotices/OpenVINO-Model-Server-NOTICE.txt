@@ -1,0 +1,12 @@
+OpenVINO Model Server (OVMS)
+
+Local RAG uses the published HTTP API of a separately installed server.
+The server, OpenVINO runtime, drivers and models are not bundled with Local RAG.
+
+The upstream model_server project identifies its license as Apache-2.0:
+https://github.com/openvinotoolkit/model_server/blob/main/LICENSE
+
+Review the license and third-party notices supplied with the version you install.
+Models and drivers have their own terms. This file describes the dependency;
+it is not a replacement for the upstream license or bundled third-party notices.
+Reference checked: 2026-11-12.

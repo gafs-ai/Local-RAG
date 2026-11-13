@@ -35,7 +35,8 @@ internal static class CorpusEvaluation
             Console.WriteLine($"Models: chat={settings.Ai.ChatModel}; embedding={settings.Ai.EmbeddingModel}");
             await server.EnsureRunningAsync(settings.Database, token: token);
             await using var repository = await TextRagRepository.OpenAsync(server.Connection!, token, settings.DataSourceName);
-            using var inner = new LemonadeTextAi(settings);
+            var keys = await new AiCredentialStore(aiSettingsDirectory).LoadAsync(settings.Ai, token);
+            using var inner = new LemonadeTextAi(settings, apiKeys: keys);
             var ai = new MeasuredAi(inner, Path.Combine(run, "trace.jsonl"));
             using var service = new TextRagService(repository, ai, settings, data);
             var timer = Stopwatch.StartNew();
@@ -76,13 +77,15 @@ internal static class CorpusEvaluation
                 var fetched = await service.FetchAsync(document.DocumentId, token);
                 fetches.Add(new { File = Path.GetFileName(document.Path), fetched?.Decision, OriginalMatches = fetched?.Content == document.Original });
             }
-            using var connection = new LemonadeClient(settings.Ai);
-            var loadedModels = await connection.GetModelsAsync(token);
+            using var chatConnection = AiModelClient.Create(settings.Ai.ChatEndpoint(), keys.GetValueOrDefault(settings.Ai.ChatEndpoint().Id));
+            using var embeddingConnection = AiModelClient.Create(settings.Ai.EmbeddingEndpoint(), keys.GetValueOrDefault(settings.Ai.EmbeddingEndpoint().Id));
+            var chatModels = await chatConnection.GetModelsAsync(token);
+            var embeddingModels = await embeddingConnection.GetModelsAsync(token);
             var report = new
             {
                 Timestamp = DateTimeOffset.UtcNow, settings.Ai.ChatModel, settings.Ai.EmbeddingModel,
-                ChatContext = loadedModels.Single(m => m.Id == settings.Ai.ChatModel).ContextLength,
-                EmbeddingContext = loadedModels.Single(m => m.Id == settings.Ai.EmbeddingModel).ContextLength,
+                ChatContext = chatModels.Single(m => m.Id == settings.Ai.ChatModel).ContextLength,
+                EmbeddingContext = embeddingModels.Single(m => m.Id == settings.Ai.EmbeddingModel).ContextLength,
                 Configuration = settings.PipelineConfigurationId(), IngestionSeconds = ingestionSeconds,
                 IngestionChatCalls = ingestionCalls, IngestionEmbeddingCalls = ingestionEmbeddingCalls, QueryFailures = queryFailures,
                 ai.ChatSeconds, ai.EmbeddingSeconds, cycle,

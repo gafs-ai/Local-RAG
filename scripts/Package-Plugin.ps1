@@ -27,7 +27,7 @@ Copy-Item -LiteralPath (Join-Path $repo 'Assets/Brand/local-rag-512.png'),(Join-
 $manifest = [ordered]@{
     '$schema' = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
     name = 'local-rag'; version = $(if ($build.SemanticVersion) { $build.SemanticVersion } else { $build.Version })
-    description = 'このプラグイン単独では動作しません。Windows版Local RAG本体とLemonade Serverを準備し、文書を取り込んで本体を起動したまま利用します。導入ガイド: https://github.com/gafs-ai/Local-RAG/blob/main/Documents/QuickStart.md'
+    description = 'このプラグイン単独では動作しません。Windows版Local RAG本体とモデルサーバーを準備し、文書を取り込んで本体を起動したまま利用します。Lemonade推奨、OpenVINO・LM Studio・複数サーバー併用にも対応。導入ガイド: https://github.com/gafs-ai/Local-RAG/blob/main/Documents/QuickStart.md'
     homepage = 'https://github.com/gafs-ai/Local-RAG/blob/main/Documents/QuickStart.md'
     author = @{name='GAFS Inc.'}; license = 'GPL-3.0-or-later'
     extensions = @{'com.openai'=@{
@@ -71,7 +71,7 @@ Copy-Item -LiteralPath (Join-Path $repo 'plugins/local-rag/skills/search-local-d
 @'
 # Local RAG desktop plugin
 
-このプラグイン単独では動作しません。Windows 11 x64版Local RAG本体とLemonade Serverを先に準備してください。
+このプラグイン単独では動作しません。Windows 11 x64版Local RAG本体とモデルサーバーを先に準備してください。Lemonade Serverを推奨します。Intel NPUを使いたい場合はOpenVINO Model Serverを利用でき、LM Studio・複数サーバーの併用にも対応します。
 
 [クイックスタートガイド](https://github.com/gafs-ai/Local-RAG/blob/main/Documents/QuickStart.md)
 

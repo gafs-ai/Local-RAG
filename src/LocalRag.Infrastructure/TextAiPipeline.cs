@@ -3,9 +3,19 @@ using LocalRag.Core;
 
 namespace LocalRag.Infrastructure;
 
-public sealed class LemonadeTextAi(AppSettings settings, HttpMessageHandler? handler = null) : ITextRagAi, IDisposable
+public sealed class LemonadeTextAi : ITextRagAi, IDisposable
 {
-    private readonly LemonadeClient _client = new(settings.Ai, handler);
+    private readonly AppSettings settings;
+    private readonly IAiModelClient _client;
+    private readonly IAiModelClient _embeddingClient;
+    public LemonadeTextAi(AppSettings settings, HttpMessageHandler? handler = null, IReadOnlyDictionary<string, string>? apiKeys = null)
+    {
+        this.settings = settings;
+        var chat = settings.Ai.ChatEndpoint();
+        var embedding = settings.Ai.EmbeddingEndpoint();
+        _client = AiModelClient.Create(chat, apiKeys?.GetValueOrDefault(chat.Id), handler);
+        _embeddingClient = chat == embedding ? _client : AiModelClient.Create(embedding, apiKeys?.GetValueOrDefault(embedding.Id), handler);
+    }
     private const string JsonInstruction = "\nReturn exactly one JSON object matching the requested schema. No explanations or Markdown. /no_think";
     public Task<string> CompleteAsync(string system, string input, CancellationToken token) =>
         _client.CompleteAsync(settings.Ai.ChatModel, system + JsonInstruction,
@@ -15,14 +25,14 @@ public sealed class LemonadeTextAi(AppSettings settings, HttpMessageHandler? han
     public Task<string> CompleteBoundedAsync(string system, string input, int outputTokens, CancellationToken token) =>
         _client.CompleteAsync(settings.Ai.ChatModel, system + JsonInstruction, input, outputTokens, token, jsonObject: true);
     public async Task<int> DocumentEmbeddingBudgetAsync(CancellationToken token) => Math.Max(0,
-        await _client.EmbeddingInputBudgetAsync(settings.Ai.EmbeddingModel, token).ConfigureAwait(false) -
+        await _embeddingClient.EmbeddingInputBudgetAsync(settings.Ai.EmbeddingModel, token).ConfigureAwait(false) -
         System.Text.Encoding.UTF8.GetByteCount(EmbeddingInput.Document(settings.Ai.EmbeddingModel, "")));
     public async Task<VectorBatch> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken token)
     {
-        var result = await _client.EmbedAsync(settings.Ai.EmbeddingModel, inputs, token).ConfigureAwait(false);
+        var result = await _embeddingClient.EmbedAsync(settings.Ai.EmbeddingModel, inputs, token).ConfigureAwait(false);
         return new(result.Dimension, result.Vectors);
     }
-    public void Dispose() => _client.Dispose();
+    public void Dispose() { _client.Dispose(); if (!ReferenceEquals(_client, _embeddingClient)) _embeddingClient.Dispose(); }
 }
 
 public sealed class TextAiPipeline(ITextRagAi ai, TextRagSettings settings)

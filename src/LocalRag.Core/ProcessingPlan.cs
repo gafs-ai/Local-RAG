@@ -43,7 +43,7 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
         var category = s.Categories.SingleOrDefault(c => c.Id == (categoryId ?? s.DefaultCategory));
         var excluded = category is null || category.Excluded;
         var off = ProcessingStep.Create("unused/v1", new { });
-        object Llm(string prompt, int output) => new { app.Ai.BaseUrl, app.Ai.ChatModel, prompt, output };
+        object Llm(string prompt, int output) => new { BaseUrl = app.Ai.ChatEndpoint().ChatIdentity, app.Ai.ChatModel, prompt, output };
         ProcessingStep Chat(string method, string prompt, object options, int output = 128) =>
             ProcessingStep.Create(method, new { ai = Llm(prompt, Math.Min(s.MaxOutputTokens, output)), options }, app.Ai.ChatModel);
         var classify = s.ClassifyEnabled ? Chat("classify/v1", s.ClassifyPrompt, new { s.DefaultCategory,
@@ -80,7 +80,7 @@ public sealed record ProcessingPlan(bool IsCode, bool Excluded, ProcessingStep R
             ProcessingStep.Create("word-repair-off/v1", new { });
         return new(code, excluded, read, classify, structure,
             format, children, parents, code ? Chat("code-description/v2", s.CodePrompt, new { s.SourceMode }, 512) : off,
-            parentDescription, ProcessingStep.Create("document-embedding/v1", new { app.Ai.BaseUrl, app.Ai.EmbeddingModel,
+            parentDescription, ProcessingStep.Create("document-embedding/v1", new { BaseUrl = app.Ai.EmbeddingEndpoint().EmbeddingProcessingIdentity, app.Ai.EmbeddingModel,
                 app.TextPipeline.EmbeddingRevision, s.MaxChunkCharacters, profile = EmbeddingInput.Profile(app.Ai.EmbeddingModel) }, app.Ai.EmbeddingModel), repair);
     }
 }

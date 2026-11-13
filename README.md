@@ -1,18 +1,20 @@
 # Local RAG System
 
-**0.26.6では、開発・改善のための[利用統計](Documents/UsageStatistics.md)と[フィードバック送信](Documents/Feedback.md)を追加しました。** 利用統計は初回案内の確認後に送信し、設定から停止できます。画面下部の「フィードバック」から改善要望や不具合を報告できます。
+**バージョン0.26.7**では、Lemonade Serverに加え、OpenVINO Model ServerとLM Studioに対応しました。複数のモデルサーバーを登録し、言語モデルとEmbeddingモデルに別々の接続先を指定できます。[リリースノート](Documents/Release-0.26.7.md)。
 
 Excel・CSVの取り込みは0.26.5から対応しています。`.xlsx`・`.xlsm`は直接読み取り、`.xls`・`.xlsb`は導入済みMicrosoft Excelで変換します。[設定と仕様](Documents/SpreadsheetIngestion.md)を確認し、既存設定にはExcel用・CSV用の処理を追加してください。
 
 > 0.26.4の追加機能：文字主体の[PDF取り込み](Documents/PdfIngestion.md)。既存設定ではPDF用の処理を追加してください。Word・PDFとも画像・図表等の情報は欠落し得るため、重要な内容は原本を確認してください。既存設定は自動変更しません。
 
-Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、Lemonade Server、別プロセスのSurrealDB、DiskANNを使用します。
+Windows 11 x64向けのローカル文書検索システム。C# / .NET 10、AI推論サーバー、別プロセスのSurrealDB、DiskANNを使用します。
 
 **初めて使う方は[クイックスタート](Documents/QuickStart.md)から始めてください。** 必要なインストール、メモリ・NPUに合わせたモデル選択、最小限の設定を説明しています。設定の詳細は、アプリ内の「ヘルプ」または各設定項目でF1を押すとオフラインで読めます。
 
-**バージョン0.26.6**。配布物は.NET同梱のWindows用MSIとZIPです。[0.26.6をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.6)／[0.26.6リリースノート](Documents/Release-0.26.6.md)／[配布手順](Documents/Distribution.md)。
+配布物は.NET同梱のWindows用MSIとZIPです。[0.26.7をダウンロード](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.7)／[配布手順](Documents/Distribution.md)。
 
-推奨モデルは、言語モデルが **Gemma**、Embeddingモデルが **nomic** です。Lemonade Serverに用意したモデルを、管理画面の「設定」で選択してください。
+モデルサーバーは **Lemonade Serverを推奨**します。**IntelのNPUを使用したい場合はOpenVINO Model Server**を利用でき、**LM Studio**にも対応しています。**複数サーバーの併用**も可能です。[サーバーの選び方・設定手順](Documents/AiConnections.md)を参照してください。
+
+推奨モデルは、言語モデルが **Gemma**、Embeddingモデルが **nomic** です。選んだサーバー・機材に対応するモデルを準備し、管理画面の「設定」で指定してください。
 
 Copyright (C) 2026 GAFS Inc. — **GPL-3.0-or-later**。依存ソフトウェアのライセンス原文は、アプリ上部の「ライセンス」からオフラインで確認できます。
 
@@ -38,7 +40,7 @@ Excel・CSV・PDF・Word・テキスト・Markdown・ソースコードの取り
 
 - WPF管理画面とトレイ常駐、同じ保存先での二重起動防止。
 - フォルダ・監視間隔・AI接続・用途別モデル設定の保存と復元。
-- Lemonadeモデル一覧取得、ローカル実行を確認できないモデルの推論拒否、短いチャット接続診断。
+- AI接続先ごとのモデル一覧取得と、言語モデル・Embeddingモデルの個別選択。Lemonadeがクラウド／未確認と申告するモデルの拒否は継続します。
 - SurrealDBへの処理チェックポイント保存と再読み込み。
 - SurrealDB 3.3.5の自動ダウンロード・SHA-256検証・起動。終了時にDBを残すか停止するか選択可能。
 - DBポート設定とDPAPIによる認証情報の保存。既存サーバーは終了対象にしません。
@@ -52,7 +54,7 @@ Excel・CSV・PDF・Word・テキスト・Markdown・ソースコードの取り
 - 既定5分の定期チェックと処理待ち行列。フォルダ優先度・更新日時の新しい順で処理し、更新後10分間は既定で対象外。実行中のファイルを中断せず、待ち順を更新。一時停止・手動実行にも対応。
 - 「.」で始まるファイル・フォルダを既定で除外（設定で解除可能）。該当フォルダ配下と取り込み済み文書の検索・全文取得にも適用。
 - フォルダ別の `.gitignore` / `.dockerignore` / `.npmignore` / `.ragignore` と、管理画面の全体除外パターンに対応。いずれかの `!` 例外を最優先し、ドット始まりの文書も個別に復帰可能。詳しくは[設定ガイド](Documents/SettingsGuide.md)。
-- 起動時にLemonade接続とモデル一覧を自動更新。未起動ならインストール済みサーバーを自動起動し、このアプリが起動したものだけを終了する設定に対応（各設定の既定ON）。
+- 起動時に登録したAI接続先とモデル一覧を自動確認。接続先ごとに自動起動・終了連動を選択できます。外部サーバーは接続のみです。
 - チェック開始時刻と進行状態をDBに保存し、再起動後は開始基準で次回を予定。未完了チェックは待たずに再開。
 - 原文と返却候補に対するパターン・実LLM機密検査。拒否・検査失敗時は文書ID・判定・原本パスを返す。本文は返さず、ユーザー自身がパスから原本を開いて確認できる。
 - ローカル検索・全文取得、プロンプト・カテゴリ・テキストパイプライン・取得パイプラインの管理画面。JSONの直接編集は不要です。
@@ -180,7 +182,7 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 | プロジェクト | 責務 |
 |---|---|
 | LocalRag.Core | 設定、工程チェックポイント、スケジューラー、返却制御 |
-| LocalRag.Infrastructure | 設定ファイル、SurrealDB、Lemonade、診断 |
+| LocalRag.Infrastructure | 設定ファイル、SurrealDB、AI接続、診断 |
 | LocalRag.Desktop | WPF・トレイ・管理画面 |
 | LocalRag.Diagnostics | 開発時の外部依存検証 |
 | LocalRag.ServerControl | 所有DBの専用コンソールへの通常終了通知 |
@@ -192,6 +194,6 @@ dotnet run --project src/LocalRag.Diagnostics --configuration Release --no-build
 
 本プロジェクトのソースコードと文書の権利者は **GAFS Inc.** です。[GNU General Public License version 3](LICENSE)、または利用者の選択によりそれ以降の版（**GPL-3.0-or-later**）で提供します。適用通知は[COPYRIGHT](COPYRIGHT)を参照してください。
 
-Lemonade Server、SurrealDB、NuGet依存パッケージ、AIモデルには各提供元のライセンス・利用条件が適用されます。このリポジトリにはモデル重み、DBバイナリ、Microsoft Office、ユーザー文書を同梱しません。GPLの指定によって外部ソフトウェアのライセンスが変更されるものではありません。
+Lemonade Server、OVMS、LM Studio、SurrealDB、NuGet依存パッケージ、AIモデルには各提供元のライセンス・利用条件が適用されます。このリポジトリにはモデル重み、DBバイナリ、Microsoft Office、ユーザー文書を同梱しません。GPLの指定によって外部ソフトウェアのライセンスが変更されるものではありません。
 
 開発・変更提出の手順は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。

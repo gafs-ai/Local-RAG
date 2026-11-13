@@ -123,7 +123,7 @@ public sealed record TextRagSettings
     {
         var originalId = Hash(JsonSerializer.Serialize(new
     {
-        version = "text-pipeline-v9-parent-bounds", ai.BaseUrl, ai.ChatModel, ai.EmbeddingModel,
+        version = "text-pipeline-v9-parent-bounds", BaseUrl = ai.CombinedIdentity(), ai.ChatModel, ai.EmbeddingModel,
         codeHierarchyVersion = SourceMode == SourceCodeMode.Text ? 0 : 2,
         ParentEmbedding, ParentDescriptionPrompt,
         ChildMode, ParentMode, SourceMode, EncodingMode, MechanicalMarkdown, ParentPrompt, CodePrompt,
@@ -136,7 +136,7 @@ public sealed record TextRagSettings
             SourceMode == SourceCodeMode.Word ? Hash(originalId + JsonSerializer.Serialize(Word)) : originalId;
     }
     public string SpaceId(AiConnectionSettings ai, int dimension) => Hash(JsonSerializer.Serialize(new
-        { version = "utf8-paragraphs-v1", inputProfile = EmbeddingInput.Profile(ai.EmbeddingModel), ai.BaseUrl, ai.EmbeddingModel, EmbeddingRevision, QueryInstruction = EffectiveQueryInstruction(ai), dimension, distance = "cosine" }));
+        { version = "utf8-paragraphs-v1", inputProfile = EmbeddingInput.Profile(ai.EmbeddingModel), BaseUrl = ai.EmbeddingEndpoint().Identity, ai.EmbeddingModel, EmbeddingRevision, QueryInstruction = EffectiveQueryInstruction(ai), dimension, distance = "cosine" }));
     private static string EffectiveQueryInstruction(AiConnectionSettings ai) => EmbeddingInput.QueryInstruction(ai.EmbeddingModel);
     public static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     public static bool ValidMarkdownParentBounds(int minimum, int maximum) => minimum >= 0 && maximum is >= 50 and <= 262144 && minimum <= maximum;

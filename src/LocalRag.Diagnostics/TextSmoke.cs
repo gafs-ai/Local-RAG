@@ -7,7 +7,7 @@ using ModelContextProtocol.Protocol;
 
 internal static class TextSmoke
 {
-    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token, bool includeSingleParagraph = false, bool viaMcp = false)
+    public static async Task<int> RunAsync(string chat, string embedding, string root, string? tools, CancellationToken token, bool includeSingleParagraph = false, bool viaMcp = false, AiConnectionSettings? connections = null)
     {
         // Each diagnostic run owns fresh synthetic files. Never replace or scan user documents.
         var run = Path.Combine(Path.GetFullPath(root), Guid.NewGuid().ToString("N"));
@@ -24,9 +24,13 @@ internal static class TextSmoke
         {
             UpdateExclusionMinutes = 0, // Immediate synthetic smoke test.
             ExcludeDotHiddenEntries = false, // This isolated diagnostic intentionally uses .local fixtures.
-            Folders = [new(inputs)], Ai = new() { ChatModel = chat, EmbeddingModel = embedding },
+            Folders = [new(inputs)], Ai = connections ?? new() { ChatModel = chat, EmbeddingModel = embedding },
+            AutomaticMonitoring = false,
+            UsageStatistics = new() { Enabled = false },
             Database = new() { Port = 18503 },
-            Confidentiality = new() { LlmEnabled = true } // This diagnostic explicitly exercises experimental LLM inspection.
+            // Multi-provider connectivity tests exercise deterministic confidentiality;
+            // the original Lemonade diagnostic still exercises experimental LLM inspection.
+            Confidentiality = new() { LlmEnabled = connections is null }
         };
         // Also exercise the exact old default stored by existing installations.
         if (includeSingleParagraph) settings = settings with { TextPipeline = settings.TextPipeline with { ChunkPrompt = TextRagSettings.LegacyChunkPrompt } };

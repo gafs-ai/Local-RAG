@@ -1,0 +1,15 @@
+LM Studio / llmster / lms
+
+Local RAG connects through published HTTP APIs and uses the lms command-line
+interface for optional local server lifecycle management.
+LM Studio, llmster, lms, inference runtimes and models are not bundled.
+
+Users install these products separately and must review the terms distributed
+with the selected product and version. LM Studio Desktop App terms:
+https://lmstudio.ai/app-terms
+Documentation: https://lmstudio.ai/docs/developer/core/headless
+
+This notice does not grant a license to redistribute LM Studio, llmster or models,
+and does not apply Local RAG's GPL license to those external products.
+This file describes the dependency, not the full vendor terms.
+Reference checked: 2026-11-12.

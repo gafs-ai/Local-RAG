@@ -14,7 +14,7 @@ public static class IngestionRetry
     {
         policy = "ingestion-retry/v1", classification = "classify/v2",
         pipeline = RetryPipeline(settings, path), settings.TextPipeline.MaxDocumentCharacters,
-        settings.Ai.BaseUrl, settings.Ai.ChatModel, settings.Ai.EmbeddingModel
+        BaseUrl = settings.Ai.RetryIdentity(), settings.Ai.ChatModel, settings.Ai.EmbeddingModel
     });
 
     private static TextRagSettings RetryPipeline(AppSettings settings, string path)

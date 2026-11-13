@@ -25,6 +25,7 @@ public sealed class HelpCatalogTests
     [Theory]
     [InlineData("MainWindow.xaml")]
     [InlineData("ManagementWindow.xaml")]
+    [InlineData("AiEndpointWindow.xaml")]
     public void EveryNamedEditableSettingHasHelp(string file)
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);

@@ -8,7 +8,7 @@ using LocalRag.Core;
 
 namespace LocalRag.Infrastructure;
 
-internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null) : ILemonadeRuntime
+internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null, string? shutdownApiKey = null) : ILemonadeRuntime
 {
     public async Task<IReadOnlyList<LemonadeModel>?> ProbeAsync(AiConnectionSettings settings, CancellationToken token)
     {
@@ -34,7 +34,7 @@ internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null) : I
     public IOwnedLemonade Start(AiConnectionSettings settings)
     {
         var endpoint = settings.GetBaseUri();
-        if (endpoint.Scheme != "http" || endpoint.Port < 1024 ||
+        if (!endpoint.IsLoopback || endpoint.Scheme != "http" || endpoint.Port < 1024 ||
             !new[] { "/api/v1/", "/api/v0/", "/v1/", "/v0/" }.Contains(endpoint.AbsolutePath))
             throw new InvalidOperationException("自動起動にはHTTPのローカルAPI接続先（例：http://localhost:13305/api/v1/）を指定してください。HTTPS等は起動済みサーバーへの接続のみ対応します。");
         var executable = FindExecutable(settings.ServerExecutablePath);
@@ -58,7 +58,7 @@ internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null) : I
         info.Environment.TryGetValue("LEMONADE_ADMIN_API_KEY", out var admin);
         if (string.IsNullOrEmpty(admin)) info.Environment.TryGetValue("LEMONADE_API_KEY", out admin);
         var process = Process.Start(info) ?? throw new InvalidOperationException("Lemonadeを起動できません。");
-        return new OwnedLemonade(process, executable, endpoint, admin);
+        return new OwnedLemonade(process, executable, endpoint, shutdownApiKey ?? admin);
     }
 
     internal static string FindExecutable(string configured)
@@ -118,6 +118,7 @@ internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null) : I
 
 internal static class WindowsListenerOwner
 {
+    internal static int[] ProcessIds(int port) => Owners(port, 2, 24, 8, 20).Concat(Owners(port, 23, 56, 20, 52)).Distinct().ToArray();
     internal static bool HasListener(int port) =>
         Owners(port, 2, 24, 8, 20).Count > 0 || Owners(port, 23, 56, 20, 52).Count > 0;
 

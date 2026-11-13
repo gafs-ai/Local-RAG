@@ -1,10 +1,12 @@
-# 依存ソフトウェアのライセンス（バージョン0.26.5）
+# 依存ソフトウェアのライセンス
 
 アプリ上部の「ライセンス」を開くと、名前で検索し、ライセンス原文・著作権表示・参照先をオフラインで確認できます。通常のビルドにも一覧と原文を埋め込み、配布フォルダの `ThirdPartyNotices` にも同梱します。本体はGAFS Inc.のGPL-3.0-or-laterです。依存ソフトウェアの条件は本体と同一とは限りません。
 
 SurrealDB **サーバー**はBSL 1.1です（[公式説明](https://surrealdb.com/license)）。本体とは別プロセスで必要時に取得します。接続に使う **SurrealDb.Netクライアント**のApache-2.0とは区別してください。Pythonとtree-sitterは対象言語の解析に必要な場合に取得します。
 
 Lemonade Serverとモデルは別途導入します。Lemonadeのライセンスは2026-11-06取得の参考原文を収録していますが、実際に導入する版の表示も確認してください。モデルは同梱しません。開発に使用したGemma 3系列は[Gemma利用規約](https://ai.google.dev/gemma/terms/)、nomic-embed-text-v2-moeの元モデルは[モデルカード](https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe)のApache-2.0です。GGUF変換版・NPU向け変換版についても各配布元の条件が適用されます。
+
+0.26.7では別途導入するOpenVINO Model Server（OVMS）とLM Studioにも接続できます。OVMSの上流プロジェクトは[Apache-2.0](https://github.com/openvinotoolkit/model_server/blob/main/LICENSE)、LM Studioは[配布元の利用条件](https://lmstudio.ai/app-terms)に従います。llmster・lms・推論ランタイム・モデルも含め、実際に導入する製品と版の条件を確認してください。これらの製品本体はLocal RAGに同梱せず、公開API／CLIを利用します。アプリのライセンス画面にも外部依存の通知を収録します。
 
 UTF.Unknownは配布元が示す選択肢のうちGPL第3版を適用し、元のライセンス表示も残しています。WiXのMSI内コードに対応するソースZIPとMS-RL原文はMSIに同梱します。Local RAGの対応ソースは同じGitタグと、クリーンなビルドから生成されるソースZIPで提供します。
 

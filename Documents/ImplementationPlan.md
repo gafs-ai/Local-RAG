@@ -1,5 +1,21 @@
 # Local RAG System 実装計画
 
+## 0.26.7：複数AI接続先
+
+- [x] 接続先の種類・URL・起動終了設定と、言語／Embeddingの個別選択。
+- [x] 既存Lemonade設定の読み取り互換と、変更した接続先に応じた工程識別。
+- [x] OVMS・LM Studioのモデル一覧、チャット、埋め込み、実行時入力上限／明示的代替値。
+- [x] 外部HTTP/HTTPS接続、接続先に紐付けたAPIキーのWindows暗号化保存。
+- [x] 接続先管理画面と設定ヘルプ。
+- [x] 回帰試験と修正・追加箇所の再実行、ビルド（[検証記録](AiConnectionsValidation-2026-11-12.md)）。
+- [x] 動作確認用MSI作成・このPCへの更新、設定保持・通常起動・MCP待受の確認（[更新記録](DistributionValidation-0.26.7-2026-11-13.md)）。
+- [x] 実際のOVMS（Docker／AMD CPU）・LM Studioで4構成の取り込み・MCP検索／取得を検証（[実機記録](AiConnectionsLiveValidation-2026-11-13.md)）。
+- [ ] Windows版OVMS・LM Studioの未起動状態からの連鎖起動終了と画面操作を検証。
+- [ ] Intel NPU、NVIDIA GPUの実機検証（後続）。
+- [x] ユーザー向けにLemonade推奨、Intel NPU向けOpenVINO、LM Studio、複数サーバー併用を明記。
+
+設計は[AiConnections.md](AiConnections.md)。外部サーバーの起動停止・モデルダウンロードは本アプリでは行わない。
+
 ## 0.26.4：PDF取り込み（更新検証用）
 
 - [x] 四分位から段階的に調べるコード判定、理由付きスキップ、強制文字抽出・対象外設定。

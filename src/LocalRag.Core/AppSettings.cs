@@ -36,7 +36,7 @@ public sealed record AppSettings
             try { _ = IgnorePattern.Parse(GlobalIgnorePatterns); }
             catch (InvalidDataException ex) { errors.Add(ex.Message); }
         }
-        if (SchemaVersion is not (1 or 2)) errors.Add("この設定ファイルの版には対応していません。");
+        if (SchemaVersion is not (1 or 2 or 3)) errors.Add("この設定ファイルの版には対応していません。");
         if (MonitoringIntervalMinutes is < 1 or > 10080)
             errors.Add("監視間隔は1～10080分で指定してください。");
         if (UpdateExclusionMinutes is < 0 or > 10080)
@@ -115,6 +115,9 @@ public sealed record DatabaseSettings
 
 public sealed record AiConnectionSettings
 {
+    public List<AiEndpointSettings> Connections { get; init; } = [];
+    public string ChatConnectionId { get; init; } = "";
+    public string EmbeddingConnectionId { get; init; } = "";
     public string BaseUrl { get; init; } = "http://localhost:13305/api/v1/";
     public bool AutoStartServer { get; init; } = true;
     public bool StopServerOnExit { get; init; } = true;
@@ -125,15 +128,27 @@ public sealed record AiConnectionSettings
 
     public IReadOnlyList<string> Validate()
     {
-        if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
-            !uri.IsLoopback || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
-            return ["AI接続先には、このPCのHTTP/HTTPSアドレスを指定してください（認証情報・クエリは含めません）。"];
-        if (ServerExecutablePath is null || ServerExecutablePath.Length > 0 &&
-            (!Path.IsPathFullyQualified(ServerExecutablePath) || !Path.GetExtension(ServerExecutablePath).Equals(".exe", StringComparison.OrdinalIgnoreCase)))
-            return ["Lemonadeの実行ファイルは絶対パスの.exeを指定してください。空欄なら自動検出します。"];
-        return [];
+        if (Connections is null) return ["AI接続先の一覧がありません。"];
+        var endpoints = Endpoints();
+        var errors = endpoints.SelectMany(e => e is null ? new[] { "AI接続先が不正です。" } : e.Validate()).ToList();
+        if (endpoints.Count > 32 || endpoints.Where(e => e is not null).GroupBy(e => e.Id).Any(g => g.Count() != 1)) errors.Add("AI接続先は重複しない32件以内で指定してください。");
+        if (Connections.Count > 0 && (!endpoints.Any(e => e?.Id == ChatConnectionId) || !endpoints.Any(e => e?.Id == EmbeddingConnectionId))) errors.Add("言語モデルとEmbeddingモデルの接続先を選択してください。");
+        return errors;
     }
+
+    public IReadOnlyList<AiEndpointSettings> Endpoints() => Connections.Count > 0 ? Connections :
+        [new() { Id = "lemonade-default", Name = "Lemonade", BaseUrl = BaseUrl, AutoStartServer = AutoStartServer, StopServerOnExit = StopServerOnExit, ServerExecutablePath = ServerExecutablePath }];
+    public AiEndpointSettings ChatEndpoint() => Connections.Count == 0 ? Endpoints()[0] : Connections.Single(e => e.Id == ChatConnectionId);
+    public AiEndpointSettings EmbeddingEndpoint() => Connections.Count == 0 ? Endpoints()[0] : Connections.Single(e => e.Id == EmbeddingConnectionId);
+    public AiConnectionSettings WithConnections() => Connections.Count > 0 ? this : this with
+        { Connections = Endpoints().ToList(), ChatConnectionId = "lemonade-default", EmbeddingConnectionId = "lemonade-default" };
+    public static AiConnectionSettings ForEndpoint(AiEndpointSettings endpoint) => new()
+        { BaseUrl = endpoint.BaseUrl, AutoStartServer = endpoint.AutoStartServer, StopServerOnExit = endpoint.StopServerOnExit, ServerExecutablePath = endpoint.ServerExecutablePath };
+    public string CombinedIdentity() => ChatEndpoint().ChatIdentity == EmbeddingEndpoint().EmbeddingProcessingIdentity ? ChatEndpoint().ChatIdentity :
+        ChatEndpoint().ChatIdentity + "\nembedding=" + EmbeddingEndpoint().EmbeddingProcessingIdentity;
+    public bool UsesExternalInference() => !ChatEndpoint().IsLocal || !EmbeddingEndpoint().IsLocal;
+    public string RetryIdentity() => ChatEndpoint().CredentialsRevision.Length == 0 && EmbeddingEndpoint().CredentialsRevision.Length == 0 ? CombinedIdentity() :
+        CombinedIdentity() + "\ncredentials=" + ChatEndpoint().CredentialsRevision + "|" + EmbeddingEndpoint().CredentialsRevision;
 
     public Uri GetBaseUri()
     {

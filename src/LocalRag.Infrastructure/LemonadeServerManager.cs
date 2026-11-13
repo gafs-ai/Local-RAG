@@ -10,6 +10,7 @@ internal interface IOwnedLemonade : IDisposable
     Uri Endpoint { get; }
     bool IsAlive { get; }
     bool OwnsListener { get; }
+    bool StartupPending => false;
     Task StopAsync(CancellationToken token);
 }
 
@@ -38,7 +39,7 @@ public sealed class LemonadeServerManager : IAsyncDisposable
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            progress?.Report("Lemonadeへの接続とモデル一覧を確認しています…");
+            progress?.Report("AIサーバーへの接続とモデル一覧を確認しています…");
             foreach (var exited in _owned.Where(p => !p.IsAlive).ToArray()) { exited.Dispose(); _owned.Remove(exited); }
             var models = await _runtime.ProbeAsync(settings, token).ConfigureAwait(false);
             // localhost/127.0.0.1 aliases must not cause a second startup on the same local port.
@@ -46,14 +47,14 @@ public sealed class LemonadeServerManager : IAsyncDisposable
             if (models is not null) return new(models, owned?.OwnsListener == true);
             if (owned is null)
             {
-                if (!settings.AutoStartServer) throw new InvalidOperationException("Lemonadeに接続できません。自動起動はOFFです。Lemonadeを起動して再確認してください。");
+                if (!settings.AutoStartServer || !endpoint.IsLoopback) throw new InvalidOperationException("AIサーバーに接続できません。サーバーを起動して再確認してください。");
                 if (await _runtime.PortOpenAsync(endpoint, token).ConfigureAwait(false))
                     throw new InvalidOperationException("AI接続先のポートは使用中ですが、モデル一覧を取得できません。重複起動せず接続先の確認を待ちます。");
                 token.ThrowIfCancellationRequested();
                 owned = _runtime.Start(settings);
                 _owned.Add(owned); // Retain ownership even if readiness times out or cancellation arrives.
             }
-            progress?.Report("Lemonadeを起動しています。モデル一覧を取得できるまで待っています…");
+            progress?.Report("AIサーバーを起動しています。モデル一覧を取得できるまで待っています…");
             using var startup = CancellationTokenSource.CreateLinkedTokenSource(token);
             startup.CancelAfter(_startupTimeout);
             try
@@ -67,15 +68,16 @@ public sealed class LemonadeServerManager : IAsyncDisposable
                     catch (OperationCanceledException) when (!startup.IsCancellationRequested) { models = null; }
                     if (models is not null)
                     {
-                        if (!owned.OwnsListener) throw new InvalidOperationException("接続先を別のプロセスが使用しています。Lemonadeの起動状態を確認してください。");
+                        if (owned.StartupPending) { await Task.Delay(200, startup.Token).ConfigureAwait(false); continue; }
+                        if (!owned.OwnsListener) throw new InvalidOperationException("接続先を別のプロセスが使用しています。AIサーバーの起動状態を確認してください。");
                         return new(models, true);
                     }
                     await Task.Delay(200, startup.Token).ConfigureAwait(false);
                 }
-                throw new InvalidOperationException("Lemonadeが起動中に終了しました。実行ファイルとLemonadeの設定を確認してください。");
+                throw new InvalidOperationException("AIサーバーの起動を確認できませんでした。実行ファイル・CLI・モデル設定を確認してください。LM Studioが別ポートで起動している場合はその接続先を指定してください。");
             }
             catch (OperationCanceledException) when (!token.IsCancellationRequested)
-            { throw new TimeoutException("Lemonadeの起動待ちが時間切れになりました。重複起動はしません。「モデル一覧を確認」で再試行できます。"); }
+            { throw new TimeoutException("AIサーバーの起動待ちが時間切れになりました。重複起動はしません。「接続確認・モデル一覧更新」で再試行できます。"); }
         }
         finally { _gate.Release(); }
     }

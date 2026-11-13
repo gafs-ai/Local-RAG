@@ -152,7 +152,7 @@ public sealed class UsageStatisticsAccumulator
     }
     public UsageStatisticsReport? Preview(AppSettings settings, string version, UsageStatisticsHardwareInput? hardware = null)
     {
-        lock (_gate) return !_enabled || settings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true }
+        lock (_gate) return !_enabled || settings.Ai.UsesExternalInference() || settings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true }
             ? null : _pending?.Report ?? Report(settings, version, hardware);
     }
     /// <summary>
@@ -163,7 +163,7 @@ public sealed class UsageStatisticsAccumulator
     {
         lock (_gate)
         {
-            var processing = _enabled && settings.UsageStatistics is { Enabled: true, NoticeAcknowledged: true }
+            var processing = _enabled && !settings.Ai.UsesExternalInference() && settings.UsageStatistics is { Enabled: true, NoticeAcknowledged: true }
                 ? _counts.Values.OrderBy(p => p.Extension, StringComparer.Ordinal).ToArray()
                 : [];
             return new(1, UsageStatisticsPrivacy.Version(version), UsageStatisticsPrivacy.Hardware(hardware),
@@ -175,7 +175,7 @@ public sealed class UsageStatisticsAccumulator
     {
         lock (_gate)
         {
-            if (!_enabled || settings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true }) return null;
+            if (!_enabled || settings.Ai.UsesExternalInference() || settings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true }) return null;
             if (_pending is not null) return _pending;
             var report = Report(settings, version, hardware);
             return report is null ? null : _pending = new(report);

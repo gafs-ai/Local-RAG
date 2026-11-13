@@ -23,7 +23,7 @@ public partial class MainWindow : Window, IDisposable
     private readonly System.Drawing.Icon _trayIcon;
     private CancellationTokenSource _lifetime = new();
     private readonly SurrealServerManager _server;
-    private readonly LemonadeServerManager _lemonade = new();
+    private readonly AiServerManager _lemonade = new();
     private Task _aiTask = Task.CompletedTask;
     private Task _startupTask = Task.CompletedTask;
     private Task _databaseTask = Task.CompletedTask;
@@ -86,10 +86,7 @@ public partial class MainWindow : Window, IDisposable
             ExcludeDotHiddenBox.IsChecked = settings.ExcludeDotHiddenEntries;
             GlobalIgnoreBox.Text = string.Join(Environment.NewLine, settings.GlobalIgnorePatterns);
             AutomaticMonitoringBox.IsChecked = settings.AutomaticMonitoring;
-            BaseUrlBox.Text = settings.Ai.BaseUrl;
-            AutoStartAiBox.IsChecked = settings.Ai.AutoStartServer;
-            StopAiBox.IsChecked = settings.Ai.StopServerOnExit;
-            AiExecutableBox.Text = settings.Ai.ServerExecutablePath;
+            InitializeAiConnections(settings.Ai);
             ChatModelBox.Text = settings.Ai.ChatModel;
             EmbeddingModelBox.Text = settings.Ai.EmbeddingModel;
             _localDbPort = settings.Database.Port;
@@ -153,7 +150,7 @@ public partial class MainWindow : Window, IDisposable
     private void UpdateApplicationStatus()
     {
         ApplicationStatus.Text = _shuttingDown ? "終了処理中" : _dbFailed ? "DBへの接続に失敗しました" :
-            _aiFailed ? "Lemonade Serverへの接続に失敗しました" : _starting ? "起動中" :
+            _aiFailed ? "AIサーバーへの接続に失敗しました" : _starting ? "起動中" :
             _operationError ?? (_currentFile is not null ? "ファイル処理中" :
                 _manualScanRunning ? "ファイル確認中" : _monitoringEnabled ? "監視中" : "停止中");
     }
@@ -224,13 +221,7 @@ public partial class MainWindow : Window, IDisposable
             Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true,
                 AutoStartServer = AutoStartDbBox.IsChecked == true, ExternalEndpoint = DbEndpointBox.Text.Trim() },
             Folders = folders,
-            Ai = _loadedSettings.Ai with
-            {
-                BaseUrl = BaseUrlBox.Text.Trim(), ChatModel = ChatModelBox.Text.Trim(),
-                EmbeddingModel = EmbeddingModelBox.Text.Trim(),
-                AutoStartServer = AutoStartAiBox.IsChecked == true, StopServerOnExit = StopAiBox.IsChecked == true,
-                ServerExecutablePath = AiExecutableBox.Text.Trim()
-            }
+            Ai = ReadAiSettings()
         };
         var errors = settings.Validate();
         if (errors.Count != 0) throw new InvalidDataException(string.Join(Environment.NewLine, errors));
@@ -257,7 +248,7 @@ public partial class MainWindow : Window, IDisposable
         SaveButton.IsEnabled = SettingsPanel.IsEnabled = false;
         try
         {
-            var settings = _loadedSettings with { SchemaVersion = 2, Management = management, TextPipeline = limits };
+            var settings = _loadedSettings with { Management = management, TextPipeline = limits };
             await PrepareUsageStatisticsForSettingsAsync(settings);
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;
@@ -282,6 +273,7 @@ public partial class MainWindow : Window, IDisposable
             await _aiTask;
             await _databaseTask;
             var settings = ReadSettings();
+            await SaveAiCredentialsAsync(settings.Ai);
             var credentialsChanged = false;
             if (settings.Database.UsesExternalEndpoint)
             {
@@ -316,11 +308,8 @@ public partial class MainWindow : Window, IDisposable
     private async void CheckAi(object sender, RoutedEventArgs e)
     {
         if (!_settingsLoaded || _shuttingDown || !_aiTask.IsCompleted || !_startupTask.IsCompleted || !_saveTask.IsCompleted) return;
-        await (_aiTask = RefreshModelsAsync(_loadedSettings.Ai with
-        {
-            BaseUrl = BaseUrlBox.Text.Trim(), AutoStartServer = AutoStartAiBox.IsChecked == true,
-            ServerExecutablePath = AiExecutableBox.Text.Trim()
-        }));
+        try { await (_aiTask = RefreshModelsAsync(ReadAiSettings())); }
+        catch (Exception ex) { AiStatus.Text = SafeMessage(ex); }
     }
 
     private async Task RefreshModelsAsync(AiConnectionSettings settings)
@@ -329,18 +318,28 @@ public partial class MainWindow : Window, IDisposable
         AiStatus.Text = "接続とモデル一覧を確認しています…";
         try
         {
-            var status = await _lemonade.EnsureRunningAsync(settings,
-                new Progress<string>(message => AiStatus.Text = message), _lifetime.Token);
-            if (_shuttingDown || BaseUrlBox.Text.Trim() != settings.BaseUrl) return;
-            var models = status.Models;
-            ModelList.ItemsSource = models.Select(m => $"{m.Id}   ·   {string.Join(", ", m.Labels)}   ·   {(m.VerifiedLocal ? "ローカル" : "ローカル性未確認／利用不可")}");
-            FillModels(ChatModelBox, models, "chat");
-            FillModels(EmbeddingModelBox, models, "embeddings");
-            var hasEmbedding = models.Any(m => m.VerifiedLocal && m.Labels.Contains("embeddings"));
-            AiStatus.Text = $"接続できました（{models.Count}モデル）。" +
-                (status.ManagedByApplication ? "このアプリが起動したLemonadeです。" : "既存のLemonadeです。アプリ終了時にも停止しません。") +
-                (hasEmbedding ? "" : "Embeddingモデルが未準備です。");
-            _aiFailed = false;
+            var errors = settings.Validate();
+            if (errors.Count > 0) throw new InvalidDataException(errors[0]);
+            var lines = new List<string>(); var statuses = new List<string>(); var failed = new HashSet<string>();
+            _aiModels.Clear();
+            foreach (var endpoint in settings.Endpoints())
+            {
+                try
+                {
+                    var key = await ReadAiKeyAsync(endpoint);
+                    var status = await _lemonade.EnsureRunningAsync(endpoint, key, new Progress<string>(message => AiStatus.Text = message), _lifetime.Token);
+                    _aiModels[endpoint.Id] = status.Models;
+                    lines.AddRange(status.Models.Select(m => $"{endpoint.Name} · {m.Id} · {string.Join(", ", m.Labels)}{(m.VerifiedLocal ? "" : " · 利用不可")}"));
+                    statuses.Add($"{endpoint.Name}：接続済み（{status.Models.Count}モデル・{(status.ManagedByApplication ? "本アプリから起動" : "既存サーバー")}）");
+                }
+                catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { throw; }
+                catch (Exception ex) { failed.Add(endpoint.Id); statuses.Add(endpoint.Name + "：" + SafeMessage(ex)); }
+            }
+            if (_shuttingDown) return;
+            ModelList.ItemsSource = lines;
+            RefreshSelectedAiModels();
+            AiStatus.Text = string.Join(Environment.NewLine, statuses);
+            _aiFailed = failed.Contains(settings.ChatEndpoint().Id) || failed.Contains(settings.EmbeddingEndpoint().Id);
         }
         catch (OperationCanceledException) { ClearModels(); _aiFailed = !_shuttingDown; AiStatus.Text = "接続確認を中断しました（時間切れまたは終了）。"; }
         catch (Exception ex) { ClearModels(); _aiFailed = true; AiStatus.Text = SafeMessage(ex); }
@@ -437,7 +436,7 @@ public partial class MainWindow : Window, IDisposable
             await CompleteFeedbackShutdownAsync();
             await StopRagAsync();
             await CompleteUsageStatisticsShutdownAsync();
-            await _lemonade.ShutdownAsync(_loadedSettings.Ai.StopServerOnExit);
+            await _lemonade.ShutdownAsync(_loadedSettings.Ai);
             await _server.ShutdownAsync(_loadedSettings.Database.StopOnExit);
         }
         catch

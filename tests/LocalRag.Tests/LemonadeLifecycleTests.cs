@@ -15,7 +15,7 @@ public class LemonadeLifecycleTests
         Assert.True(original.Ai.AutoStartServer); Assert.True(original.Ai.StopServerOnExit);
         var settings = original with { Ai = original.Ai with { AutoStartServer = false, StopServerOnExit = false, ServerExecutablePath = @"C:\Apps\LemonadeServer.exe" } };
         await store.SaveAsync(settings);
-        Assert.Equal(settings.Ai, (await store.LoadAsync()).Ai);
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(settings.Ai), System.Text.Json.JsonSerializer.Serialize((await store.LoadAsync()).Ai));
         Assert.Equal(original.PipelineConfigurationId(), settings.PipelineConfigurationId());
         Assert.NotEmpty((settings.Ai with { ServerExecutablePath = "relative.exe" }).Validate());
         Assert.NotEmpty((settings.Ai with { ServerExecutablePath = @"C:\test.cmd" }).Validate());

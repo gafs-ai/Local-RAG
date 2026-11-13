@@ -32,6 +32,8 @@ foreach($package in Get-Content (Join-Path $repo 'src/LocalRag.Infrastructure/Tr
     Add-Entry $package.Name $package.Version 'MIT' '必要時に別途ダウンロード' '構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。' ("https://pypi.org/project/"+$package.Name+"/"+$package.Version+"/") @("$($package.Name)-$($package.Version)-LICENSE.txt")
 }
 Add-Entry 'Lemonade Server' '' 'Apache-2.0 / 同梱第三者通知' '利用者が別途インストール' '本体には同梱しません。表示する原文は2026-11-06時点の上流LICENSEです。実際に利用する版・推論バックエンドの通知も確認してください。' 'https://github.com/lemonade-sdk/lemonade/blob/main/LICENSE' @('Lemonade-LICENSE.txt')
+Add-Entry 'OpenVINO Model Server' '' 'Apache-2.0 / 導入版の第三者通知' '利用者が別途インストール' 'HTTP APIで接続し、本体には同梱しません。導入するサーバー・実行環境・ドライバー・モデルの条件を確認してください。' 'https://github.com/openvinotoolkit/model_server/blob/main/LICENSE' @('OpenVINO-Model-Server-NOTICE.txt')
+Add-Entry 'LM Studio / llmster / lms' '' '配布元・導入製品の利用条件' '利用者が別途インストール' '公開APIとCLIを使用し、製品本体は同梱しません。この通知は利用条件の全文ではありません。導入する製品と版の利用条件を確認してください。' 'https://lmstudio.ai/app-terms' @('LM-Studio-NOTICE.txt')
 Add-Entry 'Microsoft Word' '' '導入済みOffice / Microsoft 365の利用条件' '旧形式.docの変換時のみ使用・別途インストール' '本体には同梱しません。表示する通知は依存関係の説明で、Microsoftのライセンス原文ではありません。利用する製品・契約の条件を確認してください。' 'https://www.microsoft.com/useterms' @('Microsoft-Word-NOTICE.txt')
 Add-Entry 'Microsoft Excel' '' '導入済みOffice / Microsoft 365の利用条件' 'Excel .xls・.xlsbの変換時のみ使用・別途インストール' '本体には同梱しません。表示する通知は依存関係の説明で、Microsoftのライセンス原文ではありません。利用する製品・契約の条件を確認してください。' 'https://www.microsoft.com/useterms' @('Microsoft-Excel-NOTICE.txt')
 Add-Entry 'Gemma 3 / nomic / その他のモデル' '' 'モデル別の利用条件' '利用者が別途ダウンロード' 'モデルのライセンスはアプリ本体とは別です。Gemma 3はGemma利用規約、nomic v2原モデルはApache-2.0です。選択した量子化・変換配布物の条件も確認してください。' 'https://ai.google.dev/gemma/terms/' @('Models-NOTICE.txt')

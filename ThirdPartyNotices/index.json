@@ -555,6 +555,28 @@
     ]
   },
   {
+    "Name": "OpenVINO Model Server",
+    "Version": "",
+    "License": "Apache-2.0 / 導入版の第三者通知",
+    "Scope": "利用者が別途インストール",
+    "Description": "HTTP APIで接続し、本体には同梱しません。導入するサーバー・実行環境・ドライバー・モデルの条件を確認してください。",
+    "Source": "https://github.com/openvinotoolkit/model_server/blob/main/LICENSE",
+    "Files": [
+      "OpenVINO-Model-Server-NOTICE.txt"
+    ]
+  },
+  {
+    "Name": "LM Studio / llmster / lms",
+    "Version": "",
+    "License": "配布元・導入製品の利用条件",
+    "Scope": "利用者が別途インストール",
+    "Description": "公開APIとCLIを使用し、製品本体は同梱しません。この通知は利用条件の全文ではありません。導入する製品と版の利用条件を確認してください。",
+    "Source": "https://lmstudio.ai/app-terms",
+    "Files": [
+      "LM-Studio-NOTICE.txt"
+    ]
+  },
+  {
     "Name": "Microsoft Word",
     "Version": "",
     "License": "導入済みOffice / Microsoft 365の利用条件",

@@ -156,26 +156,30 @@
                             <TextBox x:Name="UpdateExclusionBox" Width="100" HorizontalAlignment="Left" AutomationProperties.Name="更新除外期間"/>
                         </DockPanel>
                         <TextBlock Text="更新除外期間より新しいファイルは更新しません（自動保存アプリケーションへの対策）。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
-                        <TextBlock Text="Lemonade Server" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,4" />
-                        <TextBlock Text="接続先" />
-                        <TextBox x:Name="BaseUrlBox" AutomationProperties.Name="AI接続先" />
-                        <CheckBox x:Name="AutoStartAiBox" Content="Lemonadeが起動していなければ自動起動する" Margin="0,6" />
-                        <CheckBox x:Name="StopAiBox" Content="アプリ終了時に、このアプリが起動したLemonadeも終了する" Margin="0,0,0,6" />
-                        <TextBlock Text="Lemonade実行ファイル（空欄で自動検出）" Margin="0,6,0,0" />
-                        <TextBox x:Name="AiExecutableBox" AutomationProperties.Name="Lemonade実行ファイル" />
-                        <TextBlock Text="設定する場合、LemonadeServer.exeまたはlemond.exeの絶対パスを記載します" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,10" />
+                        <TextBlock Text="AI接続先" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,4" />
+                        <ListBox x:Name="AiEndpointList" Height="130" DisplayMemberPath="Name" AutomationProperties.Name="AI接続先一覧" />
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
+                            <Button x:Name="AddAiEndpointButton" Content="追加" Click="AddAiEndpoint" />
+                            <Button Content="編集" Click="EditAiEndpoint" Margin="8,0" />
+                            <Button Content="削除" Click="RemoveAiEndpoint" />
+                        </StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="20" /><ColumnDefinition /></Grid.ColumnDefinitions>
                             <StackPanel>
+                                <TextBlock Text="言語モデルの接続先" />
+                                <ComboBox x:Name="ChatConnectionBox" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="AiConnectionChanged" AutomationProperties.Name="言語モデルの接続先" />
                                 <TextBlock Text="言語モデル" />
                                 <ComboBox x:Name="ChatModelBox" IsEditable="True" AutomationProperties.Name="チャットモデル" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
+                                <TextBlock Text="Embeddingモデルの接続先" />
+                                <ComboBox x:Name="EmbeddingConnectionBox" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="AiConnectionChanged" AutomationProperties.Name="Embeddingモデルの接続先" />
                                 <TextBlock Text="Embeddingモデル" />
                                 <ComboBox x:Name="EmbeddingModelBox" IsEditable="True" AutomationProperties.Name="Embeddingモデル" />
                             </StackPanel>
                         </Grid>
                         <TextBlock Text="推奨モデル 言語モデル: Gemma, Embeddingモデル: nomic" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,0" />
+                        <TextBlock Text="接続先を編集した後は「接続状態」の「接続確認・モデル一覧更新」で一覧を更新し、設定を保存してください。言語モデルとEmbeddingモデルは別のサーバーを選べます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,0" />
                         <TextBlock Text="SurrealDB" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,6" />
                         <CheckBox x:Name="AutoStartDbBox" Content="SurrealDBが起動していなければ自動起動する" Margin="0,6" />
                         <CheckBox x:Name="StopDbBox" Content="アプリ終了時に、このアプリが起動したSurrealDBも終了する" Margin="0,0,0,12" AutomationProperties.Name="DBも終了する" />

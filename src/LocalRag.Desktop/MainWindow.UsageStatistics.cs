@@ -75,6 +75,13 @@ public partial class MainWindow
         try { UsageStatisticsBox.IsChecked = _loadedSettings.UsageStatistics.Enabled; }
         finally { _usageStatisticsUiLoading = false; }
         _usageStatistics.Configure(_loadedSettings.UsageStatistics);
+        if (_loadedSettings.Ai.UsesExternalInference())
+        {
+            StopUsageStatistics();
+            _usageStatistics.Configure(new() { Enabled = false, NoticeAcknowledged = true });
+            UsageStatisticsStatus.Text = "利用統計：外部AI接続では処理速度をこのPCの機材に対応付けられないため、自動収集・送信を停止します。";
+            return;
+        }
         if (_loadedSettings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true })
         {
             StopUsageStatistics();

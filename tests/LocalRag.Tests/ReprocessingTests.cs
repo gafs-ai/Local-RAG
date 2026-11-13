@@ -119,6 +119,32 @@ public class ReprocessingTests
     }
 
     [ServerFact]
+    public async Task MigratingConnectionsKeepsIndexThenEmbeddingDestinationChangeReusesLlmOutput()
+    {
+        await using var f = await ServerFixture.StartAsync();
+        var input = Path.Combine(f.Root, "input"); Directory.CreateDirectory(input);
+        await File.WriteAllTextAsync(Path.Combine(input, "a.txt"), Text);
+        var initial = Settings(input, ParentEmbeddingMode.TextOrSummary);
+        await using var repo = await TextRagRepository.OpenAsync(f.Manager.Connection!);
+        Assert.Equal(1, (await Scan(repo, initial, new(), f.Root)).Indexed);
+        var original = Assert.Single(await repo.DocumentsAsync(default));
+        var migrated = initial with { Ai = initial.Ai.WithConnections() };
+        var migrationAi = new RecordingAi();
+        Assert.Equal(1, (await Scan(repo, migrated, migrationAi, f.Root)).Unchanged);
+        Assert.Empty(migrationAi.Calls); Assert.Equal(0, migrationAi.Embeddings);
+        var embedding = migrated.Ai.EmbeddingEndpoint() with { Id = "new-embedding", BaseUrl = "http://localhost:18099/v1/", Provider = AiProvider.LmStudio };
+        var changed = migrated with { Ai = migrated.Ai with { Connections = [.. migrated.Ai.Connections, embedding], EmbeddingConnectionId = embedding.Id } };
+        var ai = new RecordingAi();
+        using (var beforeScan = new TextRagService(repo, ai, changed, Path.Combine(f.Root, "data")))
+            Assert.Empty(await beforeScan.SearchAsync("moon")); // Never search the old embedding space using the new server.
+        Assert.Equal(1, (await Scan(repo, changed, ai, f.Root)).Indexed);
+        Assert.Empty(ai.Calls); Assert.True(ai.Embeddings > 0);
+        var current = Assert.Single(await repo.DocumentsAsync(default));
+        Assert.Equal(original.DocumentId, current.DocumentId); Assert.Equal(original.PreparedChildren, current.PreparedChildren);
+        Assert.NotEqual(original.SpaceId, current.SpaceId);
+    }
+
+    [ServerFact]
     public async Task OldParentDescriptionRecipeRebuildsOnlyDescriptionsAndDiscardsOldPartialProgress()
     {
         await using var f = await ServerFixture.StartAsync();

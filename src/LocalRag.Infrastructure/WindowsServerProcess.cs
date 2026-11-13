@@ -10,13 +10,16 @@ internal static class WindowsServerProcess
 {
     // A private hidden console is essential: a stop signal must never reach the app's terminal or other servers.
     public static Process Start(string executable, IReadOnlyList<string> arguments, string password)
+        => StartIsolated(executable, arguments, new Dictionary<string, string> { ["SURREAL_PASS"] = password, ["SURREAL_TELEMETRY_PROVIDER"] = "none" }, "SURREAL_");
+
+    internal static Process StartIsolated(string executable, IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string>? overrides = null, string? removePrefix = null)
     {
         var environment = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (DictionaryEntry item in Environment.GetEnvironmentVariables())
-            if (!((string)item.Key).StartsWith("SURREAL_", StringComparison.OrdinalIgnoreCase))
+            if (removePrefix is null || !((string)item.Key).StartsWith(removePrefix, StringComparison.OrdinalIgnoreCase))
                 environment[(string)item.Key] = (string?)item.Value ?? "";
-        environment["SURREAL_PASS"] = password;
-        environment["SURREAL_TELEMETRY_PROVIDER"] = "none";
+        if (overrides is not null) foreach (var item in overrides) environment[item.Key] = item.Value;
         var block = string.Join('\0', environment.Select(x => $"{x.Key}={x.Value}")) + "\0\0";
         var memory = Marshal.StringToHGlobalUni(block);
         var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Flags = 1, ShowWindow = 0 };
@@ -25,7 +28,7 @@ internal static class WindowsServerProcess
         {
             if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, false,
                 0x00000010 | 0x00000400 | 0x00004000, memory, Path.GetDirectoryName(executable), ref startup, out var information))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "SurrealDBを起動できませんでした。");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "サーバーを起動できませんでした。");
             try { return Process.GetProcessById((int)information.ProcessId); }
             finally { CloseHandle(information.Thread); CloseHandle(information.Process); }
         }

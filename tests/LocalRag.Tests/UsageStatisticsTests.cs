@@ -153,7 +153,7 @@ public class UsageStatisticsTests
         var retry = restored.Capture(Settings(), "0.26.6")!;
         Assert.Equal(name, retry.Report.Hardware.Npu);
         Assert.Equal(pending.Json, retry.Json);
-        var attachment = restored.SnapshotForFeedback(Settings(), "0.26.6", new(Npu: name));
+        var attachment = restored.SnapshotForFeedback(Settings(), ProductInfo.Version, new(Npu: name));
         Assert.Equal(name, FeedbackBatch.Create("bug", "synthetic", attachment).Report.Usage!.Hardware.Npu);
     }
 

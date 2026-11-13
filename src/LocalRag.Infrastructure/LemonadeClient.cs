@@ -7,20 +7,23 @@ namespace LocalRag.Infrastructure;
 public sealed record LemonadeModel(string Id, string Recipe, IReadOnlyList<string> Labels, bool VerifiedLocal, int? ContextLength = null);
 public sealed record EmbeddingBatch(string ModelId, int Dimension, IReadOnlyList<float[]> Vectors);
 
-public sealed class LemonadeClient : IDisposable
+public sealed class LemonadeClient : IAiModelClient
 {
     private readonly HttpClient _http;
+    private readonly AiEndpointSettings? _endpoint;
     private static readonly HashSet<string> LocalRecipes = new(StringComparer.OrdinalIgnoreCase)
         { "llamacpp", "flm", "ryzenai-llm", "whispercpp", "vllm", "kokoro", "sd-cpp" };
 
-    public LemonadeClient(AiConnectionSettings settings, HttpMessageHandler? handler = null)
+    public LemonadeClient(AiConnectionSettings settings, HttpMessageHandler? handler = null, string? apiKey = null, AiEndpointSettings? endpoint = null)
     {
+        _endpoint = endpoint;
         // Redirects could move a localhost request to a remote host.
         _http = new HttpClient(handler ?? new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false })
         {
             BaseAddress = settings.GetBaseUri(),
             Timeout = TimeSpan.FromMinutes(3)
         };
+        if (!string.IsNullOrEmpty(apiKey)) _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
     }
 
     public async Task<IReadOnlyList<LemonadeModel>> GetModelsAsync(CancellationToken cancellationToken = default)
@@ -69,7 +72,7 @@ public sealed class LemonadeClient : IDisposable
                 : new[] { new { role = "system", content = system }, new { role = "user", content = userContent } },
             ["max_tokens"] = maxTokens, ["temperature"] = 0, ["stream"] = false
         };
-        if (jsonObject)
+        if (jsonObject && (_endpoint?.JsonOutput ?? true))
         {
             request["response_format"] = new { type = "json_object" };
             request["chat_template_kwargs"] = new { enable_thinking = false };
@@ -122,13 +125,17 @@ public sealed class LemonadeClient : IDisposable
         using var response = await _http.PostAsJsonAsync("embeddings", new { model, input = inputs, encoding_format = "float" }, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-        var data = json.RootElement.GetProperty("data");
-        if (data.GetArrayLength() != inputs.Count) throw new InvalidDataException("Embedding応答の件数が一致しません。");
-        var vectors = new float[inputs.Count][];
+        return ReadEmbeddingBatch(model, inputs.Count, json.RootElement.GetProperty("data"));
+    }
+
+    internal static EmbeddingBatch ReadEmbeddingBatch(string model, int count, JsonElement data)
+    {
+        if (data.GetArrayLength() != count) throw new InvalidDataException("Embedding応答の件数が一致しません。");
+        var vectors = new float[count][];
         foreach (var item in data.EnumerateArray())
         {
             var index = item.GetProperty("index").GetInt32();
-            if (index < 0 || index >= inputs.Count || vectors[index] is not null)
+            if (index < 0 || index >= count || vectors[index] is not null)
                 throw new InvalidDataException("Embedding応答の位置が不正です。");
             var vector = item.GetProperty("embedding").EnumerateArray().Select(x => x.GetSingle()).ToArray();
             if (vector.Length == 0 || vector.Any(x => !float.IsFinite(x)) || vector.All(x => x == 0))
@@ -143,7 +150,9 @@ public sealed class LemonadeClient : IDisposable
 
     private async Task<int> GetContextAsync(LemonadeModel model, string label, CancellationToken token)
     {
-        if (model.ContextLength is { } length) return length;
+        var configured = label == "chat" ? _endpoint?.ChatContextTokens ?? 0 : _endpoint?.EmbeddingContextTokens ?? 0;
+        if (model.ContextLength is { } length) return configured > 0 ? Math.Min(length, configured) : length;
+        if (configured > 0) return configured;
         // Runtime context_length is exposed after load. Never infer it from the advertised architectural maximum.
         using var load = await _http.PostAsJsonAsync("load", new { model_name = model.Id }, token).ConfigureAwait(false);
         load.EnsureSuccessStatusCode();

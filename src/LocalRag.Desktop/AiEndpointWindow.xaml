@@ -1,0 +1,30 @@
+<Window x:Class="LocalRag.Desktop.AiEndpointWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="AI接続先の設定" Width="700" Height="750" MinWidth="550" MinHeight="500" WindowStartupLocation="CenterOwner" Background="White">
+ <DockPanel Margin="20">
+  <StackPanel DockPanel.Dock="Bottom">
+   <TextBlock x:Name="ErrorText" Foreground="Firebrick" TextWrapping="Wrap" Margin="0,8"/>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="反映" Click="Apply" Padding="24,8" Margin="8"/><Button Content="キャンセル" IsCancel="True" Padding="24,8" Margin="8"/></StackPanel>
+  </StackPanel>
+  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+   <TextBlock Text="接続先名"/><TextBox x:Name="NameBox" Margin="0,4,0,12" Padding="6"/>
+   <TextBlock Text="サーバーの種類"/><ComboBox x:Name="ProviderBox" DisplayMemberPath="Label" SelectedValuePath="Provider" SelectionChanged="ProviderChanged" Margin="0,4,0,12" Padding="6"/>
+   <TextBlock Text="API接続先（http:// または https://）"/><TextBox x:Name="UrlBox" TextChanged="OptionsChanged" Margin="0,4,0,4" Padding="6"/>
+   <TextBlock Text="言語モデルの接続先には文書本文、Embeddingモデルの接続先には文書や説明・検索語を送信します。外部URLではPC外へ送信されます。取得時の秘匿設定とは独立しています。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+   <CheckBox x:Name="AutoStartBox" Content="未起動なら自動起動する（このPCの接続先のみ）" Checked="OptionsChanged" Unchecked="OptionsChanged" Margin="0,4"/>
+   <CheckBox x:Name="StopBox" Content="アプリ終了時に、このアプリが起動したサーバーも終了する" Margin="0,4,0,12"/>
+   <StackPanel x:Name="LaunchPanel">
+    <TextBlock x:Name="ExecutableLabel" Text="実行ファイル"/><TextBox x:Name="ExecutableBox" Margin="0,4,0,8" Padding="6"/>
+    <StackPanel x:Name="OvmsPanel"><TextBlock Text="OVMSモデル設定ファイル（config.jsonの絶対パス）"/><TextBox x:Name="ConfigBox" Margin="0,4,0,8" Padding="6"/><TextBlock Text="Windows版OVMSと変換済みモデルを準備してください。実行環境とデバイスの設定はOVMS側で行います。" TextWrapping="Wrap" Foreground="#526477"/></StackPanel>
+    <TextBlock x:Name="LaunchHelp" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+   </StackPanel>
+   <TextBlock Text="APIキー（必要な場合のみ・空欄は保存済みのキーを維持）"/><PasswordBox x:Name="KeyBox" Margin="0,4,0,4" Padding="6"/>
+   <CheckBox x:Name="ClearKeyBox" Content="保存済みのAPIキーを削除する" Margin="0,4,0,8"/>
+   <TextBlock Text="キーはWindowsの暗号化機能で保護します。URLや種類を変えた場合はキーを再入力してください。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+   <TextBlock Text="言語モデルの入力上限（トークン数）"/><TextBox x:Name="ChatLimitBox" Margin="0,4,0,8" Padding="6"/>
+   <TextBlock Text="Embeddingモデルの入力上限（トークン数）"/><TextBox x:Name="EmbeddingLimitBox" Margin="0,4,0,8" Padding="6"/>
+   <TextBlock Text="0は実行時の上限を自動取得します。取得できないサーバーでは、実際のモデル起動設定以下の値を指定してください。モデルの理論上限とは異なります。自動取得値が小さい場合はそちらを優先します。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+   <CheckBox x:Name="JsonBox" Content="構造化JSON出力を要求する（非対応のモデルではOFF）" Margin="0,4"/>
+   <TextBlock Text="OFFでも応答JSONの検証・修正と再試行を行います。" TextWrapping="Wrap" Foreground="#526477"/>
+  </StackPanel></ScrollViewer>
+ </DockPanel>
+</Window>

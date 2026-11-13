@@ -121,7 +121,7 @@ public class SettingsTests
         await store.SaveAsync(expected);
         var actual = await store.LoadAsync();
         Assert.Equal(expected.Folders, actual.Folders);
-        Assert.Equal(expected.Ai, actual.Ai);
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(expected.Ai), System.Text.Json.JsonSerializer.Serialize(actual.Ai));
         Assert.Equal(expected.Database, actual.Database);
     }
 

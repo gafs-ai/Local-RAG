@@ -54,7 +54,7 @@ public partial class MainWindow
             }
             _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token, _loadedSettings.DataSourceName);
             _ragCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
-            _ragAi = new LemonadeTextAi(_loadedSettings);
+            _ragAi = new LemonadeTextAi(_loadedSettings, apiKeys: await new AiCredentialStore(_dataDirectory).LoadAsync(_loadedSettings.Ai, _lifetime.Token));
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);
             AttachIngestionActivity(_rag);
             _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));

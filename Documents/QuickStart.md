@@ -1,11 +1,21 @@
-# Local RAG クイックスタート（バージョン0.26.6）
+# Local RAG クイックスタート（バージョン0.26.7）
 
 Windows 11（64ビット）で、PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索できるようにします。音声は未対応です。旧形式の.docにはMicrosoft Word、.xls・.xlsbにはMicrosoft Excelが必要です。
+
+**モデルサーバーはLemonade Serverを推奨します。** このガイドではLemonadeを使う最小限の手順を説明します。
+
+| 使い方 | 選べるモデルサーバー |
+| --- | --- |
+| まず使い始めたい | **Lemonade Server（推奨）** |
+| IntelのNPUを使いたい | **OpenVINO Model Server**を利用できます。対応ドライバー・モデルの準備が必要です |
+| LM Studioのモデルを使いたい | **LM Studio**を利用できます |
+
+**複数のモデルサーバーも併用できます。** 例えば、言語モデルをOpenVINO、EmbeddingモデルをLemonadeに割り当てられます。別のサーバーを使う場合は[AI接続先の設定](AiConnections.md)を参照してください。
 
 ## 1. インストールする
 
 1. [Lemonade Server](https://lemonade-server.ai/docs/guide/install/windows/)をインストールします。
-2. [Local RAG 0.26.6のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.6)から`LocalRAG-0.26.6-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
+2. [Local RAG 0.26.7のリリースページ](https://github.com/gafs-ai/Local-RAG/releases/tag/0.26.7)から`LocalRAG-0.26.7-win-x64.msi`をダウンロードして開き、画面の案内に従ってインストールします。
 
 Local RAGのインストーラには.NETランタイムが含まれます。DBは初回起動時に自動で導入します。初回はインターネット接続が必要です。
 
@@ -34,7 +44,7 @@ NPUはLemonadeが対応する機種・ドライバーである必要がありま
 
 1. モデルのダウンロード完了後、スタートメニューから **Local RAG** を起動します。
 2. 「設定」で、**監視フォルダ**を「追加」します。
-3. **言語モデル**と**Embeddingモデル**に、ダウンロードしたモデルを選びます。一覧にない場合は「接続状態」→「接続確認・モデル一覧更新」を押します。
+3. **言語モデルの接続先**と**Embeddingモデルの接続先**でLemonadeを選び、ダウンロードしたモデルをそれぞれ選びます。一覧にない場合は「接続状態」→「接続確認・モデル一覧更新」を押します。
 4. 「設定を保存」を押し、「取り込み」で「監視再開」または「今すぐ実行」を押します。
 
 ほかの設定は、そのままで始められます。初期設定では、更新から10分以内のファイルは取り込みを待ちます。

@@ -85,7 +85,7 @@ public sealed class SettingsStore(string dataDirectory)
 
     private static AppSettings Migrate(AppSettings settings)
     {
-        var migrated = settings with { SchemaVersion = 2,
+        var migrated = settings with { SchemaVersion = settings.Ai.Connections.Count > 0 ? 3 : 2,
             Management = (settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality)).ToOrderedSettings() };
         Validate(migrated);
         return migrated; // Persist only when the user saves; failed/cancelled edits never rewrite the old file.
