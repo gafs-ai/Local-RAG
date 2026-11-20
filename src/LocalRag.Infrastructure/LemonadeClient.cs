@@ -18,7 +18,7 @@ public sealed class LemonadeClient : IAiModelClient
     {
         _endpoint = endpoint;
         // Redirects could move a localhost request to a remote host.
-        _http = new HttpClient(handler ?? new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false })
+        _http = new HttpClient(OutboundHttp.ForEndpoint(settings.GetBaseUri(), settings.VerifyCertificate, handler))
         {
             BaseAddress = settings.GetBaseUri(),
             Timeout = TimeSpan.FromMinutes(3)

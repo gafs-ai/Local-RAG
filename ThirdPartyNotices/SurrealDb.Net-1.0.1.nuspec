@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>SurrealDb.Net</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <authors>surrealdb</authors>
     <license type="file">LICENSE</license>
     <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
@@ -12,7 +12,7 @@
     <description>The official SurrealDB library for .NET</description>
     <copyright>Copyright © SurrealDB Ltd</copyright>
     <tags>SurrealDB Surreal Database</tags>
-    <repository type="git" url="https://github.com/surrealdb/surrealdb.net" branch="refs/tags/v1.0.0" commit="39f4910dc05372c3172d6db804f8eb89c83f5e7a" />
+    <repository type="git" url="https://github.com/surrealdb/surrealdb.net" branch="refs/tags/v1.0.1" commit="825ca3761031b56c5cab45b132a841e78e3ce247" />
     <dependencies>
       <group targetFramework="net10.0">
         <dependency id="ConcurrentHashSet" version="1.3.0" exclude="Build,Analyzers" />

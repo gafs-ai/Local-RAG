@@ -11,6 +11,7 @@ public sealed record AiEndpointSettings
     public string Name { get; init; } = "Lemonade";
     public AiProvider Provider { get; init; }
     public string BaseUrl { get; init; } = "http://localhost:13305/api/v1/";
+    public bool VerifyCertificate { get; init; } = true;
     public bool AutoStartServer { get; init; }
     public bool StopServerOnExit { get; init; } = true;
     public string ServerExecutablePath { get; init; } = "";
@@ -26,7 +27,7 @@ public sealed record AiEndpointSettings
     public string CredentialsRevision { get; init; } = "";
 
     public Uri GetBaseUri() => new(BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
-    [JsonIgnore] public bool IsLocal => Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) && uri.IsLoopback;
+    [JsonIgnore] public bool IsLocal => Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) && OutboundPolicy.IsLocalHost(uri);
     [JsonIgnore] public string Identity => Provider == AiProvider.Lemonade ? BaseUrl : Provider + "|" + BaseUrl;
     [JsonIgnore] public string ChatIdentity => ChatContextTokens == 0 && JsonOutput ? Identity : Identity + $"|context={ChatContextTokens}|json={JsonOutput}";
     [JsonIgnore] public string EmbeddingProcessingIdentity => EmbeddingContextTokens == 0 ? Identity : Identity + $"|context={EmbeddingContextTokens}";
@@ -42,6 +43,7 @@ public sealed record AiEndpointSettings
         if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) || BaseUrl.Length > 2048 || BaseUrl.Any(char.IsControl) || uri.Scheme is not ("http" or "https") ||
             string.IsNullOrEmpty(uri.Host) || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
             errors.Add("AI接続先はHTTP/HTTPSのURLで指定してください（認証情報・クエリは含めません）。");
+        else if (!OutboundPolicy.IsAllowed(uri)) errors.Add(OutboundPolicy.CleartextError);
         if (AutoStartServer && (uri is null || !uri.IsLoopback || uri.Scheme != "http" || uri.Port < 1024)) errors.Add("AIの自動起動はこのPCのHTTP接続先・1024以上のポートだけで使用できます。外部サーバーは自動起動をOFFにしてください。");
         if (ServerExecutablePath is null || ServerExecutablePath.Length > 0 &&
             (!Path.IsPathFullyQualified(ServerExecutablePath) || !Path.GetExtension(ServerExecutablePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))) errors.Add("AI実行ファイルは絶対パスの.exeで指定してください。");

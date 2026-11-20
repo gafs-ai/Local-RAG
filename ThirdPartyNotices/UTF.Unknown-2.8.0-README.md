@@ -1,11 +1,8 @@
 [![CI/CD](https://github.com/CharsetDetector/UTF-unknown/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CharsetDetector/UTF-unknown/actions/workflows/ci.yml)
 [![NuGet Pre Release](https://img.shields.io/nuget/vpre/UTF.Unknown.svg)](https://www.nuget.org/packages/UTF.Unknown/)
 
-<!--
-[![codecov.io](https://codecov.io/github/UniversalCharsetDetector/ude/coverage.svg?branch=main)](https://codecov.io/github/UniversalCharsetDetector/ude?branch=main)
--->
 
-<h1><img src="https://raw.githubusercontent.com/CharsetDetector/UTF-unknown/main/logo.png" width="40" height="40" /> UTF Unknown </h1>
+# ![UTF Unknown logo](https://raw.githubusercontent.com/CharsetDetector/UTF-unknown/main/logo30.png) UTF Unknown
 
 
 
@@ -30,14 +27,14 @@ Features:
 
 ## Supported Platforms
 
-- .NET 8
+- .NET 8, .NET 9 and .NET 10
 - .NET Standard 2.0
 
 > **Note:** .NET 6 support was removed in version 2.7.0.
 
 __Remarks:__
 You can still register your [`EncodingProvider`](https://docs.microsoft.com/dotnet/api/system.text.encodingprovider) 
-so that the  [`Encoding.GetEncoding(...)`](https://docs.microsoft.com/dotnet/api/system.text.encoding.getencoding) method first tries to find in it.
+so that the [`Encoding.GetEncoding(...)`](https://docs.microsoft.com/dotnet/api/system.text.encoding.getencoding) method first tries to find the encoding using it.
 
 ## Usage
 

@@ -24,8 +24,8 @@ public static class TreeSitterRuntime
                 var temporary = archive + ".download";
                 try
                 {
-                    using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
-                    using var response = await http.GetAsync(package.Url, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                    using var http = OutboundHttp.DownloadClient(TimeSpan.FromMinutes(3));
+                    using var response = await OutboundHttp.DownloadAsync(http, package.Url, token).ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
                     await using var source = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
                     await using (var target = File.Create(temporary))

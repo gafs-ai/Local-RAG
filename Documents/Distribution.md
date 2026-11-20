@@ -1,6 +1,6 @@
 # 配布物の作成と検証
 
-利用者向けの案内は[クイックスタート](QuickStart.md)です。この文書は配布担当者向けです。現在の版は0.26.8です。`main`をリリース用、`dev`を開発用とします。公開用パッケージはmainのコミット済みソースから作成し、検証後に同じコミットへ版番号のタグを付けます。
+利用者向けの案内は[クイックスタート](QuickStart.md)です。この文書は配布担当者向けです。現在の正式版は0.26.9です。`main`をリリース用、`dev`を開発用とします。公開用パッケージはmainのコミット済みソースから作成し、検証後に同じコミットへ版番号のタグを付けます。
 
 ## 配布内容
 
@@ -12,14 +12,14 @@
 
 ## 作成
 
-Windows上で.NET SDK（`global.json`指定版）、PowerShell 7、WiX Toolset 5.0.2を使用します。日本語UI拡張も5.0.2に固定します。配布用ランタイムは検証・ライセンス確認済みの.NET 10.0.14に`Package.ps1`で固定し、SDKのパッチ更新による暗黙の切り替えを防ぎます。ランタイムを更新する場合は動作確認と第三者通知の更新を併せて行ってください。
+Windows上で.NET SDK（`global.json`指定版）、PowerShell 7、WiX Toolset 5.0.2を使用します。日本語UI拡張も5.0.2に固定します。配布用ランタイムは検証・ライセンス確認済みの.NET 10.0.15に`Package.ps1`で固定し、SDKのパッチ更新による暗黙の切り替えを防ぎます。ランタイムを更新する場合は動作確認と第三者通知の更新を併せて行ってください。
 
 ```powershell
 New-Item -ItemType Directory -Force .local | Out-Null
 Push-Location .local
 & 'C:/Program Files/WiX Toolset v5.0/bin/wix.exe' extension add WixToolset.UI.wixext/5.0.2
 Pop-Location
-./scripts/Package.ps1 # VERSIONから0.26.8を取得
+./scripts/Package.ps1 # VERSIONから版番号を取得
 # 表示された配布フォルダを指定
 ./scripts/Build-Installer.ps1 -DistributionDirectory '<配布フォルダ>'
 ./scripts/Package-Plugin.ps1 -DistributionDirectory '<配布フォルダ>'
@@ -29,7 +29,7 @@ WiXの場所を変更した場合は `-WixPath`、UI拡張は `-UiExtension` で
 
 MSI作成の初回にはWiX 5.0.2の固定コミットの対応ソースを取得し、SHA-256を照合します。MSI内のWiX UIコードに対応するソースとMS-RLライセンスは、インストール先の `ThirdPartyNotices` に同梱します。
 
-表示・Gitタグ・配布物名・MSI・.NET・プラグインのバージョンは0.26.8です。版はルートの`VERSION`で指定します。ソースが未コミットなら内部評価用とし、対応ソースZIPは作成しません。クリーンなソースからは同じコミットの対応ソースZIPを生成します。依存関係とライセンス一覧の一致もパッケージ作成時に検査します。
+表示・Gitタグ・配布物名・MSI・.NET・プラグインのバージョンはVERSIONに合わせます。ソースが未コミットなら内部評価用とし、対応ソースZIPは作成しません。クリーンなソースからは同じコミットの対応ソースZIPを生成します。依存関係とライセンス一覧の一致もパッケージ作成時に検査します。
 
 ## プラグイン
 

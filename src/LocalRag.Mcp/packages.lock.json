@@ -4,11 +4,11 @@
     "net10.0-windows7.0": {
       "ModelContextProtocol.AspNetCore": {
         "type": "Direct",
-        "requested": "[2.3.0, )",
-        "resolved": "2.3.0",
-        "contentHash": "YaRK007jAIFYAGH65I2SPsXVHzaFDRBx+d3swxLCziRYysmk9zGCWm+Lqdt5geHq0wDwCcvwYkMzAOSUWLpajw==",
+        "requested": "[2.4.0, )",
+        "resolved": "2.4.0",
+        "contentHash": "qo04FrgNKc5obyjzqd8CTu1vofrxcbKnOFVzxQ1+b3G9SBluwRMT31NZTztegJ1QDri4Z/3jUe8UqaIc+2xmCw==",
         "dependencies": {
-          "ModelContextProtocol": "[2.3.0]"
+          "ModelContextProtocol": "[2.4.0]"
         }
       },
       "ConcurrentHashSet": {
@@ -28,24 +28,24 @@
       },
       "Microsoft.CodeAnalysis.Analyzers": {
         "type": "Transitive",
-        "resolved": "5.9.0-1.26328.17",
-        "contentHash": "HP9NNk8ZjOSI2hgOyXnQg+kv7/X837Vr2nAlXiGAtqtYnYKjRRa1UmQFr8KFs5ynGYKqfbb8zB9APoWjiAGdMg=="
+        "resolved": "5.9.0",
+        "contentHash": "jMNOo+uoBGiWbZ6Wx0dqU93r5WD4P5WnIRZdoz67RP5N09OUetHgAbo4L7hihOH1NHdD2TgW5/l+SP4gQukwww=="
       },
       "Microsoft.CodeAnalysis.Common": {
         "type": "Transitive",
-        "resolved": "5.9.0",
-        "contentHash": "IYaIaUWdIx539AReKZOBEqTskFusZfCh/wFSPilDvCn5Say8MegLw2LONcSIcVy+v3Gzv53qYBspgvBGSErfbQ==",
+        "resolved": "5.12.0",
+        "contentHash": "0C7o9ys497xp0kZ64sL7C6nY/5WPQlxia28VlezdonBmjxbC6mIovAYs8mBoh/QooxBBZQCo/wMuZnV1kNk9GA==",
         "dependencies": {
-          "Microsoft.CodeAnalysis.Analyzers": "5.9.0-1.26328.17"
+          "Microsoft.CodeAnalysis.Analyzers": "5.9.0"
         }
       },
       "Microsoft.CodeAnalysis.CSharp": {
         "type": "Transitive",
-        "resolved": "5.9.0",
-        "contentHash": "7JGDA0UT1+h7k9ZcA3rF4eFC8+QPq1xyYaXxag4p8r/zzPurEJxvdi7aM+MRL/SfP7XADXpWF/pl/eUYXOq/ww==",
+        "resolved": "5.12.0",
+        "contentHash": "6W6vBcpQFjlxog+KUGNM2fFy+XA2StC1PtnkEkechk68vFy3a28tGjEdnoA7NrxhMdr8a+zh/AmiUtBAmdkQPg==",
         "dependencies": {
-          "Microsoft.CodeAnalysis.Analyzers": "5.9.0-1.26328.17",
-          "Microsoft.CodeAnalysis.Common": "[5.9.0]"
+          "Microsoft.CodeAnalysis.Analyzers": "5.9.0",
+          "Microsoft.CodeAnalysis.Common": "[5.12.0]"
         }
       },
       "Microsoft.Extensions.AI.Abstractions": {
@@ -65,16 +65,16 @@
       },
       "ModelContextProtocol": {
         "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "PHZ0q8xTAoysqUKpA5gC0RGJSfwpZhfsNz+9Sw0X0RzFFVHjIE52sx6C+ogMn+LSE+FfiYiNscPJhM6q6DMT6Q==",
+        "resolved": "2.4.0",
+        "contentHash": "3oMhK5W0G3H8+1SbMosV7meE6sKQfmzLKSNtjQ3dGZ+IJU5RomKTs/bKWHFyOJQNMWk//+iClQJfcMpHnwCFsg==",
         "dependencies": {
-          "ModelContextProtocol.Core": "[2.3.0]"
+          "ModelContextProtocol.Core": "[2.4.0]"
         }
       },
       "ModelContextProtocol.Core": {
         "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "resolved": "2.4.0",
+        "contentHash": "q98pZMlcxhsh0LpGXcT2ow7sGNveCPhDlJT3zJ7Cz5nNyPmPkm8P57dUIUpzv1w6qWbdSZcR/Z+RbZtNYjEmXQ==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.11.0"
         }
@@ -91,8 +91,8 @@
       },
       "SurrealDb.Net": {
         "type": "Transitive",
-        "resolved": "1.0.0",
-        "contentHash": "eGyxhh/ZjBT5wYf4ADr+FLXHPLRkNU2Yu3kaKpVpsmapfZucveCoVz5iIrNYGCZh8/IlVVF5FZNfrKSjyQwmFw==",
+        "resolved": "1.0.1",
+        "contentHash": "8g8jNynXv1H6AfjHS9zpTeh97E9/kkx+8WxszQ6ZDd8cXlOcPkJv38H7YjCkPsWSkK0Cyuw2NELKyF7xZEA6pA==",
         "dependencies": {
           "ConcurrentHashSet": "1.3.0",
           "Dahomey.Cbor": "1.26.3",
@@ -110,13 +110,13 @@
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "qy6C3gQRTrfhFfuiIYU1jNwWfFdJpBVo1BARW7jgMm1zTEm3LRzLLyOLJGaAuKE+nZCGkEP71y4rj9NWjqLGdQ=="
+        "resolved": "11.0.0",
+        "contentHash": "iS9iyAMwLDPFBzTdcREDkzRBYmwy7aENYl7EXxAvnNJNCbl7+UVRgJfWaVLtVjSeDmT3JIItgGODmuAPljXFww=="
       },
       "UTF.Unknown": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "QpiN8FVvfEMB6QF3T8IhXCbA0atOu1opLHRlbVxPOW9Cv3VksGVPQVXAjCdWFc00sA7FL6z7pOFCYWtO89PbgQ=="
+        "resolved": "2.8.0",
+        "contentHash": "bpDbg9Hjuenm/vMhxavOb/cLivRBQxhU4Dc6iRPPoEUM80qlAnRQ7c2niLQJPxLV/XBEGGhda5cNLkcQuHxULA=="
       },
       "Websocket.Client": {
         "type": "Transitive",
@@ -133,12 +133,12 @@
       "localrag.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "LocalRag.Core": "[0.26.3, )",
-          "Microsoft.CodeAnalysis.CSharp": "[5.9.0, )",
+          "LocalRag.Core": "[0.26.9, )",
+          "Microsoft.CodeAnalysis.CSharp": "[5.12.0, )",
           "PdfPig": "[0.1.16, )",
-          "SurrealDb.Net": "[1.0.0, )",
-          "System.Security.Cryptography.ProtectedData": "[10.0.0, )",
-          "UTF.Unknown": "[2.7.0, )"
+          "SurrealDb.Net": "[1.0.1, )",
+          "System.Security.Cryptography.ProtectedData": "[11.0.0, )",
+          "UTF.Unknown": "[2.8.0, )"
         }
       }
     },

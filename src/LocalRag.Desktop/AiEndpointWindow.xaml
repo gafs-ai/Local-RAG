@@ -10,6 +10,7 @@
    <TextBlock Text="サーバーの種類"/><ComboBox x:Name="ProviderBox" DisplayMemberPath="Label" SelectedValuePath="Provider" SelectionChanged="ProviderChanged" Margin="0,4,0,12" Padding="6"/>
    <TextBlock Text="API接続先（http:// または https://）"/><TextBox x:Name="UrlBox" TextChanged="OptionsChanged" Margin="0,4,0,4" Padding="6"/>
    <TextBlock Text="言語モデルの接続先には文書本文、Embeddingモデルの接続先には文書や説明・検索語を送信します。外部URLではPC外へ送信されます。取得時の秘匿設定とは独立しています。" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,12"/>
+   <CheckBox x:Name="VerifyCertificateBox" Content="証明書を検証する" IsChecked="True" Margin="0,4"/>
    <CheckBox x:Name="AutoStartBox" Content="未起動なら自動起動する（このPCの接続先のみ）" Checked="OptionsChanged" Unchecked="OptionsChanged" Margin="0,4"/>
    <CheckBox x:Name="StopBox" Content="アプリ終了時に、このアプリが起動したサーバーも終了する" Margin="0,4,0,12"/>
    <StackPanel x:Name="LaunchPanel">

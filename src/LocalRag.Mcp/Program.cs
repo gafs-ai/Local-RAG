@@ -40,11 +40,12 @@ internal sealed class ForwardCalls(string data) : IRetrievalCalls
             var settings = await new SettingsStore(data).LoadMcpAsync(bounded.Token).ConfigureAwait(false);
             if (!settings.Enabled) return LocalRetrievalCalls.Error("retrieval_unavailable");
             var secret = await new McpTokenStore(data).LoadAsync(bounded.Token).ConfigureAwait(false);
-            using var handler = new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false };
-            using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(110) };
+            var uri = new Uri($"http://127.0.0.1:{settings.Port}/mcp");
+            using var http = OutboundHttp.ForLocalMcp(uri);
+            http.Timeout = TimeSpan.FromSeconds(110);
             var transport = new HttpClientTransport(new HttpClientTransportOptions
             {
-                Endpoint = new Uri($"http://127.0.0.1:{settings.Port}/mcp"),
+                Endpoint = uri,
                 AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
             }, http);
             await using var client = await McpClient.CreateAsync(transport, cancellationToken: bounded.Token).ConfigureAwait(false);

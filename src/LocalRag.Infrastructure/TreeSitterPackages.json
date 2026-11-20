@@ -1,10 +1,10 @@
 [
   {
     "Name": "tree-sitter",
-    "Version": "0.26.0",
-    "FileName": "tree_sitter-0.26.0-cp314-cp314-win_amd64.whl",
-    "Url": "https://files.pythonhosted.org/packages/c9/1b/0b36fe2a984ecedc4ce6aefd5d56447a6626a8e9b595c4e48658510ce8f8/tree_sitter-0.26.0-cp314-cp314-win_amd64.whl",
-    "Sha256": "a4033fecc8f606c7f2e8b8014d0057b74668a7f0152763606f7bc25c5f9ec64c"
+    "Version": "0.26.1",
+    "FileName": "tree_sitter-0.26.1-cp314-cp314-win_amd64.whl",
+    "Url": "https://files.pythonhosted.org/packages/e9/da/2bc600b0e1aa6c6160abea62dfae4da8b7d934d45cb550e25553519c0d72/tree_sitter-0.26.1-cp314-cp314-win_amd64.whl",
+    "Sha256": "b1e079af889beed37ae2f8aa24078018ed63ff3bb566f47212a4f90d7990528e"
   },
   {
     "Name": "tree-sitter-typescript",

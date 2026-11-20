@@ -20,8 +20,8 @@ public sealed class PythonParserRuntime(string toolsDirectory)
             var temporary = archive + "." + Guid.NewGuid().ToString("N") + ".download";
             try
             {
-                using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-                using var response = await http.GetAsync(DownloadUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                using var http = OutboundHttp.DownloadClient(TimeSpan.FromMinutes(5));
+                using var response = await OutboundHttp.DownloadAsync(http, DownloadUrl, token).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
                 await using var input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
                 await using (var output = File.Create(temporary))

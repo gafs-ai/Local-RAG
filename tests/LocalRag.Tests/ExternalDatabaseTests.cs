@@ -8,7 +8,7 @@ namespace LocalRag.Tests;
 public class ExternalDatabaseTests
 {
     [Theory]
-    [InlineData("ws://db.example:8000", true)]
+    [InlineData("ws://db.example:8000", false)]
     [InlineData("wss://db.example/rpc", true)]
     [InlineData("http://db.example:8000", false)]
     [InlineData("ws://user:password@db.example", false)]
@@ -69,7 +69,7 @@ public class ExternalDatabaseTests
     }
 
     [ServerFact]
-    public async Task WebSocketExternalConnectionSupportsDiskAnnAndNeverStopsServer()
+    public async Task LocalWsAddressOverHttpRpcSupportsDiskAnnAndNeverStopsServer()
     {
         await using var fixture = await ServerFixture.StartAsync();
         var endpoint = new Uri($"ws://127.0.0.1:{fixture.Settings.Port}/rpc");

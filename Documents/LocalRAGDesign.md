@@ -13,7 +13,7 @@ Word対応の具体的な実装設計は[WordIngestion.md](WordIngestion.md)を�
 
 ## 0.26.7の複数AI接続先
 
-AI接続は[複数AI接続先](AiConnections.md)を正とする。Lemonade、OpenVINO Model Server、LM Studioを登録し、言語モデルとEmbeddingモデルに別々の接続先を選べる。外部HTTP/HTTPS接続を選んだ場合は入力を指定サーバーへ送信するため、以下の初期設計にある「ローカルAIのみ」の制約を置き換える。
+AI接続は[複数AI接続先](AiConnections.md)を正とする。Lemonade、OpenVINO Model Server、LM Studioを登録し、言語モデルとEmbeddingモデルに別々の接続先を選べる。外部HTTPS接続を選んだ場合は入力を指定サーバーへ送信するため、以下の初期設計にある「ローカルAIのみ」の制約を置き換える。
 
 ## 1. 目的と前提
 
@@ -56,7 +56,7 @@ AI接続は[複数AI接続先](AiConnections.md)を正とする。Lemonade、Ope
 | Word互換 | Microsoft.Office.Interop.Word | STA・ダイアログ・タイムアウト・ユーザーのWordへの影響 |
 | MCP | 公式C# SDK | Streamable HTTP、認証、対象ChatGPT環境での実呼び出し |
 
-旧構成の`SurrealDb.Embedded.SurrealKv 1.0.0`は内蔵エンジン3.0.5のためDISKANNを利用できなかった。ユーザーの追加指示に従い、公式Windows x64版SurrealDB 3.3.5を別プロセスとして実行し、`SurrealDb.Net 1.0.0`からHTTPで接続する構成へ変更した。HNSWや別DBへの置換は行わない。
+旧構成の`SurrealDb.Embedded.SurrealKv 1.0.0`は内蔵エンジン3.0.5のためDISKANNを利用できなかった。ユーザーの追加指示に従い、公式Windows x64版SurrealDB 3.3.5を別プロセスとして実行し、`SurrealDb.Net 1.0.1`からHTTPで接続する構成へ変更した。HNSWや別DBへの置換は行わない。
 
 実機で自動導入・起動・通常終了、DiskANNの作成・検索・更新・削除、プロセス再起動後のチェックポイントとベクトル検索を確認済み。詳細は[技術検証記録](TechnicalValidation.md)の追補を参照。
 
@@ -597,7 +597,7 @@ MCP `fetch(id)`は既存の原文全文取得を継続し、加工後の子・�
 - 共通設定と拡張子別設定に方式・プロンプトを追加。カテゴリ別に子・親のプロンプトを指定可能。旧設定は既存IDと既定値で読み込める。新処理版v7で再索引し、旧版の結果は返さない。
 - Markdownの共通動作はLLMを使わない子結合と構造上の章を親にする方式。分類・整形の設定は独立。
 
-ソースコードの自動判定はC#（.cs）とPython（.py）を対象とする。C#はMicrosoft.CodeAnalysis.CSharp 5.9.0の構文木、Pythonは専用CPython 3.14.10のast.parseを使用する。対象コードを実行せず、関数・型/クラス・ファイルの単位と所属・行範囲を抽出する。型・関数の境界を正規表現やLLMの推測に任せない。言語を増やす場合はSourceCodeParserに解析実装を追加する。[Roslynの構文木](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/work-with-syntax)、[Python AST](https://docs.python.org/3.14/library/ast.html)を参照。
+ソースコードの自動判定はC#（.cs）とPython（.py）を対象とする。C#はMicrosoft.CodeAnalysis.CSharp 5.12.0の構文木、Pythonは専用CPython 3.14.10のast.parseを使用する。対象コードを実行せず、関数・型/クラス・ファイルの単位と所属・行範囲を抽出する。型・関数の境界を正規表現やLLMの推測に任せない。言語を増やす場合はSourceCodeParserに解析実装を追加する。[Roslynの構文木](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/work-with-syntax)、[Python AST](https://docs.python.org/3.14/library/ast.html)を参照。
 
 説明生成は各単位をモデルの入力上限内の断片へ分け、descriptionフィールドを持つJSONとして受け取る。断片ごとに進捗を永続化し、失敗時も直近の保存状態を維持する。各単位の説明を結合し、Embedding上限内で再分割して索引化する。埋め込み対象には原文コードを渡さない。検索結果の親は、その説明と元の単位の原文コード。ファイル説明も全断片から構成するが、一度に全体を俯瞰した要約ではない。説明の意味的な正確性は別途実モデル評価が必要。
 
@@ -628,11 +628,11 @@ Pythonランタイムは公式のWindows x64埋め込み配布物を保存先内
 
 解析エラーは保留する。Kotlin 1.1.0がクラス閉じ波括弧直前に生成するゼロ幅の`_class_member_semi`欠落だけは、原文を変えず許容する。他の欠落・エラーは拒否する。[Python bindings](https://github.com/tree-sitter/py-tree-sitter)、[Kotlin配布情報](https://pypi.org/project/tree-sitter-kotlin/1.1.0/)を参照。
 
-文書の読み取りはUTF.Unknown 2.7.0を使ったローカル判別と、.NETの厳格デコーダで行う。BOM付きUTF-8/16/32を優先し、明示指定との矛盾は保留する。BOMなしは有効なUTF-8を優先するが、ISO-2022-JPのエスケープ列は先に判別する。残りはShift-JIS(CP932)、EUC-JP、ISO-2022-JP、GB18030/GBK、Big5、CP949/EUC-KRに限定して推定し、検出器の確度0.80未満・未対応名は保留する。この数値は正解率を意味しない。NULを含むBOMなしUnicodeは推測せず明示指定を求める。
+文書の読み取りはUTF.Unknown 2.8.0を使ったローカル判別と、.NETの厳格デコーダで行う。BOM付きUTF-8/16/32を優先し、明示指定との矛盾は保留する。BOMなしは有効なUTF-8を優先するが、ISO-2022-JPのエスケープ列は先に判別する。残りはShift-JIS(CP932)、EUC-JP、ISO-2022-JP、GB18030/GBK、Big5、CP949/EUC-KRに限定して推定し、検出器の確度0.80未満・未対応名は保留する。この数値は正解率を意味しない。NULを含むBOMなしUnicodeは推測せず明示指定を求める。
 
 不正バイトを置換文字へ変換しない。文字列内のバイナリ制御文字を拒否し、改行・タブ・改ページは保持する。原本バイトのSHA-256は維持し、デコードした原文を分類・整形・構文解析・秘匿チェック・全文取得で共用する。読み取った文字コードと自動/指定の区別を処理記録へ保存する。処理版v8への更新により再取り込みする。低確度は保留できるが、高確度の誤判別や混在文字コードまで完全検知する保証はない。ユーザーはルート単位で文字コードを明示指定できる。ignoreファイルと設定JSONはUTF-8のまま。
 
-[UTF.Unknown 2.7.0](https://www.nuget.org/packages/UTF.Unknown/2.7.0)と[上流ソース](https://github.com/CharsetDetector/UTF-unknown/tree/fd4c6fab634ef3783f8b5cb88e9ae9b2cc295ad5)を参照。配布メタデータはMPL-1.1、上流READMEにはGPL-2.0-or-later / LGPL-2.1-or-laterの代替条件も記載される。固定版の依存関係は各プロジェクトのpackages.lock.jsonに保存する。
+[UTF.Unknown 2.8.0](https://www.nuget.org/packages/UTF.Unknown/2.8.0)と[上流ソース](https://github.com/CharsetDetector/UTF-unknown/tree/4654fbf0cdb47705e74a2c74bae20d486eb23fa8)を参照。配布メタデータはMPL-1.1、上流READMEにはGPL-2.0-or-later / LGPL-2.1-or-laterの代替条件も記載される。固定版の依存関係は各プロジェクトのpackages.lock.jsonに保存する。
 
 ## Markdown親チャンクの長さ調整（2026-11-04追補）
 
@@ -679,7 +679,7 @@ Gemma NPUで観測したJSONの単一バッククォート囲みと、文字列�
 
 「今すぐ実行」はAI/DB操作レーンと独立してファイルを探索し、実行中セッションの待ち行列を置き換える。処理中ファイルは中断・重複しない。定期チェックと手動チェックの探索は直列化し、古い探索結果による上書きを避ける。セッションがない場合は手動取り込みを開始する。
 
-DB設定に `AutoStartServer`（既定true）と `ExternalEndpoint`（既定空文字）を追加する。空欄時はローカルDBポートと既存の所有権管理を使う。外部接続先はws/wssに限定し、指定時にはローカル起動・外部プロセス管理を行わない。バージョン確認は同ホスト・ポートのHTTP/HTTPS `/version`、認証済みクエリとRAG保存・検索は指定したWebSocket接続で行う。ローカルDBのポート変更は再起動後、外部接続先・認証情報の変更は保存時に再接続して適用する。
+DB設定に `AutoStartServer`（既定true）と `ExternalEndpoint`（既定空文字）を追加する。空欄時はローカルDBポートと既存の所有権管理を使う。外部接続先はwss/https（このPCのみwsも可）に限定し、指定時にはローカル起動・外部プロセス管理を行わない。バージョン確認は同ホスト・ポートのHTTP/HTTPS `/version`、認証済みクエリとRAG保存・検索は同じ接続先のHTTP(S) `POST /rpc`で行う。ローカルDBのポート変更は再起動後、外部接続先・認証情報の変更は保存時に再接続して適用する。
 
 外部認証情報は接続先のscheme/host/port単位で別々のDPAPIファイルに保管し、ローカルDB用の認証情報を流用しない。パスワードは設定JSON・画面の再表示・ログに出さない。同一接続先とユーザー名なら空欄保存で既存パスワードを維持する。
 

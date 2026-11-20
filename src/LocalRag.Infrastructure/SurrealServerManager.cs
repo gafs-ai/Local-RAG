@@ -50,7 +50,7 @@ public sealed class SurrealServerManager : IAsyncDisposable
         {
             if (Connection is not null)
             {
-                if (Connection.Endpoint != settings.Endpoint) throw new InvalidOperationException("DB接続先の変更はアプリの再起動後に適用されます。");
+                if (Connection.Endpoint != settings.Endpoint || Connection.VerifyCertificate != settings.VerifyCertificate) throw new InvalidOperationException("DB接続先の変更はアプリの再起動後に適用されます。");
                 await VerifyConnectionAsync(Connection, token).ConfigureAwait(false);
                 return Status!;
             }
@@ -58,8 +58,8 @@ public sealed class SurrealServerManager : IAsyncDisposable
             {
                 var externalCredentials = await new ServerCredentialStore(Path.GetDirectoryName(_directory)!, settings.Endpoint).LoadAsync(token).ConfigureAwait(false)
                     ?? throw new InvalidDataException("外部DBのユーザー名とパスワードを設定してください。");
-                var external = new ServerConnection(settings.Endpoint, externalCredentials);
-                var version = await VerifyConnectionAsync(external, token).ConfigureAwait(false);
+                var external = new ServerConnection(settings.Endpoint, externalCredentials, settings.VerifyCertificate);
+                string version; try { version = await VerifyConnectionAsync(external, token).ConfigureAwait(false); } catch { external.Dispose(); throw; }
                 Connection = external;
                 return Status = new(version, false, settings.Endpoint.Port);
             }
@@ -72,8 +72,8 @@ public sealed class SurrealServerManager : IAsyncDisposable
             {
                 progress?.Report("起動済みのSurrealDBへの接続を確認しています…");
                 if (credentials is null) throw new InvalidDataException("DBポートは使用中です。既存サーバーの認証情報を設定するか、別のポートを指定してください。");
-                var connection = new ServerConnection(settings.Endpoint, credentials);
-                var version = await VerifyConnectionAsync(connection, token).ConfigureAwait(false);
+                var connection = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate);
+                string version; try { version = await VerifyConnectionAsync(connection, token).ConfigureAwait(false); } catch { connection.Dispose(); throw; }
                 if (saved is not null && saved.Port == settings.Port && IsOwnedProcessAlive(saved)) _owned = saved;
                 Connection = connection;
                 return Status = new(version, _owned is not null, settings.Port);
@@ -95,7 +95,7 @@ public sealed class SurrealServerManager : IAsyncDisposable
                     "--log", "warn", "--no-banner", "surrealkv://" + storage.Replace('\\', '/')], credentials.Password);
             _owned = new(process.Id, process.StartTime.ToUniversalTime().Ticks, executable, settings.Port);
             // Persist ownership before cancellation can abandon startup.
-            var proposed = new ServerConnection(settings.Endpoint, credentials);
+            var proposed = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate);
             using var startup = CancellationTokenSource.CreateLinkedTokenSource(token);
             startup.CancelAfter(TimeSpan.FromSeconds(45));
             try
@@ -125,6 +125,7 @@ public sealed class SurrealServerManager : IAsyncDisposable
             }
             catch (Exception startupError)
             {
+                proposed.Dispose();
                 // Leave ownership intact if stopping fails, so a later run can recover it safely.
                 try { await StopOwnedCoreAsync(CancellationToken.None).ConfigureAwait(false); }
                 catch (Exception stopError) { throw new AggregateException("DB起動と終了処理に失敗しました。", startupError, stopError); }
@@ -140,6 +141,7 @@ public sealed class SurrealServerManager : IAsyncDisposable
         try
         {
             if (stopOnExit) await StopOwnedCoreAsync(token).ConfigureAwait(false);
+            Connection?.Dispose();
             Connection = null;
             Status = null;
             _owned = null;
@@ -181,9 +183,9 @@ public sealed class SurrealServerManager : IAsyncDisposable
 
     public static async Task<string> VerifyConnectionAsync(ServerConnection connection, CancellationToken token)
     {
-        using var http = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false }) { Timeout = TimeSpan.FromSeconds(5) };
-        var versionEndpoint = new UriBuilder(connection.Endpoint) { Scheme = connection.Endpoint.Scheme switch
-            { "ws" => "http", "wss" => "https", var scheme => scheme }, Port = connection.Endpoint.Port, Path = "/version" }.Uri;
+        using var http = connection.CreateClient(string.Empty);
+        http.Timeout = TimeSpan.FromSeconds(5);
+        var versionEndpoint = new Uri(connection.RpcEndpoint, "/version");
         var text = await http.GetStringAsync(versionEndpoint, token).ConfigureAwait(false);
         var match = Regex.Match(text, @"\bsurrealdb-(\d+\.\d+\.\d+)\b", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
         if (!match.Success || !Version.TryParse(match.Groups[1].Value, out var version) || version < new Version(3, 1))
@@ -225,6 +227,7 @@ public sealed class SurrealServerManager : IAsyncDisposable
         // Disposal alone never kills a server. The caller must apply the user's shutdown preference explicitly.
         _managementLease?.Dispose();
         _managementLease = null;
+        Connection?.Dispose();
         _gate.Dispose();
         return ValueTask.CompletedTask;
     }

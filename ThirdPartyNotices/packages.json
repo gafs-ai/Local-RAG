@@ -21,21 +21,21 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.CodeAnalysis.Analyzers/5.9.0-1.26328.17",
+    "Package": "Microsoft.CodeAnalysis.Analyzers/5.9.0",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
     "Source": "https://github.com/dotnet/roslyn"
   },
   {
-    "Package": "Microsoft.CodeAnalysis.Common/5.9.0",
+    "Package": "Microsoft.CodeAnalysis.Common/5.12.0",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
     "Source": "https://github.com/dotnet/roslyn"
   },
   {
-    "Package": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+    "Package": "Microsoft.CodeAnalysis.CSharp/5.12.0",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -49,7 +49,7 @@
     "Source": "https://github.com/dotnet/extensions"
   },
   {
-    "Package": "Microsoft.Extensions.Caching.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.Caching.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -63,7 +63,7 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Configuration.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.Configuration.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -84,7 +84,7 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -98,21 +98,21 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Diagnostics.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.Diagnostics.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.FileProviders.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.FileProviders.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Hosting.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.Hosting.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -133,14 +133,14 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Logging.Abstractions/10.0.13",
+    "Package": "Microsoft.Extensions.Logging.Abstractions/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Options/10.0.13",
+    "Package": "Microsoft.Extensions.Options/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -154,7 +154,7 @@
     "Source": "https://github.com/dotnet/dotnet"
   },
   {
-    "Package": "Microsoft.Extensions.Primitives/10.0.13",
+    "Package": "Microsoft.Extensions.Primitives/10.0.14",
     "License": "MIT",
     "Authors": "Microsoft",
     "Copyright": "© Microsoft Corporation. All rights reserved.",
@@ -175,32 +175,25 @@
     "Source": ""
   },
   {
-    "Package": "ModelContextProtocol/2.3.0",
+    "Package": "ModelContextProtocol/2.4.0",
     "License": "Apache-2.0",
     "Authors": "ModelContextProtocol",
     "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
     "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
   },
   {
-    "Package": "ModelContextProtocol.AspNetCore/2.3.0",
+    "Package": "ModelContextProtocol.AspNetCore/2.4.0",
     "License": "Apache-2.0",
     "Authors": "ModelContextProtocol",
     "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
     "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
   },
   {
-    "Package": "ModelContextProtocol.Core/2.3.0",
+    "Package": "ModelContextProtocol.Core/2.4.0",
     "License": "Apache-2.0",
     "Authors": "ModelContextProtocol",
     "Copyright": "© Model Context Protocol a Series of LF Projects, LLC.",
     "Source": "https://github.com/modelcontextprotocol/csharp-sdk"
-  },
-  {
-    "Package": "Semver/3.0.0",
-    "License": "MIT",
-    "Authors": "Jeff Walker, Max Hauser",
-    "Copyright": "Copyright © 2013-2024 Jeff Walker, Max Hauser",
-    "Source": "https://github.com/WalkerCodeRanger/semver"
   },
   {
     "Package": "PdfPig/0.1.16",
@@ -210,7 +203,14 @@
     "Source": "https://github.com/UglyToad/PdfPig/tree/a7bb35662bbbf405efddad50aedc9bcdcf515afc"
   },
   {
-    "Package": "SurrealDb.Net/1.0.0",
+    "Package": "Semver/3.0.0",
+    "License": "MIT",
+    "Authors": "Jeff Walker, Max Hauser",
+    "Copyright": "Copyright © 2013-2024 Jeff Walker, Max Hauser",
+    "Source": "https://github.com/WalkerCodeRanger/semver"
+  },
+  {
+    "Package": "SurrealDb.Net/1.0.1",
     "License": "LICENSE",
     "Authors": "surrealdb",
     "Copyright": "Copyright © SurrealDB Ltd",
@@ -224,7 +224,14 @@
     "Source": "https://github.com/dotnet/reactive"
   },
   {
-    "Package": "UTF.Unknown/2.7.0",
+    "Package": "System.Security.Cryptography.ProtectedData/11.0.0",
+    "License": "MIT",
+    "Authors": "Microsoft",
+    "Copyright": "© Microsoft Corporation. All rights reserved.",
+    "Source": "https://github.com/dotnet/dotnet"
+  },
+  {
+    "Package": "UTF.Unknown/2.8.0",
     "License": "MPL-1.1",
     "Authors": "Julian Verdurmen, Rustam Sayfutdinov, Rudi Pettazzi, Shy Shalom",
     "Copyright": "",

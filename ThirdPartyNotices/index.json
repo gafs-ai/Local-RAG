@@ -45,35 +45,38 @@
   },
   {
     "Name": "Microsoft.CodeAnalysis.Analyzers",
-    "Version": "5.9.0-1.26328.17",
+    "Version": "5.9.0",
     "License": "MIT",
     "Scope": "ビルド時",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/roslyn",
     "Files": [
-      "Microsoft.CodeAnalysis.Analyzers-5.9.0-1.26328.17-LICENSE.txt"
+      "Microsoft.CodeAnalysis.Analyzers-5.9.0-LICENSE.txt",
+      "Microsoft.CodeAnalysis.Analyzers-5.9.0-ThirdPartyNotices.txt"
     ]
   },
   {
     "Name": "Microsoft.CodeAnalysis.Common",
-    "Version": "5.9.0",
+    "Version": "5.12.0",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/roslyn",
     "Files": [
-      "Microsoft.CodeAnalysis.Common-5.9.0-LICENSE.txt"
+      "Microsoft.CodeAnalysis.Common-5.12.0-LICENSE.txt",
+      "Microsoft.CodeAnalysis.Common-5.12.0-ThirdPartyNotices.rtf"
     ]
   },
   {
     "Name": "Microsoft.CodeAnalysis.CSharp",
-    "Version": "5.9.0",
+    "Version": "5.12.0",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/roslyn",
     "Files": [
-      "Microsoft.CodeAnalysis.CSharp-5.9.0-LICENSE.txt"
+      "Microsoft.CodeAnalysis.CSharp-5.12.0-LICENSE.txt",
+      "Microsoft.CodeAnalysis.CSharp-5.12.0-ThirdPartyNotices.rtf"
     ]
   },
   {
@@ -89,13 +92,14 @@
   },
   {
     "Name": "Microsoft.Extensions.Caching.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Caching.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Caching.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Caching.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -111,13 +115,14 @@
   },
   {
     "Name": "Microsoft.Extensions.Configuration.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Configuration.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Configuration.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Configuration.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -144,13 +149,14 @@
   },
   {
     "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.DependencyInjection.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.DependencyInjection.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -166,35 +172,38 @@
   },
   {
     "Name": "Microsoft.Extensions.Diagnostics.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Diagnostics.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Diagnostics.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Diagnostics.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
     "Name": "Microsoft.Extensions.FileProviders.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.FileProviders.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.FileProviders.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.FileProviders.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
     "Name": "Microsoft.Extensions.Hosting.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Hosting.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Hosting.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Hosting.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -221,24 +230,26 @@
   },
   {
     "Name": "Microsoft.Extensions.Logging.Abstractions",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Logging.Abstractions-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Logging.Abstractions-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Logging.Abstractions-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
     "Name": "Microsoft.Extensions.Options",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Options-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Options-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Options-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -254,13 +265,14 @@
   },
   {
     "Name": "Microsoft.Extensions.Primitives",
-    "Version": "10.0.13",
+    "Version": "10.0.14",
     "License": "MIT",
     "Scope": "同梱ライブラリ",
     "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "Microsoft.Extensions.Primitives-10.0.13-LICENSE.txt"
+      "Microsoft.Extensions.Primitives-10.0.14-LICENSE.txt",
+      "Microsoft.Extensions.Primitives-10.0.14-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
@@ -287,7 +299,7 @@
   },
   {
     "Name": "ModelContextProtocol",
-    "Version": "2.3.0",
+    "Version": "2.4.0",
     "License": "Apache-2.0",
     "Scope": "同梱ライブラリ",
     "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
@@ -298,7 +310,7 @@
   },
   {
     "Name": "ModelContextProtocol.AspNetCore",
-    "Version": "2.3.0",
+    "Version": "2.4.0",
     "License": "Apache-2.0",
     "Scope": "同梱ライブラリ",
     "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
@@ -309,24 +321,13 @@
   },
   {
     "Name": "ModelContextProtocol.Core",
-    "Version": "2.3.0",
+    "Version": "2.4.0",
     "License": "Apache-2.0",
     "Scope": "同梱ライブラリ",
     "Description": "© Model Context Protocol a Series of LF Projects, LLC.\nAuthors: ModelContextProtocol",
     "Source": "https://github.com/modelcontextprotocol/csharp-sdk",
     "Files": [
       "Apache-2.0.txt"
-    ]
-  },
-  {
-    "Name": "Semver",
-    "Version": "3.0.0",
-    "License": "MIT",
-    "Scope": "同梱ライブラリ",
-    "Description": "Copyright © 2013-2024 Jeff Walker, Max Hauser\nAuthors: Jeff Walker, Max Hauser",
-    "Source": "https://github.com/WalkerCodeRanger/semver",
-    "Files": [
-      "Semver-3.0.0-LICENSE.txt"
     ]
   },
   {
@@ -341,14 +342,25 @@
     ]
   },
   {
+    "Name": "Semver",
+    "Version": "3.0.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "Copyright © 2013-2024 Jeff Walker, Max Hauser\nAuthors: Jeff Walker, Max Hauser",
+    "Source": "https://github.com/WalkerCodeRanger/semver",
+    "Files": [
+      "Semver-3.0.0-LICENSE.txt"
+    ]
+  },
+  {
     "Name": "SurrealDb.Net",
-    "Version": "1.0.0",
+    "Version": "1.0.1",
     "License": "Apache-2.0",
     "Scope": "同梱ライブラリ",
     "Description": "Copyright © SurrealDB Ltd\nAuthors: surrealdb",
     "Source": "https://github.com/surrealdb/surrealdb.net",
     "Files": [
-      "SurrealDb.Net-1.0.0-LICENSE.txt"
+      "SurrealDb.Net-1.0.1-LICENSE.txt"
     ]
   },
   {
@@ -363,16 +375,28 @@
     ]
   },
   {
+    "Name": "System.Security.Cryptography.ProtectedData",
+    "Version": "11.0.0",
+    "License": "MIT",
+    "Scope": "同梱ライブラリ",
+    "Description": "© Microsoft Corporation. All rights reserved.\nAuthors: Microsoft",
+    "Source": "https://github.com/dotnet/dotnet",
+    "Files": [
+      "System.Security.Cryptography.ProtectedData-11.0.0-LICENSE.txt",
+      "System.Security.Cryptography.ProtectedData-11.0.0-THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
     "Name": "UTF.Unknown",
-    "Version": "2.7.0",
+    "Version": "2.8.0",
     "License": "GPL-2.0-or-later（GPLv3を適用）",
     "Scope": "同梱ライブラリ",
     "Description": "\nAuthors: Julian Verdurmen, Rustam Sayfutdinov, Rudi Pettazzi, Shy Shalom",
     "Source": "https://github.com/CharsetDetector/UTF-unknown",
     "Files": [
-      "UTF.Unknown-2.7.0-GPL-3.0.txt",
-      "UTF.Unknown-2.7.0-NOTICE.txt",
-      "UTF.Unknown-2.7.0-README.md"
+      "UTF.Unknown-2.8.0-GPL-3.0.txt",
+      "UTF.Unknown-2.8.0-NOTICE.txt",
+      "UTF.Unknown-2.8.0-README.md"
     ]
   },
   {
@@ -388,37 +412,37 @@
   },
   {
     "Name": "microsoft.netcore.app.runtime.win-x64",
-    "Version": "10.0.14",
+    "Version": "10.0.15",
     "License": "MIT / 同梱第三者通知",
     "Scope": "自己完結型配布に同梱",
     "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "microsoft.netcore.app.runtime.win-x64-10.0.14-LICENSE.TXT",
-      "microsoft.netcore.app.runtime.win-x64-10.0.14-THIRD-PARTY-NOTICES.TXT"
+      "microsoft.netcore.app.runtime.win-x64-10.0.15-LICENSE.TXT",
+      "microsoft.netcore.app.runtime.win-x64-10.0.15-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
     "Name": "microsoft.aspnetcore.app.runtime.win-x64",
-    "Version": "10.0.14",
+    "Version": "10.0.15",
     "License": "MIT / 同梱第三者通知",
     "Scope": "自己完結型配布に同梱",
     "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "microsoft.aspnetcore.app.runtime.win-x64-10.0.14-LICENSE.txt",
-      "microsoft.aspnetcore.app.runtime.win-x64-10.0.14-THIRD-PARTY-NOTICES.TXT"
+      "microsoft.aspnetcore.app.runtime.win-x64-10.0.15-LICENSE.txt",
+      "microsoft.aspnetcore.app.runtime.win-x64-10.0.15-THIRD-PARTY-NOTICES.TXT"
     ]
   },
   {
     "Name": "microsoft.windowsdesktop.app.runtime.win-x64",
-    "Version": "10.0.14",
+    "Version": "10.0.15",
     "License": "MIT / 同梱第三者通知",
     "Scope": "自己完結型配布に同梱",
     "Description": ".NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。",
     "Source": "https://github.com/dotnet/dotnet",
     "Files": [
-      "microsoft.windowsdesktop.app.runtime.win-x64-10.0.14-LICENSE"
+      "microsoft.windowsdesktop.app.runtime.win-x64-10.0.15-LICENSE"
     ]
   },
   {
@@ -457,13 +481,13 @@
   },
   {
     "Name": "tree-sitter",
-    "Version": "0.26.0",
+    "Version": "0.26.1",
     "License": "MIT",
     "Scope": "必要時に別途ダウンロード",
     "Description": "構文解析と各言語の文法。ダウンロードするwheelにも元のライセンスが含まれます。",
-    "Source": "https://pypi.org/project/tree-sitter/0.26.0/",
+    "Source": "https://pypi.org/project/tree-sitter/0.26.1/",
     "Files": [
-      "tree-sitter-0.26.0-LICENSE.txt"
+      "tree-sitter-0.26.1-LICENSE.txt"
     ]
   },
   {

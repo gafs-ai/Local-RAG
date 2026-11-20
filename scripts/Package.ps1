@@ -8,7 +8,7 @@ if (!(Test-Path -LiteralPath (Join-Path $repo "Documents/$releaseNotes"))) { thr
 $semanticVersion = ([version]$Version).ToString()
 # Keep releases on the runtime verified on the host and covered by ThirdPartyNotices.
 # SDK patch roll-forward must not silently change the redistributed runtime.
-$runtimeVersion = '10.0.14'
+$runtimeVersion = '10.0.15'
 Push-Location $repo
 try {
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -46,6 +46,7 @@ try {
     Copy-Item Documents/UpdateNotificationsValidation-2026-11-13.md $userDocs.FullName
     Copy-Item Documents/DistributionValidation-0.26.8-2026-11-13.md $userDocs.FullName
     Copy-Item Documents/ReleaseValidation-0.26.8-2026-11-13.md $userDocs.FullName
+    Copy-Item Documents/ReleaseValidation-0.26.9-2026-11-20.md $userDocs.FullName
     Copy-Item ThirdPartyNotices (Join-Path $stage 'ThirdPartyNotices') -Recurse
     & (Join-Path $PSScriptRoot 'Test-LicenseInventory.ps1') -DistributionDirectory $stage
     $revision = git -c "safe.directory=$repo" rev-parse HEAD

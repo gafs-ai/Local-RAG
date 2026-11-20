@@ -25,8 +25,8 @@ public sealed class SurrealServerInstaller(string toolsDirectory)
         var temporary = ExecutablePath + "." + Guid.NewGuid().ToString("N") + ".download";
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
-            using var response = await http.GetAsync(DownloadUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+            using var http = OutboundHttp.DownloadClient(TimeSpan.FromMinutes(15));
+            using var response = await OutboundHttp.DownloadAsync(http, DownloadUrl, token).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             await using (var source = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false))
             await using (var target = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))

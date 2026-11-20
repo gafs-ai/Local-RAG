@@ -1,4 +1,4 @@
-# Local RAG バージョン0.26.8
+# Local RAG バージョン0.26.9
 
 PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索するWindows 11 x64向けアプリです。
 

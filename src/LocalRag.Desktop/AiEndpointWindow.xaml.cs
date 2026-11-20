@@ -9,6 +9,7 @@ public partial class AiEndpointWindow : Window
     private sealed record ProviderChoice(AiProvider Provider, string Label);
     private readonly AiEndpointSettings _original;
     private bool _loading = true;
+    private string? _certificateAuthority;
     public AiEndpointSettings? Result { get; private set; }
     public string? ApiKey { get; private set; }
     public AiEndpointWindow(AiEndpointSettings endpoint)
@@ -17,6 +18,8 @@ public partial class AiEndpointWindow : Window
         ProviderBox.ItemsSource = new[] { new ProviderChoice(AiProvider.Lemonade, "Lemonade Server"), new(AiProvider.OpenVino, "OpenVINO Model Server"), new(AiProvider.LmStudio, "LM Studio") };
         ProviderBox.SelectedValue = endpoint.Provider;
         NameBox.Text = endpoint.Name; UrlBox.Text = endpoint.BaseUrl;
+        _certificateAuthority = Uri.TryCreate(endpoint.BaseUrl, UriKind.Absolute, out var originalUri) ? originalUri.GetLeftPart(UriPartial.Authority) : null;
+        VerifyCertificateBox.IsChecked = endpoint.VerifyCertificate;
         AutoStartBox.IsChecked = endpoint.AutoStartServer; StopBox.IsChecked = endpoint.StopServerOnExit;
         ExecutableBox.Text = endpoint.ServerExecutablePath; ConfigBox.Text = endpoint.ModelConfigPath;
         ChatLimitBox.Text = endpoint.ChatContextTokens.ToString(); EmbeddingLimitBox.Text = endpoint.EmbeddingContextTokens.ToString();
@@ -37,7 +40,12 @@ public partial class AiEndpointWindow : Window
     private void OptionsChanged(object sender, RoutedEventArgs e) { if (!_loading) RefreshOptions(); }
     private void RefreshOptions()
     {
-        var local = Uri.TryCreate(UrlBox.Text.Trim(), UriKind.Absolute, out var uri) && uri.IsLoopback && uri.Scheme == "http";
+        var validUri = Uri.TryCreate(UrlBox.Text.Trim(), UriKind.Absolute, out var tls);
+        var authority = tls?.GetLeftPart(UriPartial.Authority);
+        if (_certificateAuthority != authority) VerifyCertificateBox.IsChecked = true;
+        _certificateAuthority = authority;
+        VerifyCertificateBox.Visibility = validUri && tls!.Scheme == "https" ? Visibility.Visible : Visibility.Collapsed;
+        var local = Uri.TryCreate(UrlBox.Text.Trim(), UriKind.Absolute, out var uri) && OutboundPolicy.IsLocalHost(uri) && uri.Scheme == "http";
         AutoStartBox.IsEnabled = local;
         if (!local) AutoStartBox.IsChecked = false;
         StopBox.IsEnabled = local;
@@ -56,7 +64,7 @@ public partial class AiEndpointWindow : Window
     {
         if (!int.TryParse(ChatLimitBox.Text, out var chat) || !int.TryParse(EmbeddingLimitBox.Text, out var embedding)) { ErrorText.Text = "入力上限は整数で指定してください。"; return; }
         var result = _original with { Name = NameBox.Text.Trim(), Provider = (AiProvider)ProviderBox.SelectedValue, BaseUrl = UrlBox.Text.Trim(),
-            AutoStartServer = AutoStartBox.IsChecked == true, StopServerOnExit = StopBox.IsChecked == true, ServerExecutablePath = ExecutableBox.Text.Trim(),
+            VerifyCertificate = VerifyCertificateBox.IsChecked != false, AutoStartServer = AutoStartBox.IsChecked == true, StopServerOnExit = StopBox.IsChecked == true, ServerExecutablePath = ExecutableBox.Text.Trim(),
             ModelConfigPath = ConfigBox.Text.Trim(), ChatContextTokens = chat, EmbeddingContextTokens = embedding, JsonOutput = JsonBox.IsChecked == true };
         var errors = result.Validate();
         if (errors.Count > 0) { ErrorText.Text = string.Join(Environment.NewLine, errors); return; }

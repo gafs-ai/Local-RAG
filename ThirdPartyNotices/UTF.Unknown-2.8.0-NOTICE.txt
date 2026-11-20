@@ -1,0 +1,5 @@
+UTF.Unknown 2.8.0 is distributed here under its GPL-2.0-or-later alternative,
+using GPL version 3. The NuGet metadata reports MPL-1.1; see the included
+upstream README for the alternative license grant.
+Upstream source: https://github.com/CharsetDetector/UTF-unknown/tree/4654fbf0cdb47705e74a2c74bae20d486eb23fa8
+The library has not been modified by Local RAG.

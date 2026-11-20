@@ -19,7 +19,7 @@ public sealed class OpenAiModelClient : IAiModelClient
     {
         if (endpoint.Validate() is { Count: > 0 } errors) throw new ArgumentException(string.Join("\n", errors));
         _endpoint = endpoint;
-        _http = new(handler ?? new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false })
+        _http = new(OutboundHttp.ForEndpoint(endpoint.GetBaseUri(), endpoint.VerifyCertificate, handler))
             { BaseAddress = endpoint.GetBaseUri(), Timeout = TimeSpan.FromMinutes(3) };
         if (!string.IsNullOrEmpty(apiKey)) _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }

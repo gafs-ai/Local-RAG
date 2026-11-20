@@ -45,7 +45,10 @@ public sealed class SettingsStore(string dataDirectory)
         return settings;
     }
 
-    public async Task<AppSettings> LoadAsync(CancellationToken cancellationToken = default)
+    public Task<AppSettings> LoadAsync(CancellationToken cancellationToken = default) => LoadAsync(false, cancellationToken);
+    public Task<AppSettings> LoadForEditingAsync(CancellationToken cancellationToken = default) => LoadAsync(true, cancellationToken);
+
+    private async Task<AppSettings> LoadAsync(bool forEditing, CancellationToken cancellationToken)
     {
         AppSettings settings;
         JsonObject? stored = null;
@@ -61,8 +64,8 @@ public sealed class SettingsStore(string dataDirectory)
             needsName = !document.RootElement.TryGetProperty("DataSourceName", out _);
         }
         settings = RemoveSearchPrompts(settings);
-        Validate(settings);
-        settings = Migrate(settings);
+        Validate(settings, forEditing);
+        settings = Migrate(settings, forEditing);
         var owner = LocalDataSourceIdentity.Owner();
         var newIdentity = needsName || settings.DataSourceOwner is { } previousOwner && previousOwner != owner;
         if (newIdentity)
@@ -83,11 +86,11 @@ public sealed class SettingsStore(string dataDirectory)
         return settings;
     }
 
-    private static AppSettings Migrate(AppSettings settings)
+    private static AppSettings Migrate(AppSettings settings, bool forEditing = false)
     {
         var migrated = settings with { SchemaVersion = settings.Ai.Connections.Count > 0 ? 3 : 2,
             Management = (settings.Management ?? ManagementSettings.FromLegacy(settings.TextPipeline, settings.Confidentiality)).ToOrderedSettings() };
-        Validate(migrated);
+        Validate(migrated, forEditing);
         return migrated; // Persist only when the user saves; failed/cancelled edits never rewrite the old file.
     }
 
@@ -127,9 +130,9 @@ public sealed class SettingsStore(string dataDirectory)
     private static AppSettings RemoveSearchPrompts(AppSettings settings) => settings with
     { Management = settings.Management?.WithoutSearchPrompts() };
 
-    private static void Validate(AppSettings settings)
+    private static void Validate(AppSettings settings, bool forEditing = false)
     {
-        var errors = settings.Validate();
+        var errors = settings.Validate().Where(error => !forEditing || error != OutboundPolicy.CleartextError).ToList();
         if (errors.Count != 0) throw new InvalidDataException(string.Join(Environment.NewLine, errors));
     }
 }

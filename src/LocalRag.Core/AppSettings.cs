@@ -93,6 +93,7 @@ public sealed record WatchedFolder(string Path, bool Recursive = true, int Prior
 public sealed record DatabaseSettings
 {
     public int Port { get; init; } = 8000;
+    public bool VerifyCertificate { get; init; } = true;
     public bool AutoStartServer { get; init; } = true;
     public string ExternalEndpoint { get; init; } = "";
     public bool StopOnExit { get; init; } = true;
@@ -102,12 +103,13 @@ public sealed record DatabaseSettings
     {
         var errors = new List<string>();
         if (Port is < 1024 or > 65535) errors.Add("DBポートは1024～65535で指定してください。");
+        if (UsesExternalEndpoint && Uri.TryCreate(ExternalEndpoint, UriKind.Absolute, out var remote) && remote.Scheme == "ws" && !OutboundPolicy.IsAllowed(remote)) errors.Add(OutboundPolicy.CleartextError);
         if (ExternalEndpoint is null || UsesExternalEndpoint &&
             (!Uri.TryCreate(ExternalEndpoint, UriKind.Absolute, out var uri) ||
-             uri.Scheme is not ("ws" or "wss") || string.IsNullOrEmpty(uri.Host) ||
+             uri.Scheme is not ("ws" or "wss" or "https") || string.IsNullOrEmpty(uri.Host) ||
              uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 ||
              uri.AbsolutePath is not ("/" or "/rpc")))
-            errors.Add("外部DB接続先はws://またはwss://で指定してください（パスは空または/rpc、認証情報・クエリは含めません）。");
+            errors.Add("DB接続先はwss://またはhttps://（このPCのみws://も可）で指定してください（パスは空または/rpc、認証情報・クエリは含めません）。");
         return errors;
     }
 
@@ -120,6 +122,7 @@ public sealed record AiConnectionSettings
     public string ChatConnectionId { get; init; } = "";
     public string EmbeddingConnectionId { get; init; } = "";
     public string BaseUrl { get; init; } = "http://localhost:13305/api/v1/";
+    public bool VerifyCertificate { get; init; } = true;
     public bool AutoStartServer { get; init; } = true;
     public bool StopServerOnExit { get; init; } = true;
     public string ServerExecutablePath { get; init; } = "";
@@ -138,13 +141,13 @@ public sealed record AiConnectionSettings
     }
 
     public IReadOnlyList<AiEndpointSettings> Endpoints() => Connections.Count > 0 ? Connections :
-        [new() { Id = "lemonade-default", Name = "Lemonade", BaseUrl = BaseUrl, AutoStartServer = AutoStartServer, StopServerOnExit = StopServerOnExit, ServerExecutablePath = ServerExecutablePath }];
+        [new() { Id = "lemonade-default", Name = "Lemonade", BaseUrl = BaseUrl, VerifyCertificate = VerifyCertificate, AutoStartServer = AutoStartServer, StopServerOnExit = StopServerOnExit, ServerExecutablePath = ServerExecutablePath }];
     public AiEndpointSettings ChatEndpoint() => Connections.Count == 0 ? Endpoints()[0] : Connections.Single(e => e.Id == ChatConnectionId);
     public AiEndpointSettings EmbeddingEndpoint() => Connections.Count == 0 ? Endpoints()[0] : Connections.Single(e => e.Id == EmbeddingConnectionId);
     public AiConnectionSettings WithConnections() => Connections.Count > 0 ? this : this with
         { Connections = Endpoints().ToList(), ChatConnectionId = "lemonade-default", EmbeddingConnectionId = "lemonade-default" };
     public static AiConnectionSettings ForEndpoint(AiEndpointSettings endpoint) => new()
-        { BaseUrl = endpoint.BaseUrl, AutoStartServer = endpoint.AutoStartServer, StopServerOnExit = endpoint.StopServerOnExit, ServerExecutablePath = endpoint.ServerExecutablePath };
+        { BaseUrl = endpoint.BaseUrl, VerifyCertificate = endpoint.VerifyCertificate, AutoStartServer = endpoint.AutoStartServer, StopServerOnExit = endpoint.StopServerOnExit, ServerExecutablePath = endpoint.ServerExecutablePath };
     public string CombinedIdentity() => ChatEndpoint().ChatIdentity == EmbeddingEndpoint().EmbeddingProcessingIdentity ? ChatEndpoint().ChatIdentity :
         ChatEndpoint().ChatIdentity + "\nembedding=" + EmbeddingEndpoint().EmbeddingProcessingIdentity;
     public bool UsesExternalInference() => !ChatEndpoint().IsLocal || !EmbeddingEndpoint().IsLocal;

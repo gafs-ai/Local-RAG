@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
   <metadata>
     <id>Microsoft.CodeAnalysis.Analyzers</id>
-    <version>5.9.0-1.26328.17</version>
+    <version>5.9.0</version>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
     <developmentDependency>true</developmentDependency>
@@ -16,6 +16,6 @@
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>Roslyn CodeAnalysis Compiler CSharp VB VisualBasic Diagnostic Analyzers Syntax Semantics</tags>
     <serviceable>true</serviceable>
-    <repository type="git" url="https://github.com/dotnet/roslyn" commit="411469b8cd5e1ac891644ef6e3bf5cc8fa7943cc" />
+    <repository type="git" url="https://github.com/dotnet/roslyn" commit="35d9211b841e7613c1d2f8f5af6d628ace696c4c" />
   </metadata>
 </package>

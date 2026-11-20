@@ -80,7 +80,7 @@ public partial class MainWindow : Window, IDisposable
     {
         try
         {
-            var settings = await _settingsStore.LoadAsync(_lifetime.Token);
+            var settings = await _settingsStore.LoadForEditingAsync(_lifetime.Token);
             _loadedSettings = settings;
             foreach (var folder in settings.Folders) _folderRows.Add(new() { Path = folder.Path, Recursive = folder.Recursive, Priority = folder.Priority.ToString() });
             FolderGrid.ItemsSource = _folderRows;
@@ -97,6 +97,7 @@ public partial class MainWindow : Window, IDisposable
             _localDbPort = settings.Database.Port;
             DbPortBox.Text = settings.Database.Port.ToString();
             DbEndpointBox.Text = settings.Database.ExternalEndpoint;
+            VerifyDbCertificateBox.IsChecked = settings.Database.VerifyCertificate;
             AutoStartDbBox.IsChecked = settings.Database.AutoStartServer;
             await LoadExternalCredentialsAsync();
             StopDbBox.IsChecked = settings.Database.StopOnExit;
@@ -105,6 +106,14 @@ public partial class MainWindow : Window, IDisposable
             await InitializeUsageStatisticsAsync();
             _settingsLoaded = true;
             await ConfigureUpdateMonitoringAsync();
+            if (settings.Validate().Contains(OutboundPolicy.CleartextError))
+            {
+                SettingsStatus.Text = AiStatus.Text = OutboundPolicy.CleartextError;
+                _operationError = "接続先の設定を変更してください。";
+                _starting = false;
+                UpdateApplicationStatus();
+                return;
+            }
             SettingsStatus.Text = "";
         }
         catch (OperationCanceledException) { }
@@ -132,6 +141,17 @@ public partial class MainWindow : Window, IDisposable
         FolderGrid.CancelEdit(System.Windows.Controls.DataGridEditingUnit.Row);
         _folderRows.Remove(row);
         SettingsStatus.Text = "フォルダを一覧から削除しました。「設定を保存」で反映します。";
+    }
+
+    private string? _dbCertificateAuthority;
+    private void DbEndpointTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (VerifyDbCertificateBox is null) return;
+        var secure = Uri.TryCreate(DbEndpointBox.Text.Trim(), UriKind.Absolute, out var uri) && uri.Scheme is "https" or "wss";
+        var authority = uri?.GetLeftPart(UriPartial.Authority);
+        if (authority != _dbCertificateAuthority) VerifyDbCertificateBox.IsChecked = true;
+        _dbCertificateAuthority = authority;
+        VerifyDbCertificateBox.Visibility = secure ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void DbEndpointChanged(object sender, RoutedEventArgs e)
@@ -225,7 +245,7 @@ public partial class MainWindow : Window, IDisposable
             AutomaticMonitoring = AutomaticMonitoringBox.IsChecked == true,
             AutomaticUpdateChecks = AutomaticUpdatesBox.IsChecked == true,
             Mcp = new McpSettings { Enabled = McpEnabledBox.IsChecked == true, Port = mcpPort },
-            Database = new DatabaseSettings { Port = port, StopOnExit = StopDbBox.IsChecked == true,
+            Database = new DatabaseSettings { VerifyCertificate = VerifyDbCertificateBox.IsChecked != false, Port = port, StopOnExit = StopDbBox.IsChecked == true,
                 AutoStartServer = AutoStartDbBox.IsChecked == true, ExternalEndpoint = DbEndpointBox.Text.Trim() },
             Folders = folders,
             Ai = ReadAiSettings()
@@ -296,7 +316,7 @@ public partial class MainWindow : Window, IDisposable
                     throw new InvalidDataException("外部DBのユーザー名とパスワードを指定してください。保存済みパスワードを維持する場合は空欄にします。");
                 DbPasswordBox.Clear();
             }
-            var reconnect = credentialsChanged || settings.Database.ExternalEndpoint != _loadedSettings.Database.ExternalEndpoint || _server.Connection is null;
+            var reconnect = credentialsChanged || settings.Database.VerifyCertificate != _loadedSettings.Database.VerifyCertificate || settings.Database.ExternalEndpoint != _loadedSettings.Database.ExternalEndpoint || _server.Connection is null;
             await PrepareUsageStatisticsForSettingsAsync(settings);
             await _settingsStore.SaveAsync(settings, _lifetime.Token);
             _loadedSettings = settings;

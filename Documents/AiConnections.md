@@ -43,7 +43,7 @@ Lemonade Server、OpenVINO Model Server（OVMS）、LM Studioを接続先とし�
 
 ## 接続とモデル
 
-接続先には名前、種類、APIのベースURL、必要に応じてAPIキーを設定する。例はLemonadeの`http://localhost:13305/api/v1/`、OVMSの`http://localhost:8001/v3/`、LM Studioの`http://localhost:1234/v1/`。外部サーバーのHTTP/HTTPS URLも指定できる。OVMSの例は既定のSurrealDBポート8000との競合を避けている。
+接続先には名前、種類、APIのベースURL、必要に応じてAPIキーを設定する。例はLemonadeの`http://localhost:13305/api/v1/`、OVMSの`http://localhost:8001/v3/`、LM Studioの`http://localhost:1234/v1/`。別のPCのサーバーにはHTTPSが必要です。HTTPは `127.0.0.1`、`[::1]`、`localhost` のみ許可します。接続先を編集すると「証明書を検証する」（既定オン）を設定できます。OVMSの例は既定のSurrealDBポート8000との競合を避けている。
 
 外部接続を選ぶと、分類・整形・説明生成・埋め込みのために文書内容や検索文が指定先へ送られる。取得結果の秘匿検査は、これらの入力送信を防止する機能ではない。自動リダイレクトは追跡しない。APIキーはWindowsのユーザー単位の暗号化で保存し、接続先の種類・URLに関連付ける。URLを変更した場合に以前のキーを別の接続先へ転送しない。
 

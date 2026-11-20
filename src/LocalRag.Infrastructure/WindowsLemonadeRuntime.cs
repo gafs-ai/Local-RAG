@@ -101,7 +101,7 @@ internal sealed class WindowsLemonadeRuntime(string? isolatedProfile = null, str
         {
             if (!IsAlive) return;
             if (!OwnsListener) throw new InvalidOperationException("起動したLemonadeの待受プロセスを確認できないため停止しません。Lemonadeの状態を確認してください。");
-            using var http = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false }) { Timeout = TimeSpan.FromSeconds(35) };
+            using var http = new HttpClient(OutboundHttp.ForEndpoint(Endpoint, true)) { Timeout = TimeSpan.FromSeconds(35) };
             if (!string.IsNullOrEmpty(_admin)) http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _admin);
             try
             {

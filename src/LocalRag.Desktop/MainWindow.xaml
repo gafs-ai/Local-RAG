@@ -191,8 +191,9 @@
                         <TextBlock Text="自動起動するSurrealDBのDBポート（変更後はアプリ再起動）" />
                         <TextBox x:Name="DbPortBox" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="DBポート" />
                         <TextBlock Text="以下は、アプリケーションから自動起動する場合は空欄にしてください" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,6" />
-                        <TextBlock Text="外部SurrealDBの接続先（ws:// または wss://）" />
-                        <TextBox x:Name="DbEndpointBox" AutomationProperties.Name="外部DB接続先" LostFocus="DbEndpointChanged" />
+                        <TextBlock Text="外部SurrealDBの接続先（wss:// または https://、このPCのみ ws:// も可）" />
+                        <TextBox x:Name="DbEndpointBox" AutomationProperties.Name="外部DB接続先" LostFocus="DbEndpointChanged" TextChanged="DbEndpointTextChanged" />
+                        <CheckBox x:Name="VerifyDbCertificateBox" Visibility="Collapsed" Content="証明書を検証する" IsChecked="True" Margin="0,4" />
                         <TextBlock Text="ユーザー名" /><TextBox x:Name="DbUserBox" AutomationProperties.Name="DBユーザー名" />
                         <TextBlock Text="パスワード" /><PasswordBox x:Name="DbPasswordBox" Padding="8" Margin="0,6,0,14" AutomationProperties.Name="DBパスワード" />
                         <TextBlock Text="MCP" FontSize="18" FontWeight="SemiBold" />

@@ -61,7 +61,7 @@ public sealed class AiConnectionTests
 
     [Theory]
     [InlineData("https://host.example/prefix/v1/", false, true)]
-    [InlineData("http://192.168.1.20:8001/v3/", false, true)]
+    [InlineData("http://192.168.1.20:8001/v3/", false, false)]
     [InlineData("https://host.example/v1/", true, false)]
     [InlineData("ftp://host.example/v1/", false, false)]
     [InlineData("https://user:secret@host.example/v1/", false, false)]

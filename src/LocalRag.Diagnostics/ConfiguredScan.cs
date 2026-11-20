@@ -30,11 +30,13 @@ internal static class ConfiguredScan
             {
                 var secret = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
                 await using var host = await LocalMcpHost.StartAsync(service, settings.Mcp.Port, secret, token);
+                var uri = new Uri($"http://127.0.0.1:{settings.Mcp.Port}/mcp");
+                using var http = OutboundHttp.ForLocalMcp(uri);
                 await using var client = await McpClient.CreateAsync(new HttpClientTransport(new()
                 {
-                    Endpoint = new($"http://127.0.0.1:{settings.Mcp.Port}/mcp"),
+                    Endpoint = uri,
                     AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + secret }
-                }), cancellationToken: token);
+                }, http), cancellationToken: token);
                 static JsonElement Body(CallToolResult response)
                 {
                     if (response.IsError == true) throw new InvalidDataException("MCP evaluation failed.");

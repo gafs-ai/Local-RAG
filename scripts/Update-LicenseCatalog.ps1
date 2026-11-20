@@ -21,9 +21,9 @@ foreach($package in Get-Content (Join-Path $root 'packages.json') -Raw | Convert
     Add-Entry $name $version $license $scope ($package.Copyright + "`nAuthors: " + $package.Authors) $source $files
 }
 foreach($pack in @('microsoft.netcore.app.runtime.win-x64','microsoft.aspnetcore.app.runtime.win-x64','microsoft.windowsdesktop.app.runtime.win-x64')) {
-    $files=@(Get-ChildItem $root -File -Filter "$pack-10.0.14-*" | Sort-Object Name | Select-Object -ExpandProperty Name)
+    $files=@(Get-ChildItem $root -File -Filter "$pack-10.0.15-*" | Sort-Object Name | Select-Object -ExpandProperty Name)
     if(!$files.Count){throw "Missing runtime notices: $pack"}
-    Add-Entry $pack '10.0.14' 'MIT / 同梱第三者通知' '自己完結型配布に同梱' '.NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。' 'https://github.com/dotnet/dotnet' $files
+    Add-Entry $pack '10.0.15' 'MIT / 同梱第三者通知' '自己完結型配布に同梱' '.NET Foundation / Microsoftおよび各依存ソフトウェアの権利者。ライセンス原文と第三者通知を参照してください。' 'https://github.com/dotnet/dotnet' $files
 }
 Add-Entry 'WiX UI' '5.0.2' 'MS-RL' 'インストーラに組み込み' 'アプリ本体とは別のライセンスです。MSIには対応ソースも同梱します。' 'https://github.com/wixtoolset/wix/tree/aa65968c419420d32e3e1b647aea0082f5ca5b78' @('WiX-5.0.2-LICENSE.txt','WiX-5.0.2-NOTICE.txt')
 Add-Entry 'SurrealDB Server' '3.3.5' 'Business Source License 1.1' '初回に別途ダウンロード・別プロセス' 'SurrealDb.NetクライアントのApache-2.0とは異なります。追加利用許諾・制限・Change Dateは原文を確認してください。本体インストーラにDB実行ファイルは含めません。' 'https://github.com/surrealdb/surrealdb/blob/v3.3.5/LICENSE' @('SurrealDB-3.3.5-LICENSE.txt')
