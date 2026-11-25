@@ -6,7 +6,7 @@
     <EmbeddedResource Include="ConvertExcel.ps1" />
     <ProjectReference Include="../LocalRag.Core/LocalRag.Core.csproj" />
     <!-- The content items below copy the helper from its own output directory. -->
-    <ProjectReference Include="../LocalRag.ServerControl/LocalRag.ServerControl.csproj" ReferenceOutputAssembly="false" Private="false" GlobalPropertiesToRemove="BaseOutputPath" />
+    <ProjectReference Include="../LocalRag.ServerControl/LocalRag.ServerControl.csproj" ReferenceOutputAssembly="false" Private="false" GlobalPropertiesToRemove="BaseOutputPath;RuntimeIdentifier;SelfContained" />
     <PackageReference Include="SurrealDb.Net" Version="1.0.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.12.0" />
     <PackageReference Include="UTF.Unknown" Version="2.8.0" />
