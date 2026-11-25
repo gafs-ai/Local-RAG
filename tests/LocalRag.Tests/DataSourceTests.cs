@@ -82,7 +82,7 @@ public class DataSourceTests
     }
 
     [ServerFact]
-    public async Task LegacyMigrationPersistsNameInCurrentAndHistoricalRecordsAndPreservesUnknownFields()
+    public async Task LegacyMigrationPreservesUnknownCurrentFieldsAndReclaimsOnlyOwnedHistory()
     {
         await using var f = await ServerFixture.StartAsync();
         await using var db = await SurrealConnection.OpenAsync(f.Manager.Connection!, "application");
@@ -100,17 +100,14 @@ public class DataSourceTests
         {
             await using var repo = await TextRagRepository.OpenAsync(f.Manager.Connection!, dataSourceName: "Existing source");
             Assert.Equal("Existing source", (await repo.GetAsync("file", default))!.DataSourceName);
-            foreach (var (table, key, expected) in new[] { ("text_document", "file", "Existing source"),
-                ("text_revision", "current", "Existing source"), ("text_revision", "old", "Existing source") })
-            {
-                var result = await db.RawQuery($"SELECT VALUE {{ Name: data_source_name, Payload: payload }} FROM type::record('{table}', $key);", new Dictionary<string, object?> { ["key"] = key });
-                result.EnsureAllOks();
-                var row = Assert.Single(result.GetValue<SourceRow[]>(0)!);
-                Assert.Equal(expected, row.Name);
-                var payload = JsonNode.Parse(row.Payload)!;
-                Assert.Equal(expected, payload["DataSourceName"]!.GetValue<string>());
-                Assert.Equal("preserve", payload["FutureProperty"]!.GetValue<string>());
-            }
+            var result = await db.RawQuery("SELECT VALUE { Name: data_source_name, Payload: payload } FROM text_document:file; SELECT VALUE payload FROM text_revision;");
+            result.EnsureAllOks();
+            var row = Assert.Single(result.GetValue<SourceRow[]>(0)!);
+            Assert.Equal("Existing source", row.Name);
+            var payload = JsonNode.Parse(row.Payload)!;
+            Assert.Equal("Existing source", payload["DataSourceName"]!.GetValue<string>());
+            Assert.Equal("preserve", payload["FutureProperty"]!.GetValue<string>());
+            Assert.Empty(result.GetValue<string[]>(1)!);
         }
     }
     private sealed record SourceRow(string Name, string Payload);
@@ -133,7 +130,7 @@ public class DataSourceTests
         var document = JsonSerializer.SerializeToNode(before)!.AsObject();
         document["Key"] = oldKey; document.Remove("DataSourceName"); document["FutureField"] = "preserved";
         await using var raw = await SurrealConnection.OpenAsync(f.Manager.Connection!, "application");
-        (await raw.RawQuery("BEGIN TRANSACTION; DELETE type::record('text_document', $new); CREATE type::record('text_document', $old) SET payload=$payload; UPDATE type::record('text_revision', $revision) SET payload=$payload, data_source_name=NONE, source_key_version=NONE; COMMIT TRANSACTION;",
+        (await raw.RawQuery("BEGIN TRANSACTION; DELETE type::record('text_document', $new); CREATE type::record('text_document', $old) SET payload=$payload; UPSERT type::record('text_revision', $revision) SET payload=$payload, data_source_name=NONE, source_key_version=NONE; COMMIT TRANSACTION;",
             new Dictionary<string, object?> { ["new"] = before.Key, ["old"] = oldKey, ["revision"] = before.RevisionId, ["payload"] = document.ToJsonString() })).EnsureAllOks();
         var table = TextRagRepository.Table(before.SpaceId!);
         var vectors = await raw.RawQuery($"SELECT VALUE payload FROM {table};"); vectors.EnsureAllOks();

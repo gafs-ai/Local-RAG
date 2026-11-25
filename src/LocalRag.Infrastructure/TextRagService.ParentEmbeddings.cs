@@ -16,20 +16,25 @@ public sealed partial class TextRagService
         }
         var embeddingBudget = await IngestionAi.DocumentEmbeddingBudgetAsync(token).ConfigureAwait(false);
         var checkpoints = state.ParentEmbeddings.ToList();
+        var known = checkpoints.Select(p => p.ParentId).ToHashSet(StringComparer.Ordinal);
+        checkpoints.AddRange(state.Parents.Where(parent => known.Add(parent.Id)).Select(parent => new ParentEmbeddingProgress(parent.Id)));
+        state = state with { ParentEmbeddings = checkpoints.ToList() };
+        // Register this phase's ordered parent list / packed children once; fragment progress
+        // references that snapshot and never rewrites all other parents or the original file.
+        await repository.SaveAsync(state, token).ConfigureAwait(false);
         foreach (var parent in state.Parents)
         {
             var position = checkpoints.FindIndex(p => p.ParentId == parent.Id);
-            if (position < 0) { position = checkpoints.Count; checkpoints.Add(new(parent.Id)); }
             var checkpoint = checkpoints[position];
+            var partNumber = 0;
             var fits = Encoding.UTF8.GetByteCount(parent.Text) <= embeddingBudget;
             if (checkpoint.Completed && !fits && options.ParentEmbedding == ParentEmbeddingMode.TextOrSummary && checkpoint.Kind == "parent_summary") continue;
             if (checkpoint.Completed && !fits && options.ParentEmbedding == ParentEmbeddingMode.TextOrSummary)
                 checkpoint = new(parent.Id) { InputHash = checkpoint.InputHash, RecipeId = checkpoint.RecipeId };
             async Task Save()
             {
+                await repository.SaveParentProgressAsync(state, position, partNumber++, parent, checkpoints[position], checkpoint, token).ConfigureAwait(false);
                 checkpoints[position] = checkpoint;
-                state = state with { ParentEmbeddings = checkpoints.ToList() };
-                await repository.SaveAsync(state, token).ConfigureAwait(false);
             }
             if (fits)
                 checkpoint = checkpoint with { EmbeddingText = parent.Text, Kind = "parent_text", Skipped = false };
@@ -88,7 +93,7 @@ public sealed partial class TextRagService
             }
             if (checkpoint.Skipped)
                 state = state with { ProcessingNotices = state.ProcessingNotices.Append("parent_embedding_skipped").Distinct().ToList() };
-            checkpoint = checkpoint with { Completed = true };
+            checkpoint = checkpoint with { Completed = true, ReductionInput = null, Reduced = [] };
             await Save();
         }
         var chunks = state.Chunks!.ToList();
@@ -101,7 +106,7 @@ public sealed partial class TextRagService
                 foreach (var part in TextWindows.Split(checkpoint.EmbeddingText!, options.MaxChunkCharacters, embeddingBudget))
                     chunks.Add(new(parent.Start, parent.End, part, parent.Id, checkpoint.Kind));
         }
-        state = state with { Chunks = chunks, ParentEmbeddingsCompleted = true };
+        state = state with { Chunks = chunks, ParentEmbeddings = checkpoints, ParentEmbeddingsCompleted = true };
         await repository.SaveAsync(state, token).ConfigureAwait(false);
         return state;
     }

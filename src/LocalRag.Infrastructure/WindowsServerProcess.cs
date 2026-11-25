@@ -3,10 +3,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace LocalRag.Infrastructure;
 
-internal static class WindowsServerProcess
+internal static partial class WindowsServerProcess
 {
     // A private hidden console is essential: a stop signal must never reach the app's terminal or other servers.
     public static Process Start(string executable, IReadOnlyList<string> arguments, string password)
@@ -14,6 +15,10 @@ internal static class WindowsServerProcess
 
     internal static Process StartIsolated(string executable, IReadOnlyList<string> arguments,
         IReadOnlyDictionary<string, string>? overrides = null, string? removePrefix = null)
+        => StartCore(executable, arguments, overrides, removePrefix, null);
+
+    private static Process StartCore(string executable, IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string>? overrides, string? removePrefix, SafeFileHandle? job)
     {
         var environment = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (DictionaryEntry item in Environment.GetEnvironmentVariables())
@@ -27,9 +32,18 @@ internal static class WindowsServerProcess
         try
         {
             if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, false,
-                0x00000010 | 0x00000400 | 0x00004000, memory, Path.GetDirectoryName(executable), ref startup, out var information))
+                0x00000010u | 0x00000400u | 0x00004000u | (job is null ? 0u : 4u /* CREATE_SUSPENDED */), memory, Path.GetDirectoryName(executable), ref startup, out var information))
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "サーバーを起動できませんでした。");
-            try { return Process.GetProcessById((int)information.ProcessId); }
+            try
+            {
+                if (job is not null && (!AssignProcessToJobObject(job, information.Process) || ResumeThread(information.Thread) == uint.MaxValue))
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    TerminateProcess(information.Process, 1);
+                    throw new Win32Exception(error, "DB整理用プロセスの監視を開始できませんでした。");
+                }
+                return Process.GetProcessById((int)information.ProcessId);
+            }
             finally { CloseHandle(information.Thread); CloseHandle(information.Process); }
         }
         finally { Marshal.ZeroFreeGlobalAllocUnicode(memory); }

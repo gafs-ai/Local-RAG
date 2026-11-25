@@ -1,8 +1,10 @@
-# Local RAG バージョン0.26.9
+# Local RAG バージョン0.26.10
 
 PC内のExcel・CSV・PDF・Word・テキスト・Markdown・ソースコードを検索するWindows 11 x64向けアプリです。
 
 まずは[クイックスタート](Documents/QuickStart.md)に従って、モデルサーバーとモデルを準備してください。**Lemonade Serverを推奨**します。Intel NPUを使う場合はOpenVINO Model Serverを利用でき、LM Studioにも対応しています。複数サーバーの併用も可能です。Local RAGでは、監視フォルダ、言語モデルと接続先、Embeddingモデルと接続先を設定すれば始められます。.NETランタイムは同梱しています。
+
+MSIでインストールすると、次回のWindowsサインインからLocal RAGがタスクトレイに常駐します。アイコンをダブルクリックすると管理画面が開きます。自動起動は「設定」でオフにでき、変更は更新後も引き継ぎます。
 
 - [詳しい設定方法](Documents/SettingsGuide.md) — アプリの「ヘルプ」や各設定項目のF1でも読めます。
 - [AI接続先の設定](Documents/AiConnections.md) — Lemonade Server・OpenVINO Model Server・LM Studioを登録し、言語モデルとEmbeddingモデルに別々の接続先を選べます。

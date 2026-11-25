@@ -309,6 +309,7 @@ public class ReprocessingTests
         using (var search = new TextRagService(repo, ai, changed, Path.Combine(f.Root, "data")))
             Assert.Null(await search.FetchAsync(Assert.Single(await repo.DocumentsAsync(default)).DocumentId));
         Assert.Equal(1, (await Scan(repo, changed, ai, f.Root)).Excluded);
+        await repo.ReclaimUnusedDataAsync();
         Assert.Equal(1, (await Scan(repo, initial, ai, f.Root)).Indexed);
         Assert.Empty(ai.Calls);
         Assert.Equal(0, ai.Embeddings);

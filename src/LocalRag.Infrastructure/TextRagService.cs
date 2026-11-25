@@ -153,9 +153,8 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
                         state = state with { SpaceId = space, Dimension = batch.Dimension };
                     }
                     if (batch.Dimension != state.Dimension) throw new InvalidDataException("処理中にEmbedding次元数が変化しました。");
-                    await repository.StageChunkAsync(state, ordinal, batch.Vectors[0], token).ConfigureAwait(false);
+                    await repository.StageChunkAsync(state, ordinal, batch.Vectors[0], checkpoint: true, token).ConfigureAwait(false);
                     state = state with { EmbeddedChunks = ordinal + 1 };
-                    await repository.SaveAsync(state, token).ConfigureAwait(false);
                 }
                 stage = "publish";
                 var currentHash = await DocumentReader.HashAsync(path, pipelineSettings, token).ConfigureAwait(false);
@@ -328,7 +327,6 @@ public sealed partial class TextRagService(TextRagRepository repository, ITextRa
     private async Task<TextCycleResult> WithdrawAsync(TextDocumentState? state, CancellationToken token)
     {
         if (state is null) return new(0, 0, 0, 0, 0, 0);
-        await repository.DeactivateAsync(state, token).ConfigureAwait(false);
         await repository.SaveAsync(state with { Status = "deleted", WithdrawalReason = "ignored", ErrorCode = null, ErrorStage = null, ErrorDetailCode = null }, token).ConfigureAwait(false);
         return new(0, 0, 0, 0, 1, 0);
     }

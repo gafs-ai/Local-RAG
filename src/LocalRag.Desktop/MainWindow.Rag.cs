@@ -16,9 +16,11 @@ public partial class MainWindow
     private CancellationTokenSource? _monitorCancellation;
     private CancellationTokenSource? _ragCancellation;
     private Task _monitorTask = Task.CompletedTask;
+    private Task _retentionTask = Task.CompletedTask;
     private Task _ragTask = Task.CompletedTask;
     private bool _ragChanging;
     private bool _monitoringEnabled;
+    private bool? _monitorAfterSetupFailure;
     private bool _manualScanRunning;
     private Task _scanTask = Task.CompletedTask;
     private Task _refreshTask = Task.CompletedTask;
@@ -27,12 +29,14 @@ public partial class MainWindow
     private async Task ReconfigureRagAsync(bool refreshAi = false, bool? startMonitoring = null, bool reconnectDatabase = false)
     {
         await _ragConfiguration.WaitAsync();
-        var resumeMonitoring = startMonitoring ?? _monitoringEnabled;
+        var resumeMonitoring = startMonitoring ?? _monitorAfterSetupFailure ?? _monitoringEnabled;
+        var stage = (Log: "rag.configure", Label: "取り込み・検索の準備");
         _ragChanging = true;
         RagPanel.IsEnabled = SearchPanel.IsEnabled = false;
         SearchList.ItemsSource = null;
         SearchOutput.Clear();
         SearchStatus.Text = "";
+        RetentionStatus.Visibility = Visibility.Collapsed;
         try
         {
             await StopRagAsync();
@@ -49,16 +53,22 @@ public partial class MainWindow
             if (_server.Connection is null || _loadedSettings.Folders.Count == 0 ||
                 string.IsNullOrWhiteSpace(_loadedSettings.Ai.ChatModel) || string.IsNullOrWhiteSpace(_loadedSettings.Ai.EmbeddingModel))
             {
+                _monitorAfterSetupFailure = _server.Connection is null ? resumeMonitoring : null;
                 _operationError = "DB接続とフォルダ・言語モデル・Embeddingモデルの設定を確認してください。";
                 return;
             }
-            _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token, _loadedSettings.DataSourceName);
+            stage = ("rag.open-index", "文書索引の準備");
+            _repository = await TextRagRepository.OpenAsync(_server.Connection, _lifetime.Token, _loadedSettings.DataSourceName,
+                deferAutomaticRetention: true);
+            stage = ("rag.initialize-service", "取り込み・検索の初期化");
             _ragCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _ragAi = new LemonadeTextAi(_loadedSettings, apiKeys: await new AiCredentialStore(_dataDirectory).LoadAsync(_loadedSettings.Ai, _lifetime.Token));
             _rag = new TextRagService(_repository, _ragAi, _loadedSettings, _dataDirectory);
             AttachIngestionActivity(_rag);
             _persistentMonitor = new PersistentMonitor(_repository, MonitoringCheckpoint.ScopeFor(_loadedSettings));
+            stage = ("rag.load-statuses", "索引の状態一覧の読み込み");
             ShowDocuments(await _repository.DocumentStatusesAsync(_lifetime.Token));
+            stage = ("rag.start-services", "取り込み・検索の開始");
             await RefreshHistoryAsync(_rag);
             RagPanel.IsEnabled = SearchPanel.IsEnabled = true;
             _operationError = null;
@@ -75,14 +85,55 @@ public partial class MainWindow
                 catch (Exception) { McpStatus.Text = "MCPを開始できません。ポートの競合・設定を確認し、設定を保存して再試行してください。"; }
             }
             if (resumeMonitoring) StartMonitoring(immediate: !_starting);
+            _monitorAfterSetupFailure = null;
+            _retentionTask = RunBackgroundRetentionAsync(_repository, _ragCancellation.Token);
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { _operationError = SafeMessage(ex); }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested || _shuttingDown) { }
+        catch (Exception ex)
+        {
+            OperationalDiagnostics.Write(_dataDirectory, stage.Log, ex);
+            _monitorAfterSetupFailure = resumeMonitoring;
+            _operationError = $"{stage.Label}に失敗しました。{SafeMessage(ex)} 「接続状態」のDB接続で「接続確認」を押すと再試行できます。";
+        }
         finally
         {
             _ragChanging = false; _ragConfiguration.Release(); UpdateApplicationStatus();
             ResetIngestionButton.IsEnabled = !_shuttingDown && !_resettingData && _server.Connection is not null;
+            RefreshStorageButtons();
         }
+    }
+
+    private async Task RunBackgroundRetentionAsync(TextRagRepository repository, CancellationToken token)
+    {
+        const string checking = "旧索引データの整理状況を確認しています。検索・取り込みを利用できます。";
+        RetentionStatus.Text = checking;
+        RetentionStatus.Visibility = Visibility.Visible;
+        var finished = false;
+        var progress = new Progress<int>(deferred =>
+        {
+            // Progress<T> posts to the UI dispatcher and can arrive after completion or reconfiguration.
+            if (finished || token.IsCancellationRequested || !ReferenceEquals(_repository, repository)) return;
+            RetentionStatus.Text = deferred == 0 ? checking
+                : $"DBの書き込み競合で整理を保留している文書が{deferred:N0}件あります。自動で再試行します。";
+        });
+        string? notice;
+        try
+        {
+            await Task.Run(() => repository.RunAutomaticRetentionAsync(token, progress), token);
+            notice = repository.AutomaticRetentionNotice;
+            if (repository.AutomaticRetentionError is { } cleanupError)
+                OperationalDiagnostics.Write(_dataDirectory, "rag.cleanup-deferred", cleanupError);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
+        catch (Exception ex)
+        {
+            OperationalDiagnostics.Write(_dataDirectory, "rag.cleanup-deferred", ex);
+            notice = "エラーで旧索引データの自動整理を中断しました。次に索引を開いたときに再試行します。";
+        }
+        finally { finished = true; }
+        if (token.IsCancellationRequested || !ReferenceEquals(_repository, repository)) return;
+        RetentionStatus.Text = notice;
+        RetentionStatus.Visibility = notice is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void StartMonitoring(bool immediate = true)
@@ -263,6 +314,7 @@ public partial class MainWindow
     {
         _ragCancellation?.Cancel();
         _monitorCancellation?.Cancel();
+        await _retentionTask;
         if (_mcp is not null) { await _mcp.DisposeAsync(); _mcp = null; }
         McpStatus.Text = "MCPは停止しています。";
         await Task.WhenAll(_monitorTask, _ragTask, _refreshTask, _scanTask);

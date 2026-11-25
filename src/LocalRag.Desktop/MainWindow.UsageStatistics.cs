@@ -14,6 +14,7 @@ public partial class MainWindow
     private CancellationTokenSource? _usageStatisticsCancellation;
     private Task _usageStatisticsTask = Task.CompletedTask;
     private bool _usageStatisticsUiLoading;
+    private bool _usageNoticeDeferred;
     private UsageStatisticsHardwareInput? _usageStatisticsHardware;
     private UsageStatisticsSender? _usageStatisticsSender;
     private bool _usageStatisticsStateLoaded;
@@ -25,11 +26,10 @@ public partial class MainWindow
     private async Task InitializeUsageStatisticsAsync()
     {
         var preference = _loadedSettings.UsageStatistics;
-        if (!preference.NoticeAcknowledged)
+        _usageNoticeDeferred = !preference.NoticeAcknowledged && !IsVisible;
+        if (!preference.NoticeAcknowledged && !_usageNoticeDeferred)
         {
-            var notice = new UsageStatisticsNoticeWindow { Owner = this };
-            var confirmed = notice.ShowDialog() == true;
-            preference = preference with { Enabled = confirmed && notice.StatisticsEnabled, NoticeAcknowledged = true };
+            preference = preference with { Enabled = AskUsagePreference(), NoticeAcknowledged = true };
             var settings = _loadedSettings with { UsageStatistics = preference };
             try { await _settingsStore.SaveAsync(settings, _lifetime.Token); _loadedSettings = settings; }
             catch (OperationCanceledException) { throw; }
@@ -43,6 +43,22 @@ public partial class MainWindow
         RefreshUsageStatisticsConfiguration();
         if (_loadedSettings.UsageStatistics is not { Enabled: true, NoticeAcknowledged: true })
             try { await ClearUsageStatisticsAsync(); } catch { UsageStatisticsStatus.Text = "利用統計：停止中。未送信分を削除できませんでした。保存先を確認してください。"; }
+    }
+
+    private bool AskUsagePreference()
+    {
+        var notice = new UsageStatisticsNoticeWindow { Owner = this };
+        return notice.ShowDialog() == true && notice.StatisticsEnabled;
+    }
+
+    private async Task ShowDeferredUsageNoticeAsync()
+    {
+        if (!_usageNoticeDeferred || !_settingsLoaded || !IsVisible) return;
+        await _saveTask;
+        if (_shuttingDown || !_usageNoticeDeferred || !IsVisible) return;
+        _usageNoticeDeferred = false;
+        if (!_loadedSettings.UsageStatistics.NoticeAcknowledged)
+            await (_saveTask = SaveUsageStatisticsPreferenceAsync(AskUsagePreference()));
     }
 
     private static UsageStatisticsSender? LoadUsageStatisticsSender()

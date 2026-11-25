@@ -19,7 +19,7 @@
 | 対象 | 保存する情報・分離方法 |
 | --- | --- |
 | `text_document` | `data_source_name` 列、JSON内の `DataSourceName`、ソースを含む文書キー |
-| `text_revision` | `data_source_name` 列、JSON内の `DataSourceName` と文書キー |
+| `text_work_progress` | データソース名・文書キー・版IDによる再開用の差分。旧版の `text_revision` の重複内容は、現行文書の移行を終えた後、そのソースの分のみ回収する |
 | ベクトル行 | `data_source_name` 列、文書キー、文書版ID。ベクトルテーブル自体は同じEmbedding空間で共有 |
 | 取り込み履歴 | `data_source_name` 列。表示・件数制限による削除はソースごと |
 | 監視チェックポイント | データソース名のハッシュでレコードを分離。監視範囲の署名にもソース名を含める |

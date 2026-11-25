@@ -140,6 +140,7 @@ public static class PipelineErrors
         "excel_macro_sheet" => "旧.xlsのVBAまたはXLMマクロシートを含むため保留しました。マクロを除いた.xlsxで保存してください",
         "excel_external_data" => "外部データの自動読み込みを伴う.xls・.xlsbは自動変換しません。値を保存した.xlsxを使用してください",
         "source_changed" => "処理中に元ファイルが変更されました",
+        "db_transaction_conflict" => "DBの同時更新が競合しました",
         "category_conflict" => "区間ごとの分類が食い違っています。カテゴリを絞るか分類を省略して指定してください",
         "context_configuration" => "指示文またはカテゴリ一覧が長すぎます。プロンプトを短くするか有効カテゴリを絞ってください",
         "context_capacity" => "指示文と応答の予約を除くと本文を処理する余地がありません",

@@ -14,8 +14,10 @@ public sealed partial class TextRagService
             progress?.Report("ソースコードの構造を解析しています（必要な解析環境は初回に自動取得します）");
             state = state with { CodeUnits = await SourceCodeParser.ParseAsync(state.Original, state.Path,
                 Path.Combine(dataDirectory, "tools"), token, options.SourceMode).ConfigureAwait(false) };
-            await repository.SaveAsync(state, token).ConfigureAwait(false);
         }
+        // On resume, fold the previous run's fragments into this phase baseline before
+        // starting a fresh sequence of small per-unit checkpoints.
+        await repository.SaveAsync(state, token).ConfigureAwait(false);
         var units = state.CodeUnits.ToList();
         var outputTokens = Math.Min(options.MaxOutputTokens, 512);
         var budget = await pipeline.InputBudgetAsync(options.CodePrompt, token, outputTokens).ConfigureAwait(false);
@@ -26,17 +28,15 @@ public sealed partial class TextRagService
         foreach (var i in order)
         {
             var unit = units[i];
+            var partNumber = 0;
             if (unit.DescriptionCompleted) continue;
             if (unit.DescribedCharacters < 0 || unit.DescribedCharacters > unit.Code.Length) throw new InvalidDataException("コード説明の再開位置が不正です。");
             object Input(string part, string evidence) => new { language = SourceLanguages.Find(options.SourceMode)?.Name ?? Path.GetExtension(state.Path),
                 unit.Kind, name = unit.Name[..Math.Min(200, unit.Name.Length)], evidence, fragment = part };
             async Task Save()
             {
+                await repository.SaveCodeProgressAsync(state, i, partNumber++, units[i], unit, token).ConfigureAwait(false);
                 units[i] = unit;
-                state = state with { CodeUnits = units.ToList() };
-                if (state.Processing?.Stages.GetValueOrDefault("code-description") is { } receipt)
-                    state = Stamp(state, "code-description", receipt.Step, Syntax(state.CodeUnits), state.CodeUnits);
-                await repository.SaveAsync(state, token).ConfigureAwait(false);
             }
             async Task<string> Describe(object input)
             {
@@ -100,7 +100,9 @@ public sealed partial class TextRagService
             foreach (var part in TextWindows.Split(CodeHierarchy.Description(unit), options.MaxChunkCharacters, embeddingBudget))
                 chunks.Add(new(i + 1, i + 1, part, unit.Id, "code_description"));
         }
-        state = state with { Chunks = chunks, Parents = parents };
+        state = state with { Chunks = chunks, Parents = parents, CodeUnits = units };
+        if (state.Processing?.Stages.GetValueOrDefault("code-description") is { } receipt)
+            state = Stamp(state, "code-description", receipt.Step, Syntax(units), units);
         await repository.SaveAsync(state, token).ConfigureAwait(false);
         return state;
     }

@@ -204,7 +204,6 @@ public sealed partial class TextRagService
                 }
                 if (stillConfigured && (!discovery.Scan.CompletedRoots.Any(f => TextFiles.InFolder(old.Path, f)) ||
                     File.Exists(old.Path) && settings.AllowedTextExtensions().Contains(Path.GetExtension(old.Path), StringComparer.OrdinalIgnoreCase))) continue;
-                await repository.DeactivateAsync(old, token).ConfigureAwait(false);
                 reason ??= File.Exists(old.Path) ? "extension_disabled" : "source_missing";
                 await repository.SaveAsync(old with { Status = "deleted", WithdrawalReason = reason,
                     ErrorCode = null, ErrorStage = null, ErrorDetailCode = null, Failure = null }, token).ConfigureAwait(false);

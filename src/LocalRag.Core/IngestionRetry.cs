@@ -58,7 +58,7 @@ public static class IngestionRetry
         OperationCanceledException or TimeoutException => "transient",
         // Sharing/lock violations and interrupted reads can recover without editing the file.
         IOException io when (io.HResult & 0xffff) is 32 or 33 => "transient",
-        PipelineValidationException v when v.Code == "source_changed" => "transient",
+        PipelineValidationException v when v.Code is "source_changed" or "db_transaction_conflict" => "transient",
         PipelineValidationException v when v.Code is "category_unknown" or "category_conflict" or "response_schema" or
             "output_incomplete" or "format_ids" or "format_destructive" or "chunk_order" or "chunk_end" or "chunk_size" or "chunk_coverage" => "llm",
         System.Text.Json.JsonException or KeyNotFoundException => "llm",

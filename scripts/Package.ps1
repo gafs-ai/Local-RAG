@@ -47,6 +47,7 @@ try {
     Copy-Item Documents/DistributionValidation-0.26.8-2026-11-13.md $userDocs.FullName
     Copy-Item Documents/ReleaseValidation-0.26.8-2026-11-13.md $userDocs.FullName
     Copy-Item Documents/ReleaseValidation-0.26.9-2026-11-20.md $userDocs.FullName
+    Copy-Item Documents/ReleaseValidation-0.26.10-2026-11-25.md $userDocs.FullName
     Copy-Item ThirdPartyNotices (Join-Path $stage 'ThirdPartyNotices') -Recurse
     & (Join-Path $PSScriptRoot 'Test-LicenseInventory.ps1') -DistributionDirectory $stage
     $revision = git -c "safe.directory=$repo" rev-parse HEAD

@@ -26,6 +26,7 @@ public partial class MainWindow : Window, IDisposable
     private readonly AiServerManager _lemonade = new();
     private Task _aiTask = Task.CompletedTask;
     private Task _startupTask = Task.CompletedTask;
+    private bool _initializationStarted;
     private Task _databaseTask = Task.CompletedTask;
     private Task _saveTask = Task.CompletedTask;
     private bool _shuttingDown;
@@ -67,7 +68,18 @@ public partial class MainWindow : Window, IDisposable
         _tray.BalloonTipClicked += (_, _) => Dispatcher.Invoke(ShowManager);
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e) => await (_startupTask = InitializeAsync());
+    private async void OnLoaded(object sender, RoutedEventArgs e) => await InitializeOnceAsync();
+
+    internal Task InitializeOnceAsync()
+    {
+        if (!_initializationStarted)
+        {
+            _initializationStarted = true;
+            // Record the task before initialization can enter a nested first-use dialog.
+            _startupTask = Dispatcher.InvokeAsync(InitializeAsync).Task.Unwrap();
+        }
+        return _startupTask;
+    }
     private void OpenHelp(object sender, RoutedEventArgs e) => SettingHelp.Show(this);
     private void OpenLicenses(object sender, RoutedEventArgs e)
     {
@@ -78,6 +90,7 @@ public partial class MainWindow : Window, IDisposable
 
     private async Task InitializeAsync()
     {
+        InitializeLogonSetting();
         try
         {
             var settings = await _settingsStore.LoadForEditingAsync(_lifetime.Token);
@@ -105,6 +118,7 @@ public partial class MainWindow : Window, IDisposable
             McpPortBox.Text = settings.Mcp.Port.ToString();
             await InitializeUsageStatisticsAsync();
             _settingsLoaded = true;
+            await ShowDeferredUsageNoticeAsync();
             await ConfigureUpdateMonitoringAsync();
             if (settings.Validate().Contains(OutboundPolicy.CleartextError))
             {
@@ -404,9 +418,15 @@ public partial class MainWindow : Window, IDisposable
             DatabaseStatus.Text = $"SurrealDB {status.Version} に接続しました（ポート {status.Port}）。" +
                 (status.ManagedByApplication ? "このアプリが起動したDBです。" : "既存のDBです。アプリ終了時にも停止しません。");
             _dbFailed = false;
+            await ShowStorageHintAsync();
         }
         catch (OperationCanceledException) { _dbFailed = !_shuttingDown; DatabaseStatus.Text = "DBの準備を中断しました。"; }
-        catch (Exception ex) { _dbFailed = true; DatabaseStatus.Text = SafeMessage(ex); }
+        catch (Exception ex)
+        {
+            OperationalDiagnostics.Write(_dataDirectory, "database.start", ex);
+            _dbFailed = true;
+            DatabaseStatus.Text = SafeMessage(ex);
+        }
         finally { DbButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
@@ -422,16 +442,23 @@ public partial class MainWindow : Window, IDisposable
                 new Progress<string>(message => DatabaseStatus.Text = message), timeout.Token);
             DatabaseStatus.Text = $"SurrealDB {status.Version} に接続しました。";
             _dbFailed = false;
-            if (_rag is null && !_shuttingDown) await ReconfigureRagAsync();
+            if ((_rag is null || _monitorAfterSetupFailure.HasValue) && !_shuttingDown) await ReconfigureRagAsync();
         }
         catch (OperationCanceledException) { _dbFailed = !_shuttingDown; DatabaseStatus.Text = "接続確認を中断しました。"; }
-        catch (Exception ex) { _dbFailed = true; DatabaseStatus.Text = SafeMessage(ex); }
+        catch (Exception ex)
+        {
+            OperationalDiagnostics.Write(_dataDirectory, "database.check", ex);
+            _dbFailed = true;
+            DatabaseStatus.Text = SafeMessage(ex);
+        }
         finally { DbButton.IsEnabled = !_shuttingDown; UpdateApplicationStatus(); }
     }
 
     private static string SafeMessage(Exception ex) => ex switch
     {
         PipelineValidationException validation => PipelineErrors.Describe(null, validation.Code),
+        SurrealDb.Net.Exceptions.Response.ResponseUnsuccessfulException => "SurrealDBが要求を処理できませんでした。",
+        OperationCanceledException => "処理が中断されたか、応答待ちが時間切れになりました。",
         InvalidDataException or InvalidOperationException or TimeoutException => ex.Message,
         ArgumentException => "入力内容が正しくありません。接続先やパスを確認してください。",
         HttpRequestException => "接続できません。接続先とネットワークの状態を確認してください。",
@@ -445,7 +472,14 @@ public partial class MainWindow : Window, IDisposable
         if (!((App)System.Windows.Application.Current).IsExiting) { e.Cancel = true; Hide(); }
     }
 
-    private void ShowManager() { Show(); WindowState = WindowState.Normal; Activate(); }
+    internal async void ShowManager()
+    {
+        if (_shuttingDown) return;
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        await ShowDeferredUsageNoticeAsync();
+    }
     private void ExitClick(object sender, RoutedEventArgs e) => ((App)System.Windows.Application.Current).ExitApplication();
 
     internal async Task PrepareShutdownAsync()

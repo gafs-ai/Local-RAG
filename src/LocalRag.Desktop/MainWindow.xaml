@@ -30,6 +30,7 @@
                         <ListBox x:Name="ModelList" Height="155" Margin="0,12,0,22" BorderBrush="#D9E1EA" />
                         <TextBlock Text="DB接続" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock x:Name="DatabaseStatus" Text="未確認。設定されたDBへの接続を確認します。" TextWrapping="Wrap" Margin="0,8,0,12" />
+                        <TextBlock x:Name="RetentionStatus" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,0,0,12" />
                         <Button x:Name="DbButton" Content="接続確認" Click="CheckDatabase" HorizontalAlignment="Left" />
                         <TextBlock Text="MCP接続" FontSize="17" FontWeight="SemiBold" Margin="0,22,0,0" />
                         <TextBlock x:Name="McpStatus" Text="未準備。フォルダとAIモデルを設定してください。" TextWrapping="Wrap" Margin="0,8" />
@@ -77,6 +78,14 @@
                         <ListBox x:Name="DocumentStatusList" Height="110" />
                     </StackPanel>
                     <Separator Margin="4,16,4,8"/>
+                    <TextBlock Text="DBの容量整理" FontWeight="SemiBold" Margin="4,8,4,4" />
+                    <TextBlock Text="現在の索引を保ったまま、このアプリが管理するローカルDBを小さくします。検索・取り込みは整理中のみ停止します。" TextWrapping="Wrap" Margin="4"/>
+                    <WrapPanel Margin="4">
+                        <Button x:Name="CompactStorageButton" Content="DBを整理する" Click="CompactStorageClick" IsEnabled="False" Margin="0,0,10,0"/>
+                        <Button x:Name="ReleaseStorageButton" Content="退避した旧DBを削除" Click="ReleaseStorageClick" Visibility="Collapsed"/>
+                    </WrapPanel>
+                    <TextBlock x:Name="StorageStatusText" TextWrapping="Wrap" Margin="4,4,4,12"/>
+                    <Separator Margin="4,4,4,8"/>
                     <Button x:Name="ResetIngestionButton" Content="データを初期化する" Click="ResetIngestionClick"
                             HorizontalAlignment="Left" Margin="4,4,4,8" IsEnabled="False" AutomationProperties.Name="取り込みデータを初期化する"/>
                     <TextBlock Text="現在のデータソースの文書・ベクトル・処理履歴・再開情報を削除します。元ファイル・設定・別ソースのデータは残します。" TextWrapping="Wrap" Foreground="#526477" Margin="4,0,4,4"/>
@@ -137,6 +146,9 @@
                         <TextBlock Text="各フォルダの.gitignore / .dockerignore / .npmignore にも従います。本アプリケーション用の .ragignore を設置できます（記述方法はgitignoreと同様）。" TextWrapping="Wrap" Foreground="#526477" />
                         <TextBlock Text="例外設定（!）は、優先されます。" TextWrapping="Wrap" Foreground="#526477" Margin="0,4,0,16" />
                         <TextBlock Text="アプリケーション設定" FontSize="18" FontWeight="SemiBold" Margin="0,6,0,8" />
+                        <CheckBox x:Name="StartAtLogonBox" Content="Windowsサインイン時にタスクトレイで起動する" Click="StartAtLogonClick" Visibility="Collapsed" Margin="0,6"
+                                  ToolTip="このWindowsユーザーのスタートアップに反映します。変更はすぐに保存されます。" />
+                        <TextBlock x:Name="StartAtLogonStatus" Visibility="Collapsed" TextWrapping="Wrap" Foreground="#526477" Margin="0,0,0,6"/>
                         <TextBlock Text="アプリの更新" FontSize="16" FontWeight="SemiBold" />
                         <CheckBox x:Name="AutomaticUpdatesBox" Content="新しいバージョンを自動確認する" Margin="0,8" />
                         <TextBlock Text="24時間ごとにGitHubの正式リリースを確認し、更新があれば画面下部とWindowsの通知で案内します。文書や設定は送信しません。" TextWrapping="Wrap" Foreground="#526477" />

@@ -14,7 +14,7 @@ public static class OperationalDiagnostics
         {
             var chain = new List<object>();
             for (Exception? current = error; current is not null && chain.Count < 8; current = current.InnerException)
-                chain.Add(new { Type = current.GetType().FullName, current.HResult, Detail = PipelineErrors.DetailCode(current),
+                chain.Add(new { Type = current.GetType().FullName, current.HResult, Detail = current is TextRagRepository.RetentionQueryFailure retention ? retention.Code : PipelineErrors.DetailCode(current),
                     Stack = new StackTrace(current, false).ToString() });
             var line = JsonSerializer.Serialize(new { AtUtc = DateTimeOffset.UtcNow, Operation = operation, Errors = chain });
             Append(dataDirectory, line);

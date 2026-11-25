@@ -21,7 +21,7 @@ public sealed record ServerOwnership(int ProcessId, long StartUtcTicks, string E
 
 public sealed record ServerStatus(string Version, bool ManagedByApplication, int Port);
 
-public sealed class SurrealServerManager : IAsyncDisposable
+public sealed partial class SurrealServerManager : IAsyncDisposable
 {
     private readonly string _directory;
     private readonly string _ownershipPath;
@@ -46,93 +46,114 @@ public sealed class SurrealServerManager : IAsyncDisposable
     {
         if (settings.Validate().Count > 0) throw new InvalidDataException(settings.Validate()[0]);
         await _gate.WaitAsync(token).ConfigureAwait(false);
-        try
-        {
-            if (Connection is not null)
-            {
-                if (Connection.Endpoint != settings.Endpoint || Connection.VerifyCertificate != settings.VerifyCertificate) throw new InvalidOperationException("DB接続先の変更はアプリの再起動後に適用されます。");
-                await VerifyConnectionAsync(Connection, token).ConfigureAwait(false);
-                return Status!;
-            }
-            if (settings.UsesExternalEndpoint)
-            {
-                var externalCredentials = await new ServerCredentialStore(Path.GetDirectoryName(_directory)!, settings.Endpoint).LoadAsync(token).ConfigureAwait(false)
-                    ?? throw new InvalidDataException("外部DBのユーザー名とパスワードを設定してください。");
-                var external = new ServerConnection(settings.Endpoint, externalCredentials, settings.VerifyCertificate);
-                string version; try { version = await VerifyConnectionAsync(external, token).ConfigureAwait(false); } catch { external.Dispose(); throw; }
-                Connection = external;
-                return Status = new(version, false, settings.Endpoint.Port);
-            }
-            Directory.CreateDirectory(_directory);
-            // Held while this application is managing the server. A second manager must not acquire stop ownership.
-            _managementLease ??= new FileStream(Path.Combine(_directory, "manager.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            var saved = await ReadOwnershipAsync(token).ConfigureAwait(false);
-            var credentials = await _credentials.LoadAsync(token).ConfigureAwait(false);
-            if (await IsPortOpenAsync(settings.Port, token).ConfigureAwait(false))
-            {
-                progress?.Report("起動済みのSurrealDBへの接続を確認しています…");
-                if (credentials is null) throw new InvalidDataException("DBポートは使用中です。既存サーバーの認証情報を設定するか、別のポートを指定してください。");
-                var connection = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate);
-                string version; try { version = await VerifyConnectionAsync(connection, token).ConfigureAwait(false); } catch { connection.Dispose(); throw; }
-                if (saved is not null && saved.Port == settings.Port && IsOwnedProcessAlive(saved)) _owned = saved;
-                Connection = connection;
-                return Status = new(version, _owned is not null, settings.Port);
-            }
+        try { return await EnsureRunningCoreAsync(settings, progress, token).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
 
-            if (saved is not null && IsOwnedProcessAlive(saved))
-                throw new InvalidOperationException("以前起動したDBが応答していません。重複起動せず、既存プロセスの状態確認を待ちます。");
-            if (!settings.AutoStartServer)
-                throw new InvalidOperationException("SurrealDBに接続できません。自動起動は無効です。");
-            var executable = await _installer.EnsureInstalledAsync(progress, token).ConfigureAwait(false);
-            credentials ??= ServerCredentialStore.Generate();
-            if (!File.Exists(Path.Combine(_directory, "credentials.dpapi")))
-                await _credentials.SaveAsync(credentials, token).ConfigureAwait(false);
-            var storage = Path.Combine(_directory, "data");
-            progress?.Report("SurrealDBを起動しています…");
-            token.ThrowIfCancellationRequested();
-            using var process = WindowsServerProcess.Start(executable,
-                ["start", "--bind", $"127.0.0.1:{settings.Port}", "--user", credentials.Username,
-                    "--log", "warn", "--no-banner", "surrealkv://" + storage.Replace('\\', '/')], credentials.Password);
-            _owned = new(process.Id, process.StartTime.ToUniversalTime().Ticks, executable, settings.Port);
-            // Persist ownership before cancellation can abandon startup.
-            var proposed = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate);
-            using var startup = CancellationTokenSource.CreateLinkedTokenSource(token);
-            startup.CancelAfter(TimeSpan.FromSeconds(45));
+    private async Task<ServerStatus> EnsureRunningCoreAsync(DatabaseSettings settings, IProgress<string>? progress,
+        CancellationToken token, bool recoverMaintenance = true)
+    {
+        if (Connection is not null)
+        {
+            if (Connection.Endpoint != settings.Endpoint || Connection.VerifyCertificate != settings.VerifyCertificate) throw new InvalidOperationException("DB接続先の変更はアプリの再起動後に適用されます。");
+            await VerifyConnectionAsync(Connection, token).ConfigureAwait(false);
+            return Status!;
+        }
+        if (settings.UsesExternalEndpoint)
+        {
+            var externalCredentials = await new ServerCredentialStore(Path.GetDirectoryName(_directory)!, settings.Endpoint).LoadAsync(token).ConfigureAwait(false)
+                ?? throw new InvalidDataException("外部DBのユーザー名とパスワードを設定してください。");
+            var external = new ServerConnection(settings.Endpoint, externalCredentials, settings.VerifyCertificate);
+            string version; try { version = await VerifyConnectionAsync(external, token).ConfigureAwait(false); } catch { external.Dispose(); throw; }
+            Connection = external;
+            return Status = new(version, false, settings.Endpoint.Port);
+        }
+        Directory.CreateDirectory(_directory);
+        // Held while this application is managing the server. A second manager must not acquire stop ownership.
+        _managementLease ??= new FileStream(Path.Combine(_directory, "manager.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        var saved = await ReadOwnershipAsync(token).ConfigureAwait(false);
+        var maintenance = new StoreSwap(_directory);
+        var journal = recoverMaintenance ? maintenance.Read() : null;
+        if (recoverMaintenance && journal is null) maintenance.CheckForUnjournaledCopy();
+        var readyJournal = journal is { Phase: "ready" } ? journal : null;
+        if (readyJournal is not null) maintenance.VerifyActive(readyJournal.Id);
+        if (journal is { Phase: "copy" or "swap" })
+        {
+            await RecoverInterruptedCompactionAsync(settings.Port, saved, token).ConfigureAwait(false);
+            saved = await ReadOwnershipAsync(token).ConfigureAwait(false);
+        }
+        var credentials = await _credentials.LoadAsync(token).ConfigureAwait(false);
+        if (await IsPortOpenAsync(settings.Port, token).ConfigureAwait(false))
+        {
+            progress?.Report("起動済みのSurrealDBへの接続を確認しています…");
+            if (credentials is null) throw new InvalidDataException("DBポートは使用中です。既存サーバーの認証情報を設定するか、別のポートを指定してください。");
+            var connection = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate);
+            string version;
             try
             {
-                await WriteOwnershipAsync(_owned).ConfigureAwait(false);
-                while (!process.HasExited)
-                {
-                    startup.Token.ThrowIfCancellationRequested();
-                    if (await IsPortOpenAsync(settings.Port, startup.Token).ConfigureAwait(false))
-                    {
-                        try
-                        {
-                            var version = await VerifyConnectionAsync(proposed, startup.Token).ConfigureAwait(false);
-                            // A listening socket can precede HTTP readiness during crash recovery.
-                            if (process.HasExited) break;
-                            Connection = proposed;
-                            return Status = new(version, true, settings.Port);
-                        }
-                        catch (HttpRequestException ex) when (ex.StatusCode is null or System.Net.HttpStatusCode.ServiceUnavailable or System.Net.HttpStatusCode.BadGateway or System.Net.HttpStatusCode.GatewayTimeout)
-                        { /* Only startup transport failures are retried, within the existing deadline. */ }
-                        catch (OperationCanceledException) when (!startup.IsCancellationRequested)
-                        { /* The readiness probe has its own shorter HTTP timeout. */ }
-                    }
-                    await Task.Delay(200, startup.Token).ConfigureAwait(false);
-                }
-                throw new InvalidOperationException("SurrealDBが起動中に終了しました。ポートと保存先を確認してください。");
+                version = await VerifyConnectionAsync(connection, token).ConfigureAwait(false);
+                if (readyJournal is not null) await VerifyMaintenanceIdentityAsync(connection, readyJournal.Id, token).ConfigureAwait(false);
             }
-            catch (Exception startupError)
-            {
-                proposed.Dispose();
-                // Leave ownership intact if stopping fails, so a later run can recover it safely.
-                try { await StopOwnedCoreAsync(CancellationToken.None).ConfigureAwait(false); }
-                catch (Exception stopError) { throw new AggregateException("DB起動と終了処理に失敗しました。", startupError, stopError); }
-                throw;
-            }
+            catch { connection.Dispose(); throw; }
+            if (saved is not null && saved.Port == settings.Port && IsOwnedProcessAlive(saved)) _owned = saved;
+            if (_owned is not null) connection.ManagedStorageDirectory = maintenance.Data;
+            Connection = connection;
+            return Status = new(version, _owned is not null, settings.Port);
         }
-        finally { _gate.Release(); }
+
+        if (saved is not null && IsOwnedProcessAlive(saved))
+            throw new InvalidOperationException("以前起動したDBが応答していません。重複起動せず、既存プロセスの状態確認を待ちます。");
+        if (!settings.AutoStartServer)
+            throw new InvalidOperationException("SurrealDBに接続できません。自動起動は無効です。");
+        var executable = await _installer.EnsureInstalledAsync(progress, token).ConfigureAwait(false);
+        credentials ??= ServerCredentialStore.Generate();
+        if (!File.Exists(Path.Combine(_directory, "credentials.dpapi")))
+            await _credentials.SaveAsync(credentials, token).ConfigureAwait(false);
+        var storage = Path.Combine(_directory, "data");
+        progress?.Report("SurrealDBを起動しています…");
+        token.ThrowIfCancellationRequested();
+        using var process = WindowsServerProcess.Start(executable,
+            ["start", "--bind", $"127.0.0.1:{settings.Port}", "--user", credentials.Username,
+                "--log", "warn", "--no-banner", "surrealkv://" + storage.Replace('\\', '/')], credentials.Password);
+        _owned = new(process.Id, process.StartTime.ToUniversalTime().Ticks, executable, settings.Port);
+        // Persist ownership before cancellation can abandon startup.
+        var proposed = new ServerConnection(settings.Endpoint, credentials, settings.VerifyCertificate) { ManagedStorageDirectory = storage };
+        using var startup = CancellationTokenSource.CreateLinkedTokenSource(token);
+        startup.CancelAfter(TimeSpan.FromSeconds(45));
+        try
+        {
+            await WriteOwnershipAsync(_owned).ConfigureAwait(false);
+            while (!process.HasExited)
+            {
+                startup.Token.ThrowIfCancellationRequested();
+                if (await IsPortOpenAsync(settings.Port, startup.Token).ConfigureAwait(false))
+                {
+                    try
+                    {
+                        var version = await VerifyConnectionAsync(proposed, startup.Token).ConfigureAwait(false);
+                        if (readyJournal is not null) await VerifyMaintenanceIdentityAsync(proposed, readyJournal.Id, startup.Token).ConfigureAwait(false);
+                        // A listening socket can precede HTTP readiness during crash recovery.
+                        if (process.HasExited) break;
+                        Connection = proposed;
+                        return Status = new(version, true, settings.Port);
+                    }
+                    catch (HttpRequestException ex) when (ex.StatusCode is null or System.Net.HttpStatusCode.ServiceUnavailable or System.Net.HttpStatusCode.BadGateway or System.Net.HttpStatusCode.GatewayTimeout)
+                    { /* Only startup transport failures are retried, within the existing deadline. */ }
+                    catch (OperationCanceledException) when (!startup.IsCancellationRequested)
+                    { /* The readiness probe has its own shorter HTTP timeout. */ }
+                }
+                await Task.Delay(200, startup.Token).ConfigureAwait(false);
+            }
+            throw new InvalidOperationException("SurrealDBが起動中に終了しました。ポートと保存先を確認してください。");
+        }
+        catch (Exception startupError)
+        {
+            proposed.Dispose();
+            // Leave ownership intact if stopping fails, so a later run can recover it safely.
+            try { await StopOwnedCoreAsync(CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception stopError) { throw new AggregateException("DB起動と終了処理に失敗しました。", startupError, stopError); }
+            throw;
+        }
     }
 
     public async Task ShutdownAsync(bool stopOnExit, CancellationToken token = default)

@@ -38,7 +38,8 @@ public partial class MainWindow
             await StopRagAsync();
             _lifetime.Token.ThrowIfCancellationRequested();
             DataResetStatus.Text = "取り込みデータを初期化しています…";
-            await using var repository = await TextRagRepository.OpenAsync(_server.Connection ?? throw new InvalidOperationException("DBに接続されていません。"), _lifetime.Token, _loadedSettings.DataSourceName);
+            await using var repository = await TextRagRepository.OpenAsync(_server.Connection ?? throw new InvalidOperationException("DBに接続されていません。"),
+                _lifetime.Token, _loadedSettings.DataSourceName, deferAutomaticRetention: true);
             await repository.ResetIngestionDataAsync(_lifetime.Token);
             cleared = true;
             SearchList.ItemsSource = null;
@@ -78,6 +79,7 @@ public partial class MainWindow
             _resettingData = false;
             ResetIngestionButton.IsEnabled = !_shuttingDown && _server.Connection is not null;
             SaveButton.IsEnabled = SettingsPanel.IsEnabled = AiButton.IsEnabled = DbButton.IsEnabled = !_shuttingDown && _settingsLoaded;
+            RefreshStorageButtons();
             UpdateApplicationStatus();
         }
     }

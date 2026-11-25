@@ -376,7 +376,7 @@ Gemmaのryzenai-llm構成では、別systemメッセージの指示が期待ど�
 
 ### 18.3 保存・版管理・回復
 
-`text_document`に現行状態、`text_revision`に版のチェックポイント、`text_space`にEmbedding空間情報を保存する。空間ごとの`text_vectors_<ハッシュ>`テーブルにDiskANN（F32、COSINE）を作成する。
+`text_document`に現行状態、`text_work_progress`に高頻度の進捗の差分、`text_space`にEmbedding空間情報を保存する。旧`text_revision`の重複したスナップショットは0.26.10への移行後、データソース単位で回収する。空間ごとの`text_vectors_<ハッシュ>`テーブルにDiskANN（F32、COSINE）を作成する。
 
 文書はパスから識別し、内容のSHA-256と工程別の実効設定・入出力ハッシュで再利用可否を決める。新しい処理試行には独立した版IDを発行し、途中再開時は同じ版を使用する。Embedding空間は接続先、モデルID、明示版、モデル固有の入力プロファイル、次元、前処理版、距離関数で分離する。機密設定だけの変更で再Embeddingはしない。工程情報・移行・公開条件は[設定変更と工程単位の再処理](IncrementalReprocessing.md)に定める。
 

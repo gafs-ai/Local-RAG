@@ -121,10 +121,14 @@ public sealed partial class TextRagService
         if (state.WordPreparedText is not null && Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) return state;
         if (!Reusable(state, "word-repair", plan.WordRepair, input, state.WordRepair)) state = state with { WordRepair = null };
         state = WithoutNotices(state, options.SourceMode == SourceCodeMode.Pdf ? "pdf_repair_" : "word_repair_");
+        state = Stamp(state with { WordPreparedText = null }, "word-repair", plan.WordRepair, input, state.WordRepair);
+        if (options.Word.RepairWithLlm)
+            await repository.SaveAsync(state, token).ConfigureAwait(false);
         var result = await WordStructureRepair.RunAsync(pipeline, options, input, state.WordRepair, async next =>
         {
-            state = Stamp(state with { WordRepair = next, WordPreparedText = null }, "word-repair", plan.WordRepair, input, next);
-            await repository.SaveAsync(state, token).ConfigureAwait(false);
+            if (options.Word.RepairWithLlm)
+                await repository.SaveWordProgressAsync(state, state.WordRepair, next, token).ConfigureAwait(false);
+            state = state with { WordRepair = next };
         }, token).ConfigureAwait(false);
         var prepared = string.Join("\n\n", result.Blocks);
         if (options.SourceMode == SourceCodeMode.Pdf) result = result with { Notices = result.Notices.Select(n => n.Replace("word_", "pdf_")).Distinct().ToList() };

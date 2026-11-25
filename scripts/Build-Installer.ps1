@@ -64,6 +64,27 @@ $rtf = '{\rtf1\ansi\deff0{\fonttbl{\f0 Courier New;}}\f0\fs16 ' + ((Get-Content 
 $license = Join-Path $work 'License.rtf'
 [IO.File]::WriteAllText($license,$rtf,[Text.Encoding]::ASCII)
 $icon = EscapeXml (Join-Path $repo 'Assets/Brand/local-rag.ico')
+$logonProperties = ''
+if (!$TestPackage) {
+    # Keep the component installed even when the user opts out. MSI then owns cleanup of the
+    # real Run value at uninstall, including when the app enabled it after installation.
+    $logonProperties = @'
+  <Property Id="LogonRegistryKey" Value="Software\Microsoft\Windows\CurrentVersion\Run"/>
+  <Property Id="LOCALRAG_LOGON_DISABLED" Secure="yes">
+   <RegistrySearch Id="FindLogonOptOut" Root="HKCU" Key="Software\GAFS\LocalRAG\Preferences"
+                   Name="StartAtLogonDisabled" Type="raw" Bitness="always64"/>
+  </Property>
+  <SetProperty Action="HonorLogonOptOut" Id="LogonRegistryKey" Value="Software\GAFS\LocalRAG\Installer\SkippedLogon"
+               Before="RemoveRegistryValues" Sequence="execute" Condition='LOCALRAG_LOGON_DISABLED = "#1" AND NOT (REMOVE ~= "ALL")'/>
+'@
+    $components.Add(@"
+ <Component Id="LogonRegistration" Directory="INSTALLFOLDER" Guid="$(ComponentGuid 'logon-registration')" Bitness="always64">
+  <RegistryValue Id="LogonComponentMarker" Root="HKCU" Key="Software\GAFS\LocalRAG\Installer" Name="LogonRegistration" Type="integer" Value="1" KeyPath="yes"/>
+  <RegistryValue Id="LogonRunCommand" Root="HKCU" Key="[LogonRegistryKey]" Name="LocalRAG" Type="string" Value="&quot;[INSTALLFOLDER]LocalRag.Desktop.exe&quot; --startup-tray"/>
+  <RemoveRegistryKey Id="RemoveUnusedLogonKey" Root="HKCU" Key="Software\GAFS\LocalRAG\Installer\SkippedLogon" Action="removeOnUninstall"/>
+ </Component>
+"@)
+}
 $source = @"
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
  <Package Name="$product" Manufacturer="GAFS Inc." Version="$version" UpgradeCode="$upgradeCode" Scope="perUser" Language="1041" Codepage="932">
@@ -74,6 +95,7 @@ $source = @"
   <Property Id="ARPURLINFOABOUT" Value="https://github.com/gafs-ai/Local-RAG" />
   <Property Id="ARPPRODUCTICON" Value="AppIcon" />
   <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+$logonProperties
   <Property Id="INSTALLFOLDER" Secure="yes"><RegistrySearch Id="ReadInstallFolder" Root="HKCU" Key="Software\GAFS\$folder\Installer" Name="InstallDirectory" Type="raw" Bitness="always64" /></Property>
   <Property Id="WINDOWSBUILD"><RegistrySearch Id="ReadWindowsBuild" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber" Type="raw" Bitness="always64" /></Property>
   <Launch Condition="Installed OR (VersionNT64 AND WINDOWSBUILD &gt;= 22000)" Message="Windows 11（64ビット）が必要です。" />

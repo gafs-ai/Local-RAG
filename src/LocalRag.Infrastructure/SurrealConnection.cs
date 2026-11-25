@@ -8,6 +8,13 @@ public sealed class ServerConnection(Uri endpoint, ServerCredentials credentials
 {
     public Uri Endpoint { get; } = OutboundPolicy.RequireAllowed(endpoint);
     public bool VerifyCertificate { get; } = verifyCertificate;
+    internal string? ManagedStorageDirectory { get; set; }
+    internal bool HasMaintenanceHeadroom()
+    {
+        if (ManagedStorageDirectory is null) return true;
+        try { return new DriveInfo(Path.GetPathRoot(ManagedStorageDirectory)!).AvailableFreeSpace >= 1024L * 1024 * 1024; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { return false; }
+    }
     internal Uri RpcEndpoint { get; } = RpcOrigin(OutboundPolicy.RequireAllowed(endpoint));
     private readonly Lazy<HttpMessageHandler> _handler = new(() => OutboundHttp.ForEndpoint(RpcOrigin(OutboundPolicy.RequireAllowed(endpoint)), verifyCertificate));
     private static Uri RpcOrigin(Uri uri) => new UriBuilder(uri)
